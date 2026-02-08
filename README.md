@@ -9,11 +9,26 @@
   Multi-LLM Chat &bull; File Management &bull; Browser Automation &bull; Messenger Integration
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-blue?logo=windows" alt="Windows Only">
+</p>
+
+> **Windows Only** — Sancho is designed and built exclusively for **Windows 10/11**. It is not supported on macOS or Linux.
+
 ---
 
 ## Overview
 
 Sancho is a local AI agent desktop app for Windows 10/11. It connects to multiple LLM providers and offers chat, file management, browser automation, and messenger integration — all in one place.
+
+## Use Cases
+
+- **Chat with LLMs from your phone** — Connect WhatsApp, Telegram, or Element X and interact with AI models directly from your mobile chat app, anytime and anywhere.
+- **Get weekly weather forecasts** — Ask Sancho to search for the latest weather information and receive a summary via chat or messenger.
+- **Crypto technical analysis** — Get real-time technical analysis for Bitcoin, Ethereum, and other cryptocurrencies with up-to-date price data.
+- **Organize files automatically** — Let the AI sort your downloads folder by file type with a single command.
+- **Automate browser tasks** — Have Sancho navigate websites, fill out forms, and extract information hands-free.
+- **Schedule recurring tasks** — Set up automated jobs that run on a schedule and send results to your messenger.
 
 ## Architecture
 
