@@ -1,34 +1,34 @@
-# GitHub LLM 모델 연결 사용법
+# GitHub LLM Models Setup Guide
 
-GitHub Models는 GitHub 계정만 있으면 무료로 다양한 AI 모델을 사용할 수 있는 서비스입니다.
+GitHub Models is a service that lets you use various AI models for free with just a GitHub account.
 
-## 1단계: GitHub Personal Access Token 발급
+## Step 1: Generate a GitHub Personal Access Token
 
-1. https://github.com/settings/tokens 접속 (GitHub 로그인 필요)
-2. "Generate new token" > "Generate new token (classic)" 클릭
-3. Note: `Sancho` (또는 아무 이름)
-4. Expiration: 원하는 기간 선택
-5. 권한(scope)은 아무것도 체크하지 않아도 됩니다
-6. "Generate token" 클릭
-7. 생성된 토큰 복사 (`ghp_` 로 시작하는 문자열)
+1. Visit https://github.com/settings/tokens (GitHub login required)
+2. Click "Generate new token" > "Generate new token (classic)"
+3. Note: `Sancho` (or any name you like)
+4. Expiration: Choose your preferred duration
+5. No scopes need to be selected
+6. Click "Generate token"
+7. Copy the generated token (a string starting with `ghp_`)
 
-## 2단계: Sancho 설정
+## Step 2: Sancho Settings
 
-1. Settings > LLM Models 탭
-2. GitHub Copilot 섹션에 API Key 입력 (`ghp_...`)
-3. Save Settings 클릭
+1. Go to Settings > LLM Models tab
+2. Enter the API Key in the GitHub Copilot section (`ghp_...`)
+3. Click Save Settings
 
-## 3단계: 모델 추가
+## Step 3: Add Models
 
-1. Settings > LLM Models 탭 하단의 모델 추가 영역에서
-2. Provider: `github` 선택
-3. Model ID 입력 (아래 사용 가능 모델 참고)
-4. Add 클릭
+1. In the model addition area at the bottom of Settings > LLM Models tab
+2. Select Provider: `github`
+3. Enter a Model ID (see available models below)
+4. Click Add
 
-## 사용 가능한 모델 (예시)
+## Available Models (examples)
 
-| Model ID | 설명 |
-|----------|------|
+| Model ID | Description |
+|----------|-------------|
 | `gpt-4o` | OpenAI GPT-4o |
 | `gpt-4o-mini` | OpenAI GPT-4o Mini |
 | `o3-mini` | OpenAI o3-mini |
@@ -36,10 +36,10 @@ GitHub Models는 GitHub 계정만 있으면 무료로 다양한 AI 모델을 사
 | `Mistral-large` | Mistral Large |
 | `DeepSeek-R1` | DeepSeek R1 |
 
-전체 모델 목록: https://github.com/marketplace/models
+Full model list: https://github.com/marketplace/models
 
-## 참고
+## Notes
 
-- **무료 사용**: GitHub 계정이 있으면 무료로 사용 가능 (일일 요청 제한 있음)
-- **API 엔드포인트**: `https://models.inference.ai.azure.com` (자동 설정됨)
-- **토큰 만료**: 토큰이 만료되면 GitHub에서 새로 발급 후 교체
+- **Free to use**: Available for free with a GitHub account (daily request limits apply)
+- **API endpoint**: `https://models.inference.ai.azure.com` (automatically configured)
+- **Token expiration**: If your token expires, generate a new one on GitHub and replace it
