@@ -7,7 +7,7 @@
 3. User ID: `@사용자이름:matrix.org`
 4. Password: Element X 계정 비밀번호
 5. Save Settings > Connect 클릭
-6. 다른 사용자가 Matrix DM을 보내면 AngelBot이 LLM 응답
+6. 다른 사용자가 Matrix DM을 보내면 Sancho이 LLM 응답
 7. 채팅창에서 보라색 말풍선으로 표시
 
 ## Gmail SSO로 가입한 경우

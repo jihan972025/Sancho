@@ -8,7 +8,7 @@
 4. App 이름(아무거나), 짧은 설명 입력 후 생성
 5. API ID (숫자)와 API Hash (영문+숫자) 복사
 
-## 2단계: AngelBot 설정
+## 2단계: Sancho 설정
 
 1. start_electron.bat 실행
 2. Settings > Chat App 탭
@@ -26,5 +26,5 @@
 ## 4단계: 사용
 
 - Telegram 앱에서 "Saved Messages" (나에게 보내기)로 메시지 전송
-- AngelBot이 LLM 응답을 채팅창 + Telegram 모두에 전송
+- Sancho이 LLM 응답을 채팅창 + Telegram 모두에 전송
 - 채팅창에서 Telegram 메시지는 파란색 말풍선으로 표시
