@@ -1,0 +1,16 @@
+{
+  "clear_history": "O histórico de conversas foi limpo.",
+  "help_text": "Ajuda do Sancho\n\nMensagem geral: Chat com IA (resposta LLM)\nPalavra-chave de busca/navegador incluída: Agente do navegador é executado\n\nComandos:\n/clear - Limpar histórico de conversas\n/status - Status do agente do navegador\n/help - Esta ajuda",
+  "status_text": "Status do agente do navegador: {status}\nTarefa: {task}\nEtapa: {step}/{max_steps}\nResultado: {result}",
+  "status_none": "Nenhum",
+  "no_model": "Nenhum modelo disponível. Por favor, configure as chaves de API e os modelos nas Configurações.",
+  "model_unavailable": "O modelo '{model}' não está disponível. Por favor, verifique sua chave de API.",
+  "processing_error": "Desculpe, ocorreu um erro durante o processamento.",
+  "rate_limit": "Limite de requisições da API excedido. Por favor, tente novamente em instantes.",
+  "browser_running": "O agente do navegador já está em execução. Por favor, tente novamente após a conclusão.",
+  "browser_completed": "Concluído: {result}",
+  "browser_completed_default": "Tarefa concluída.",
+  "browser_error": "Erro: {error}",
+  "browser_status": "Status: {status}",
+  "browser_agent_error": "Erro do agente do navegador: {error}"
+}

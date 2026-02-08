@@ -1,0 +1,16 @@
+{
+  "clear_history": "L'historique de conversation a été effacé.",
+  "help_text": "Aide Sancho\n\nMessage général : Chat IA (réponse LLM)\nMot-clé recherche/navigateur inclus : L'agent navigateur s'exécute\n\nCommandes :\n/clear - Effacer l'historique de conversation\n/status - État de l'agent navigateur\n/help - Cette aide",
+  "status_text": "État de l'agent navigateur : {status}\nTâche : {task}\nÉtape : {step}/{max_steps}\nRésultat : {result}",
+  "status_none": "Aucun",
+  "no_model": "Aucun modèle disponible. Veuillez configurer les clés API et les modèles dans les Paramètres.",
+  "model_unavailable": "Le modèle '{model}' n'est pas disponible. Veuillez vérifier votre clé API.",
+  "processing_error": "Désolé, une erreur s'est produite lors du traitement.",
+  "rate_limit": "Limite de requêtes API dépassée. Veuillez réessayer dans un instant.",
+  "browser_running": "L'agent navigateur est déjà en cours d'exécution. Veuillez réessayer après sa fin.",
+  "browser_completed": "Terminé : {result}",
+  "browser_completed_default": "Tâche terminée.",
+  "browser_error": "Erreur : {error}",
+  "browser_status": "État : {status}",
+  "browser_agent_error": "Erreur de l'agent navigateur : {error}"
+}

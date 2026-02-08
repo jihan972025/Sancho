@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="./logo.svg" />
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+    <title>Sancho</title>
+    <style>
+      #splash{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0f172a}
+      #splash .spinner{width:40px;height:40px;border:3px solid #334155;border-top-color:#5c7cfa;border-radius:50%;animation:spin .8s linear infinite}
+      #splash p{margin-top:16px;color:#94a3b8;font-family:system-ui,sans-serif;font-size:14px}
+      @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white">
+    <div id="root">
+      <div id="splash">
+        <img src="./logo.svg" alt="Sancho" style="width:48px;height:auto;margin-bottom:16px" />
+        <div class="spinner"></div>
+        <p>Loading Sancho...</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

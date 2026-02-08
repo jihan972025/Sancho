@@ -1,0 +1,16 @@
+{
+  "clear_history": "تم مسح سجل المحادثة.",
+  "help_text": "مساعدة Sancho\n\nرسالة عامة: دردشة ذكاء اصطناعي (استجابة LLM)\nتتضمن كلمة بحث/متصفح: يتم تشغيل وكيل المتصفح\n\nالأوامر:\n/clear - مسح سجل المحادثة\n/status - حالة وكيل المتصفح\n/help - هذه المساعدة",
+  "status_text": "حالة وكيل المتصفح: {status}\nالمهمة: {task}\nالخطوة: {step}/{max_steps}\nالنتيجة: {result}",
+  "status_none": "لا يوجد",
+  "no_model": "لا يوجد نموذج متاح. يرجى تكوين مفاتيح API والنماذج في الإعدادات.",
+  "model_unavailable": "النموذج '{model}' غير متاح. يرجى التحقق من مفتاح API الخاص بك.",
+  "processing_error": "عذراً، حدث خطأ أثناء المعالجة.",
+  "rate_limit": "تم تجاوز حد معدل طلبات API. يرجى المحاولة مرة أخرى بعد قليل.",
+  "browser_running": "وكيل المتصفح قيد التشغيل بالفعل. يرجى المحاولة بعد انتهائه.",
+  "browser_completed": "مكتمل: {result}",
+  "browser_completed_default": "تم إنجاز المهمة.",
+  "browser_error": "خطأ: {error}",
+  "browser_status": "الحالة: {status}",
+  "browser_agent_error": "خطأ وكيل المتصفح: {error}"
+}

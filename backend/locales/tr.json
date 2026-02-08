@@ -1,0 +1,16 @@
+{
+  "clear_history": "Konuşma geçmişi temizlendi.",
+  "help_text": "Sancho Yardım\n\nGenel mesaj: Yapay zeka sohbeti (LLM yanıtı)\nArama/tarayıcı anahtar kelimesi içeriyor: Tarayıcı ajanı çalışır\n\nKomutlar:\n/clear - Konuşma geçmişini temizle\n/status - Tarayıcı ajanı durumu\n/help - Bu yardım",
+  "status_text": "Tarayıcı ajanı durumu: {status}\nGörev: {task}\nAdım: {step}/{max_steps}\nSonuç: {result}",
+  "status_none": "Yok",
+  "no_model": "Kullanılabilir model yok. Lütfen Ayarlar'da API anahtarlarını ve modelleri yapılandırın.",
+  "model_unavailable": "'{model}' modeli kullanılamıyor. Lütfen API anahtarınızı kontrol edin.",
+  "processing_error": "Üzgünüz, işleme sırasında bir hata oluştu.",
+  "rate_limit": "API istek limiti aşıldı. Lütfen kısa bir süre sonra tekrar deneyin.",
+  "browser_running": "Tarayıcı ajanı zaten çalışıyor. Lütfen bittikten sonra tekrar deneyin.",
+  "browser_completed": "Tamamlandı: {result}",
+  "browser_completed_default": "Görev tamamlandı.",
+  "browser_error": "Hata: {error}",
+  "browser_status": "Durum: {status}",
+  "browser_agent_error": "Tarayıcı ajanı hatası: {error}"
+}

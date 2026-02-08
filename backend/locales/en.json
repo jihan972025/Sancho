@@ -1,0 +1,16 @@
+{
+  "clear_history": "Conversation history has been cleared.",
+  "help_text": "Sancho Help\n\nGeneral message: AI chat (LLM response)\nSearch/browser keyword included: Browser agent runs\n\nCommands:\n/clear - Clear conversation history\n/status - Browser agent status\n/help - This help",
+  "status_text": "Browser Agent Status: {status}\nTask: {task}\nStep: {step}/{max_steps}\nResult: {result}",
+  "status_none": "None",
+  "no_model": "No available model. Please configure API keys and models in Settings.",
+  "model_unavailable": "Model '{model}' is unavailable. Please check your API key.",
+  "processing_error": "Sorry, an error occurred during processing.",
+  "rate_limit": "API rate limit exceeded. Please try again shortly.",
+  "browser_running": "Browser agent is already running. Please try again after it finishes.",
+  "browser_completed": "Completed: {result}",
+  "browser_completed_default": "Task completed.",
+  "browser_error": "Error: {error}",
+  "browser_status": "Status: {status}",
+  "browser_agent_error": "Browser agent error: {error}"
+}

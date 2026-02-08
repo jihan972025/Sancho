@@ -1,0 +1,38 @@
+appId: com.sancho.app
+productName: Sancho
+copyright: Copyright © 2024
+
+directories:
+  output: release
+  buildResources: assets
+
+files:
+  - dist/**/*
+  - dist-electron/**/*
+  - "!node_modules/**/*"
+
+extraResources:
+  - from: dist-backend/
+    to: backend/
+  - from: assets/titlebar-icon.ico
+    to: assets/titlebar-icon.ico
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icon.png
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: assets/icon.ico
+  uninstallerIcon: assets/icon.ico
+  installerHeaderIcon: assets/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Sancho
+  installerLanguages:
+    - en_US

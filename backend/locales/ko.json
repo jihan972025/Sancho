@@ -1,0 +1,16 @@
+{
+  "clear_history": "대화 이력이 초기화되었습니다.",
+  "help_text": "Sancho 도움말\n\n일반 메시지: AI 채팅 (LLM 응답)\n검색/브라우저 키워드 포함: 브라우저 에이전트 실행\n\n특수 명령:\n/clear - 대화 이력 초기화\n/status - 브라우저 에이전트 상태\n/help - 이 도움말",
+  "status_text": "브라우저 에이전트 상태: {status}\n작업: {task}\n단계: {step}/{max_steps}\n결과: {result}",
+  "status_none": "없음",
+  "no_model": "사용 가능한 모델이 없습니다. Settings에서 API 키와 모델을 설정해주세요.",
+  "model_unavailable": "모델 '{model}'을 사용할 수 없습니다. API 키를 확인해주세요.",
+  "processing_error": "죄송합니다, 처리 중 오류가 발생했습니다.",
+  "rate_limit": "API 요청 한도 초과입니다. 잠시 후 다시 시도해주세요.",
+  "browser_running": "브라우저 에이전트가 이미 실행 중입니다. 완료 후 다시 시도해주세요.",
+  "browser_completed": "완료: {result}",
+  "browser_completed_default": "작업이 완료되었습니다.",
+  "browser_error": "오류 발생: {error}",
+  "browser_status": "상태: {status}",
+  "browser_agent_error": "브라우저 에이전트 오류: {error}"
+}

@@ -1,0 +1,16 @@
+{
+  "clear_history": "Lịch sử hội thoại đã được xóa.",
+  "help_text": "Trợ giúp Sancho\n\nTin nhắn chung: Trò chuyện AI (phản hồi LLM)\nBao gồm từ khóa tìm kiếm/trình duyệt: Tác nhân trình duyệt chạy\n\nLệnh:\n/clear - Xóa lịch sử hội thoại\n/status - Trạng thái tác nhân trình duyệt\n/help - Trợ giúp này",
+  "status_text": "Trạng thái tác nhân trình duyệt: {status}\nNhiệm vụ: {task}\nBước: {step}/{max_steps}\nKết quả: {result}",
+  "status_none": "Không có",
+  "no_model": "Không có mô hình khả dụng. Vui lòng cấu hình khóa API và mô hình trong Cài đặt.",
+  "model_unavailable": "Mô hình '{model}' không khả dụng. Vui lòng kiểm tra khóa API của bạn.",
+  "processing_error": "Xin lỗi, đã xảy ra lỗi trong quá trình xử lý.",
+  "rate_limit": "Đã vượt quá giới hạn tốc độ API. Vui lòng thử lại sau giây lát.",
+  "browser_running": "Tác nhân trình duyệt đang chạy. Vui lòng thử lại sau khi hoàn tất.",
+  "browser_completed": "Hoàn tất: {result}",
+  "browser_completed_default": "Nhiệm vụ đã hoàn thành.",
+  "browser_error": "Lỗi: {error}",
+  "browser_status": "Trạng thái: {status}",
+  "browser_agent_error": "Lỗi tác nhân trình duyệt: {error}"
+}

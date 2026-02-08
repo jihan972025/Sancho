@@ -1,0 +1,16 @@
+{
+  "clear_history": "Riwayat percakapan telah dihapus.",
+  "help_text": "Bantuan Sancho\n\nPesan umum: Obrolan AI (respons LLM)\nTermasuk kata kunci pencarian/browser: Agen browser dijalankan\n\nPerintah:\n/clear - Hapus riwayat percakapan\n/status - Status agen browser\n/help - Bantuan ini",
+  "status_text": "Status agen browser: {status}\nTugas: {task}\nLangkah: {step}/{max_steps}\nHasil: {result}",
+  "status_none": "Tidak ada",
+  "no_model": "Tidak ada model yang tersedia. Silakan konfigurasi kunci API dan model di Pengaturan.",
+  "model_unavailable": "Model '{model}' tidak tersedia. Silakan periksa kunci API Anda.",
+  "processing_error": "Maaf, terjadi kesalahan saat pemrosesan.",
+  "rate_limit": "Batas laju API terlampaui. Silakan coba lagi sebentar lagi.",
+  "browser_running": "Agen browser sudah berjalan. Silakan coba lagi setelah selesai.",
+  "browser_completed": "Selesai: {result}",
+  "browser_completed_default": "Tugas selesai.",
+  "browser_error": "Kesalahan: {error}",
+  "browser_status": "Status: {status}",
+  "browser_agent_error": "Kesalahan agen browser: {error}"
+}

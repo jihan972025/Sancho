@@ -1,0 +1,16 @@
+{
+  "clear_history": "会話履歴がクリアされました。",
+  "help_text": "Sancho ヘルプ\n\n通常メッセージ: AIチャット（LLM応答）\n検索/ブラウザキーワード含む: ブラウザエージェント実行\n\nコマンド:\n/clear - 会話履歴をクリア\n/status - ブラウザエージェントの状態\n/help - このヘルプ",
+  "status_text": "ブラウザエージェント状態: {status}\nタスク: {task}\nステップ: {step}/{max_steps}\n結果: {result}",
+  "status_none": "なし",
+  "no_model": "利用可能なモデルがありません。設定でAPIキーとモデルを構成してください。",
+  "model_unavailable": "モデル '{model}' は利用できません。APIキーを確認してください。",
+  "processing_error": "申し訳ありません。処理中にエラーが発生しました。",
+  "rate_limit": "APIレート制限を超えました。しばらくしてから再試行してください。",
+  "browser_running": "ブラウザエージェントは既に実行中です。完了後に再試行してください。",
+  "browser_completed": "完了: {result}",
+  "browser_completed_default": "タスクが完了しました。",
+  "browser_error": "エラー: {error}",
+  "browser_status": "状態: {status}",
+  "browser_agent_error": "ブラウザエージェントエラー: {error}"
+}

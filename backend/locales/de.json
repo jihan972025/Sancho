@@ -1,0 +1,16 @@
+{
+  "clear_history": "Der Gesprächsverlauf wurde gelöscht.",
+  "help_text": "Sancho Hilfe\n\nAllgemeine Nachricht: KI-Chat (LLM-Antwort)\nSuch-/Browser-Schlüsselwort enthalten: Browser-Agent wird ausgeführt\n\nBefehle:\n/clear - Gesprächsverlauf löschen\n/status - Browser-Agent-Status\n/help - Diese Hilfe",
+  "status_text": "Browser-Agent-Status: {status}\nAufgabe: {task}\nSchritt: {step}/{max_steps}\nErgebnis: {result}",
+  "status_none": "Keiner",
+  "no_model": "Kein verfügbares Modell. Bitte konfigurieren Sie API-Schlüssel und Modelle in den Einstellungen.",
+  "model_unavailable": "Modell '{model}' ist nicht verfügbar. Bitte überprüfen Sie Ihren API-Schlüssel.",
+  "processing_error": "Entschuldigung, bei der Verarbeitung ist ein Fehler aufgetreten.",
+  "rate_limit": "API-Ratenlimit überschritten. Bitte versuchen Sie es in Kürze erneut.",
+  "browser_running": "Der Browser-Agent läuft bereits. Bitte versuchen Sie es nach Abschluss erneut.",
+  "browser_completed": "Abgeschlossen: {result}",
+  "browser_completed_default": "Aufgabe abgeschlossen.",
+  "browser_error": "Fehler: {error}",
+  "browser_status": "Status: {status}",
+  "browser_agent_error": "Browser-Agent-Fehler: {error}"
+}

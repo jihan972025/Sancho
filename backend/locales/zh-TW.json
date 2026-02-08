@@ -1,0 +1,16 @@
+{
+  "clear_history": "對話歷史已清除。",
+  "help_text": "Sancho 說明\n\n一般訊息: AI聊天（LLM回覆）\n包含搜尋/瀏覽器關鍵字: 瀏覽器代理執行\n\n指令:\n/clear - 清除對話歷史\n/status - 瀏覽器代理狀態\n/help - 此說明",
+  "status_text": "瀏覽器代理狀態: {status}\n任務: {task}\n步驟: {step}/{max_steps}\n結果: {result}",
+  "status_none": "無",
+  "no_model": "沒有可用的模型。請在設定中配置API金鑰和模型。",
+  "model_unavailable": "模型 '{model}' 無法使用。請檢查您的API金鑰。",
+  "processing_error": "抱歉，處理過程中發生了錯誤。",
+  "rate_limit": "API速率限制已超出。請稍後再試。",
+  "browser_running": "瀏覽器代理正在執行中。請等待完成後再試。",
+  "browser_completed": "已完成: {result}",
+  "browser_completed_default": "任務已完成。",
+  "browser_error": "錯誤: {error}",
+  "browser_status": "狀態: {status}",
+  "browser_agent_error": "瀏覽器代理錯誤: {error}"
+}

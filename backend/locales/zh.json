@@ -1,0 +1,16 @@
+{
+  "clear_history": "对话历史已清除。",
+  "help_text": "Sancho 帮助\n\n普通消息: AI聊天（LLM回复）\n包含搜索/浏览器关键词: 浏览器代理运行\n\n命令:\n/clear - 清除对话历史\n/status - 浏览器代理状态\n/help - 此帮助",
+  "status_text": "浏览器代理状态: {status}\n任务: {task}\n步骤: {step}/{max_steps}\n结果: {result}",
+  "status_none": "无",
+  "no_model": "没有可用的模型。请在设置中配置API密钥和模型。",
+  "model_unavailable": "模型 '{model}' 不可用。请检查您的API密钥。",
+  "processing_error": "抱歉，处理过程中发生了错误。",
+  "rate_limit": "API速率限制已超出。请稍后再试。",
+  "browser_running": "浏览器代理正在运行中。请等待完成后再试。",
+  "browser_completed": "已完成: {result}",
+  "browser_completed_default": "任务已完成。",
+  "browser_error": "错误: {error}",
+  "browser_status": "状态: {status}",
+  "browser_agent_error": "浏览器代理错误: {error}"
+}

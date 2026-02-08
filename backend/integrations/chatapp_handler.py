@@ -1,0 +1,237 @@
+"""Shared message processing logic for all chat app integrations (WhatsApp, Telegram, etc.)."""
+
+import json
+import logging
+
+from ..config import get_config, load_user_md
+from ..i18n import t, lang_instruction
+from ..llm.registry import get_provider_for_model, get_available_models
+from ..agents.browser_agent import get_browser_agent, AgentStatus
+from ..skills.loader import build_skill_system_prompt
+from ..skills.executor import parse_skill_call, execute_skill_call
+from .whatsapp_history import history
+
+logger = logging.getLogger(__name__)
+
+
+async def process_chat_message(
+    sender: str,
+    text: str,
+    app_name: str,
+    default_model: str,
+    browser_keywords: list[str],
+) -> str:
+    """Process an incoming message from any chat app. Returns reply text.
+
+    Args:
+        sender: Unique sender identifier (phone number, user ID, etc.)
+        text: Message text
+        app_name: Chat app name for logging ("whatsapp", "telegram", etc.)
+        default_model: Model to use for this chat app
+        browser_keywords: Keywords that trigger browser agent
+    """
+    lang = get_config().language
+    lower = text.strip().lower()
+
+    # Special commands
+    if lower == "/clear":
+        history.clear(sender)
+        return t("clear_history", lang)
+
+    if lower == "/help":
+        return t("help_text", lang)
+
+    if lower == "/status":
+        agent = get_browser_agent()
+        state = agent.get_state()
+        return t(
+            "status_text", lang,
+            status=state.status.value,
+            task=state.task or t("status_none", lang),
+            step=str(state.current_step),
+            max_steps=str(state.max_steps),
+            result=state.result or t("status_none", lang),
+        )
+
+    # Classify intent
+    is_browser = _is_browser_intent(text, browser_keywords)
+    effective_model = _resolve_model(default_model)
+    logger.info("[%s] model=%s (requested=%s), browser=%s", app_name, effective_model, default_model, is_browser)
+
+    try:
+        if is_browser:
+            return await _handle_browser(sender, text, default_model, lang)
+        else:
+            return await _handle_chat(sender, text, default_model, lang)
+    except Exception:
+        logger.exception("Error handling %s message from %s", app_name, sender)
+        return t("processing_error", lang)
+
+
+def _resolve_model(model: str) -> str:
+    """Resolve model name, verifying each candidate actually exists in the registry."""
+    # 1) Explicit model — only if a provider exists for it
+    if model and get_provider_for_model(model):
+        return model
+    # 2) Global default — only if a provider exists for it
+    config = get_config()
+    if config.llm.default_model and get_provider_for_model(config.llm.default_model):
+        return config.llm.default_model
+    # 3) First available model from any configured provider
+    available = get_available_models()
+    if available:
+        return available[0]["id"]
+    return ""
+
+
+def _is_browser_intent(text: str, keywords: list[str]) -> bool:
+    lower = text.lower()
+    return any(kw.lower() in lower for kw in keywords)
+
+
+async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> str:
+    effective_model = _resolve_model(model)
+    if not effective_model:
+        return t("no_model", lang)
+    provider = get_provider_for_model(effective_model)
+    if not provider:
+        return t("model_unavailable", lang, model=effective_model)
+
+    history.add_message(sender, "user", text)
+
+    skill_prompt = build_skill_system_prompt()
+
+    li = lang_instruction(lang)
+
+    # Build user profile block
+    user_md = load_user_md()
+    profile_block = f"\nUser profile:\n{user_md}\n" if user_md else ""
+
+    if skill_prompt is None:
+        # No skills configured — original path
+        messages = [
+            {"role": "system", "content": profile_block + "You are Sancho, a helpful AI assistant. Keep responses concise." + li},
+            *history.get_messages(sender),
+        ]
+        response = await provider.complete(messages, effective_model)
+    else:
+        # Phase 1: detect skill call
+        messages = [
+            {"role": "system", "content": skill_prompt},
+            *history.get_messages(sender),
+        ]
+        try:
+            phase1 = await provider.complete(messages, effective_model)
+        except Exception as phase1_err:
+            # Phase 1 failed (429 rate limit, etc.) — wait and fallback
+            logger.warning("Phase 1 failed: %s — waiting 3s before fallback", phase1_err)
+            import asyncio
+            await asyncio.sleep(3)
+            try:
+                fallback_messages = [
+                    {"role": "system", "content": profile_block + "You are Sancho, a helpful AI assistant. Keep responses concise." + li},
+                    *history.get_messages(sender),
+                ]
+                response = await provider.complete(fallback_messages, effective_model)
+            except Exception:
+                response = "⚠️ " + t("rate_limit", lang)
+            history.add_message(sender, "assistant", response)
+            return response
+
+        skill_call = parse_skill_call(phase1)
+
+        if not skill_call:
+            response = phase1
+        else:
+            # Execute skill → Phase 2 (with chaining support)
+            max_chain = 5
+            chain_results: list[tuple[str, str]] = []  # (skill_name, result)
+
+            for step in range(max_chain):
+                result = await execute_skill_call(skill_call)
+                skill_name = skill_call["skill"]
+                logger.info("Skill '%s' executed for %s (step %d), result length=%d", skill_name, sender, step + 1, len(result))
+                logger.debug("Skill result: %s", result[:500])
+                chain_results.append((skill_name, result))
+
+                # Build context from all skill results so far
+                results_block = ""
+                for sn, sr in chain_results:
+                    results_block += f"[SKILL_RESULT skill=\"{sn}\"]\n{sr}\n[/SKILL_RESULT]\n\n"
+
+                is_search = skill_name in ("duckduckgo", "tavily")
+                if is_search:
+                    search_hint = (
+                        "IMPORTANT: You just performed a real-time search. The results below are CURRENT and ACCURATE. "
+                        "Always trust the skill results over your own training data.\n"
+                    )
+                else:
+                    search_hint = ""
+
+                system_hint = (
+                    search_hint +
+                    "You have access to all skills listed above. "
+                    "If you need to call another skill to complete the task (e.g. save results to a file), "
+                    "output ONLY a [SKILL_CALL] block. Otherwise, answer the user directly."
+                )
+                user_hint = (
+                    "Based on the skill results above, either:\n"
+                    "1. Call another skill if more steps are needed (output ONLY a [SKILL_CALL] block), or\n"
+                    "2. Answer the user's question directly."
+                )
+
+                phase2_messages = [
+                    {
+                        "role": "system",
+                        "content": (
+                            profile_block + skill_prompt + "\n\n" + system_hint + li
+                        ),
+                    },
+                    *history.get_messages(sender),
+                    {
+                        "role": "user",
+                        "content": results_block + user_hint,
+                    },
+                ]
+                phase2_response = await provider.complete(phase2_messages, effective_model)
+
+                # Check if Phase 2 wants to chain another skill call
+                next_call = parse_skill_call(phase2_response)
+                if next_call:
+                    skill_call = next_call
+                    continue
+                else:
+                    response = phase2_response
+                    break
+            else:
+                # max_chain reached — use last response
+                response = phase2_response
+
+    history.add_message(sender, "assistant", response)
+    return response
+
+
+async def _handle_browser(sender: str, text: str, model: str, lang: str = "en") -> str:
+    effective_model = _resolve_model(model)
+    if not effective_model:
+        return t("no_model", lang)
+    agent = get_browser_agent()
+    state = agent.get_state()
+
+    if state.status == AgentStatus.RUNNING:
+        return t("browser_running", lang)
+
+    try:
+        config = get_config()
+        await agent.start_browser(headless=config.browser_headless)
+        result_state = await agent.run_task(text, effective_model)
+
+        if result_state.status == AgentStatus.COMPLETED:
+            return t("browser_completed", lang, result=result_state.result or t("browser_completed_default", lang))
+        elif result_state.status == AgentStatus.ERROR:
+            return t("browser_error", lang, error=str(result_state.error))
+        else:
+            return t("browser_status", lang, status=result_state.status.value)
+    except Exception as e:
+        logger.exception("Browser agent error")
+        return t("browser_agent_error", lang, error=str(e))

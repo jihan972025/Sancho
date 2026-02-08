@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+venv/
+
+# Build outputs
+dist/
+dist-backend/
+dist-electron/
+build/
+release/
+
+# PyInstaller
+main.spec
+*.spec
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Junk/artifact files
+nul
+=1.0.0
+C:projectSanchobackendlocales
+
+# Claude
+.claude/
+CLAUDE.md
+plan.md

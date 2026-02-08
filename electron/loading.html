@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sancho</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .logo {
+      width: 72px; height: 72px;
+      border-radius: 12px;
+      background: rgba(92, 124, 250, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .logo svg {
+      width: 48px; height: auto;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #e2e8f0;
+    }
+    .status {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 2.5px solid rgba(92, 124, 250, 0.2);
+      border-top-color: #5c7cfa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 24px;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #475569;
+      transition: color 0.3s;
+    }
+    .step.active { color: #94a3b8; }
+    .step.done { color: #4ade80; }
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #334155;
+      transition: background 0.3s;
+    }
+    .step.active .dot { background: #5c7cfa; animation: pulse 1s ease-in-out infinite; }
+    .step.done .dot { background: #4ade80; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" width="156" height="105" viewBox="0 0 156 105" style="width:48px;height:auto;">
+        <path d="M 64.18 52.93 C45.94,58.23 24.59,55.10 13.10,45.43 C3.97,37.75 3.07,22.12 11.44,16.63 C12.84,15.71 16.13,14.72 18.74,14.41 L 23.50 13.86 L 19.33 15.85 C14.24,18.27 11.78,21.80 11.64,26.85 C11.53,31.10 13.75,35.13 17.58,37.64 C21.13,39.97 26.98,38.49 43.57,31.04 C60.28,23.55 62.04,23.22 70.46,26.06 C77.50,28.44 77.85,28.42 89.64,24.88 C94.52,23.43 98.30,24.54 116.50,32.81 C122.55,35.56 129.58,38.12 132.13,38.50 C136.31,39.12 137.07,38.91 139.98,36.31 C142.45,34.10 143.32,32.38 143.71,28.88 C144.41,22.67 142.09,18.40 136.68,15.94 L 132.50 14.04 L 135.85 14.02 C148.22,13.94 154.08,27.35 147.04,39.62 C141.12,49.95 128.75,55.14 110.00,55.16 C97.13,55.17 88.17,53.05 82.05,48.53 C77.81,45.41 77.49,45.41 73.83,48.49 C72.20,49.86 67.86,51.86 64.18,52.93 ZM 83.90 90.72 C82.03,92.81 79.81,95.58 78.96,96.88 L 77.43 99.24 L 76.29 96.74 C73.78,91.22 68.58,86.87 58.11,81.51 C46.81,75.73 39.71,69.80 37.31,64.14 C36.52,62.29 36.03,60.63 36.22,60.45 C36.40,60.26 38.57,60.60 41.03,61.19 C45.23,62.20 68.27,62.86 76.00,62.20 C77.93,62.03 84.30,62.20 90.17,62.58 C99.81,63.19 114.11,62.05 118.67,60.30 C119.92,59.82 119.90,60.31 118.52,63.62 C115.85,70.03 109.41,75.62 97.90,81.51 C91.29,84.89 86.01,88.36 83.90,90.72 Z" fill="#e2e8f0"/>
+      </svg>
+    </div>
+    <h1>Sancho</h1>
+    <div class="spinner"></div>
+    <p class="status" id="statusText">Starting up...</p>
+    <div class="steps">
+      <div class="step" id="stepBackend"><span class="dot"></span>Backend server</div>
+      <div class="step" id="stepFrontend"><span class="dot"></span>Frontend</div>
+    </div>
+  </div>
+  <script>
+    const statusText = document.getElementById('statusText')
+    const stepBackend = document.getElementById('stepBackend')
+    const stepFrontend = document.getElementById('stepFrontend')
+
+    let backendReady = false
+    let frontendReady = false
+
+    function updateStatus() {
+      if (!backendReady) {
+        statusText.textContent = 'Connecting to backend...'
+        stepBackend.className = 'step active'
+      } else if (!frontendReady) {
+        statusText.textContent = 'Loading frontend...'
+        stepBackend.className = 'step done'
+        stepFrontend.className = 'step active'
+      } else {
+        statusText.textContent = 'Ready!'
+        stepBackend.className = 'step done'
+        stepFrontend.className = 'step done'
+      }
+    }
+
+    // Use image probe — works from file:// without CORS issues
+    function probeUrl(url) {
+      return new Promise((resolve) => {
+        const img = new Image()
+        const timer = setTimeout(() => { img.src = ''; resolve(false) }, 2000)
+        // Servers return non-image responses which trigger onerror,
+        // but a TCP connection success means the server is up.
+        // Use XMLHttpRequest as primary, img probe as fallback.
+        const xhr = new XMLHttpRequest()
+        xhr.open('GET', url, true)
+        xhr.timeout = 2000
+        xhr.onload = () => { clearTimeout(timer); resolve(xhr.status >= 200 && xhr.status < 400) }
+        xhr.onerror = () => { clearTimeout(timer); resolve(false) }
+        xhr.ontimeout = () => { clearTimeout(timer); resolve(false) }
+        xhr.send()
+      })
+    }
+
+    async function checkBackend() {
+      if (await probeUrl('http://127.0.0.1:8765/api/health')) {
+        backendReady = true
+        updateStatus()
+      }
+    }
+
+    async function checkFrontend() {
+      if (await probeUrl('http://localhost:5173/')) {
+        frontendReady = true
+        updateStatus()
+      }
+    }
+
+    async function poll() {
+      updateStatus()
+      while (!backendReady || !frontendReady) {
+        await Promise.all([
+          !backendReady ? checkBackend() : Promise.resolve(),
+          !frontendReady ? checkFrontend() : Promise.resolve(),
+        ])
+        if (backendReady && frontendReady) break
+        await new Promise(r => setTimeout(r, 500))
+      }
+      // Small delay for smooth transition
+      await new Promise(r => setTimeout(r, 300))
+      window.location.href = 'http://localhost:5173'
+    }
+
+    poll()
+  </script>
+</body>
+</html>
