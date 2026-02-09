@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Element X账户的密码。如果使用SSO（Gmail等）注册，请使用下方的访问令牌。",
     "matrixTokenHelp": "如果通过SSO注册且没有密码：Element Web → Settings → Help & About → 复制访问令牌"
   },
+  "logs": {
+    "title": "服务器日志",
+    "clear": "清除日志",
+    "noLogs": "暂无日志"
+  },
   "common": {
     "rateLimitError": "API请求频率超限。请稍后重试。"
   }

@@ -4,12 +4,13 @@ import Header from './components/Layout/Header'
 import ChatWindow from './components/Chat/ChatWindow'
 import SchedulerPanel from './components/Scheduler/SchedulerPanel'
 import SettingsPanel from './components/Settings/SettingsPanel'
+import LogPanel from './components/Log/LogPanel'
 import { healthCheck, getSettings, getModels, getUserProfile } from './api/client'
 import OnboardingModal from './components/Onboarding/OnboardingModal'
 import { useSettingsStore } from './stores/settingsStore'
 import { useChatStore } from './stores/chatStore'
 
-type Tab = 'chat' | 'scheduler' | 'settings'
+type Tab = 'chat' | 'scheduler' | 'logs' | 'settings'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
@@ -77,7 +78,8 @@ export default function App() {
           const profile = await getUserProfile()
           if (!profile.exists) setShowOnboarding(true)
         } catch {
-          // Ignore — onboarding will be skipped if endpoint fails
+          // Show onboarding if endpoint fails (e.g. first run)
+          setShowOnboarding(true)
         }
       } catch {
         if (attempts < 30) {
@@ -116,6 +118,7 @@ export default function App() {
             <>
               {activeTab === 'chat' && <ChatWindow />}
               {activeTab === 'scheduler' && <SchedulerPanel />}
+              {activeTab === 'logs' && <LogPanel />}
               {activeTab === 'settings' && <SettingsPanel />}
             </>
           )}

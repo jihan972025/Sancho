@@ -12,5 +12,11 @@
   "browser_completed_default": "Tarea completada.",
   "browser_error": "Error: {error}",
   "browser_status": "Estado: {status}",
-  "browser_agent_error": "Error del agente del navegador: {error}"
+  "browser_agent_error": "Error del agente del navegador: {error}",
+  "file_organize_no_path": "Por favor, especifique la ruta de la carpeta a organizar (por ejemplo, C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Carpeta no encontrada: {path}",
+  "file_organize_error": "Error de organización de archivos: {error}",
+  "file_organize_permission": "Acceso denegado: {path}",
+  "file_organize_nothing": "No hay archivos para organizar en {path}.",
+  "file_organize_done": "Se organizaron {count} archivos en {path}:"
 }

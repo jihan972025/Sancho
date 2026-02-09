@@ -12,5 +12,11 @@
   "browser_completed_default": "تم إنجاز المهمة.",
   "browser_error": "خطأ: {error}",
   "browser_status": "الحالة: {status}",
-  "browser_agent_error": "خطأ وكيل المتصفح: {error}"
+  "browser_agent_error": "خطأ وكيل المتصفح: {error}",
+  "file_organize_no_path": "يرجى تحديد مسار المجلد المراد تنظيمه (مثال: C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "المجلد غير موجود: {path}",
+  "file_organize_error": "خطأ في تنظيم الملفات: {error}",
+  "file_organize_permission": "تم رفض الوصول: {path}",
+  "file_organize_nothing": "لا توجد ملفات لتنظيمها في {path}.",
+  "file_organize_done": "تم تنظيم {count} ملفات في {path}:"
 }

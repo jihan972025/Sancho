@@ -9,6 +9,7 @@ interface Props {
 const tabNames: Record<string, string> = {
   chat: 'Chat',
   scheduler: 'Scheduler',
+  logs: 'Logs',
   settings: 'Settings',
 }
 

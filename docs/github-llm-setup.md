@@ -38,6 +38,30 @@ GitHub Models is a service that lets you use various AI models for free with jus
 
 Full model list: https://github.com/marketplace/models
 
+## Free Models
+
+### OpenAI
+- GPT-4o, GPT-4o-mini
+- GPT-4.1
+- o3, o3-mini, o4-mini (reasoning models)
+
+### Meta
+- Llama 3.3
+
+### Microsoft
+- Phi-3.5, Phi-4 (14B lightweight models)
+
+### DeepSeek
+- DeepSeek reasoning models
+
+### Others
+- Mistral models
+- Text embedding models (text-embedding-3 series)
+
+## Free Tier Limits
+
+The free tier has daily request limits of 50–150 requests depending on the model, as well as per-minute request limits and per-request token limits. This is more than sufficient for prototyping and personal projects.
+
 ## Notes
 
 - **Free to use**: Available for free with a GitHub account (daily request limits apply)

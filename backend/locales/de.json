@@ -12,5 +12,11 @@
   "browser_completed_default": "Aufgabe abgeschlossen.",
   "browser_error": "Fehler: {error}",
   "browser_status": "Status: {status}",
-  "browser_agent_error": "Browser-Agent-Fehler: {error}"
+  "browser_agent_error": "Browser-Agent-Fehler: {error}",
+  "file_organize_no_path": "Bitte geben Sie den Ordnerpfad zum Organisieren an (z. B. C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Ordner nicht gefunden: {path}",
+  "file_organize_error": "Fehler beim Organisieren der Dateien: {error}",
+  "file_organize_permission": "Zugriff verweigert: {path}",
+  "file_organize_nothing": "Keine Dateien zum Organisieren in {path}.",
+  "file_organize_done": "{count} Dateien in {path} organisiert:"
 }

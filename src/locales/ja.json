@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Element Xアカウントのパスワード。SSO（Gmailなど）で登録した場合は、下のアクセストークンを使用してください。",
     "matrixTokenHelp": "パスワードなしでSSOで登録した場合：Element Web → Settings → Help & About → アクセストークンをコピー"
   },
+  "logs": {
+    "title": "サーバーログ",
+    "clear": "ログをクリア",
+    "noLogs": "ログはまだありません"
+  },
   "common": {
     "rateLimitError": "APIレート制限を超えました。しばらくしてから再試行してください。"
   }

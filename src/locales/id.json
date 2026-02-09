@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Kata sandi akun Element X Anda. Jika mendaftar dengan SSO (Gmail, dll.), gunakan Token Akses di bawah.",
     "matrixTokenHelp": "Jika mendaftar melalui SSO tanpa kata sandi: Element Web → Settings → Help & About → Salin Token Akses"
   },
+  "logs": {
+    "title": "Log Server",
+    "clear": "Hapus log",
+    "noLogs": "Belum ada log"
+  },
   "common": {
     "rateLimitError": "Batas permintaan API terlampaui. Silakan coba lagi nanti."
   }

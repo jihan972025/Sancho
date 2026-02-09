@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "आपके Element X खाते का पासवर्ड। यदि आपने SSO (Gmail, आदि) से साइन अप किया है, तो नीचे दिए गए एक्सेस टोकन का उपयोग करें।",
     "matrixTokenHelp": "यदि SSO से बिना पासवर्ड के साइन अप किया है: Element Web → Settings → Help & About → एक्सेस टोकन कॉपी करें"
   },
+  "logs": {
+    "title": "सर्वर लॉग",
+    "clear": "लॉग साफ़ करें",
+    "noLogs": "अभी तक कोई लॉग नहीं"
+  },
   "common": {
     "rateLimitError": "API अनुरोध सीमा पार हो गई। कृपया कुछ देर बाद पुनः प्रयास करें।"
   }

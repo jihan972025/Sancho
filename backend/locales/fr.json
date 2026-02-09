@@ -12,5 +12,11 @@
   "browser_completed_default": "Tâche terminée.",
   "browser_error": "Erreur : {error}",
   "browser_status": "État : {status}",
-  "browser_agent_error": "Erreur de l'agent navigateur : {error}"
+  "browser_agent_error": "Erreur de l'agent navigateur : {error}",
+  "file_organize_no_path": "Veuillez spécifier le chemin du dossier à organiser (par exemple, C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Dossier introuvable : {path}",
+  "file_organize_error": "Erreur d'organisation des fichiers : {error}",
+  "file_organize_permission": "Accès refusé : {path}",
+  "file_organize_nothing": "Aucun fichier à organiser dans {path}.",
+  "file_organize_done": "{count} fichiers organisés dans {path} :"
 }

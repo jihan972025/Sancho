@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Contraseña de tu cuenta de Element X. Si te registraste con SSO (Gmail, etc.), usa el Token de acceso de abajo.",
     "matrixTokenHelp": "Si te registraste con SSO sin contraseña: Element Web → Settings → Help & About → Copiar Token de acceso"
   },
+  "logs": {
+    "title": "Registros del servidor",
+    "clear": "Borrar registros",
+    "noLogs": "Aún no hay registros"
+  },
   "common": {
     "rateLimitError": "Se excedió el límite de la API. Inténtalo de nuevo en un momento."
   }

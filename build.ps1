@@ -28,11 +28,20 @@ if (-not (Test-Path "venv")) {
 & "venv\Scripts\activate.ps1"
 pip install -r requirements.txt --quiet
 
+# Install Playwright Chromium inside the package directory (for PyInstaller bundling)
+$env:PLAYWRIGHT_BROWSERS_PATH = "0"
+playwright install chromium
+Write-Host "  Playwright Chromium installed" -ForegroundColor Green
+
 # Build with PyInstaller
+$playwrightPkg = python -c "import playwright; import os; print(os.path.dirname(playwright.__file__))"
+$browsersSrc = Join-Path $playwrightPkg "driver\package\.local-browsers"
 pyinstaller `
     --noconfirm `
     --distpath "dist-backend" `
     --name "main" `
+    --add-data "backend/skills/definitions;backend/skills/definitions" `
+    --add-data "$browsersSrc;playwright/driver/package/.local-browsers" `
     pyinstaller_entry.py
 
 Write-Host "  Backend built to dist-backend/" -ForegroundColor Green

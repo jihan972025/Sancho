@@ -12,5 +12,11 @@
   "browser_completed_default": "งานเสร็จสมบูรณ์",
   "browser_error": "ข้อผิดพลาด: {error}",
   "browser_status": "สถานะ: {status}",
-  "browser_agent_error": "ข้อผิดพลาดตัวแทนเบราว์เซอร์: {error}"
+  "browser_agent_error": "ข้อผิดพลาดตัวแทนเบราว์เซอร์: {error}",
+  "file_organize_no_path": "กรุณาระบุเส้นทางโฟลเดอร์ที่ต้องการจัดระเบียบ (เช่น C:\\Users\\user\\Downloads)",
+  "file_organize_not_found": "ไม่พบโฟลเดอร์: {path}",
+  "file_organize_error": "ข้อผิดพลาดในการจัดระเบียบไฟล์: {error}",
+  "file_organize_permission": "การเข้าถึงถูกปฏิเสธ: {path}",
+  "file_organize_nothing": "ไม่มีไฟล์ที่ต้องจัดระเบียบใน {path}",
+  "file_organize_done": "จัดระเบียบ {count} ไฟล์ใน {path} แล้ว:"
 }

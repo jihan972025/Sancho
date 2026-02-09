@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "كلمة مرور حساب Element X الخاص بك. إذا سجلت عبر SSO (Gmail، إلخ)، استخدم رمز الوصول أدناه.",
     "matrixTokenHelp": "إذا سجلت عبر SSO بدون كلمة مرور: Element Web → Settings → Help & About → نسخ رمز الوصول"
   },
+  "logs": {
+    "title": "سجلات الخادم",
+    "clear": "مسح السجلات",
+    "noLogs": "لا توجد سجلات بعد"
+  },
   "common": {
     "rateLimitError": "تم تجاوز حد طلبات API. يرجى المحاولة مرة أخرى بعد قليل."
   }

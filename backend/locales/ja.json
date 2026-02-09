@@ -12,5 +12,11 @@
   "browser_completed_default": "タスクが完了しました。",
   "browser_error": "エラー: {error}",
   "browser_status": "状態: {status}",
-  "browser_agent_error": "ブラウザエージェントエラー: {error}"
+  "browser_agent_error": "ブラウザエージェントエラー: {error}",
+  "file_organize_no_path": "整理するフォルダパスを指定してください（例: C:\\Users\\user\\Downloads）。",
+  "file_organize_not_found": "フォルダが見つかりません: {path}",
+  "file_organize_error": "ファイル整理エラー: {error}",
+  "file_organize_permission": "アクセスが拒否されました: {path}",
+  "file_organize_nothing": "{path} に整理するファイルがありません。",
+  "file_organize_done": "{path} 内の {count} 個のファイルを整理しました:"
 }

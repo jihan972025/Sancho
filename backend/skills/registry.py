@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -17,11 +18,15 @@ from .executors.filesystem_executor import FilesystemExecutor
 from .executors.wikipedia_executor import WikipediaExecutor
 from .executors.info_executor import InfoExecutor
 from .executors.fun_executor import FunExecutor
+from .executors.yfinance_executor import YFinanceExecutor
 from .executors.custom_api_executor import CustomApiExecutor
 
 logger = logging.getLogger(__name__)
 
-_DEFINITIONS_DIR = Path(__file__).parent / "definitions"
+if getattr(sys, 'frozen', False):
+    _DEFINITIONS_DIR = Path(sys._MEIPASS) / "backend" / "skills" / "definitions"
+else:
+    _DEFINITIONS_DIR = Path(__file__).parent / "definitions"
 
 ALL_SKILL_EXECUTORS: list[type[SkillExecutor]] = [
     FilesystemExecutor,
@@ -37,6 +42,7 @@ ALL_SKILL_EXECUTORS: list[type[SkillExecutor]] = [
     GoogleCalendarExecutor,
     GoogleSheetsExecutor,
     SlackExecutor,
+    YFinanceExecutor,
 ]
 
 _skill_instances: dict[str, SkillExecutor] = {}

@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Passwort für dein Element X-Konto. Wenn du dich mit SSO (Gmail usw.) registriert hast, verwende unten das Zugriffstoken.",
     "matrixTokenHelp": "Bei Registrierung über SSO ohne Passwort: Element Web → Settings → Help & About → Zugriffstoken kopieren"
   },
+  "logs": {
+    "title": "Server-Protokolle",
+    "clear": "Protokolle löschen",
+    "noLogs": "Noch keine Protokolle"
+  },
   "common": {
     "rateLimitError": "API-Ratenlimit überschritten. Bitte versuche es in Kürze erneut."
   }

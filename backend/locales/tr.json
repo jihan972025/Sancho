@@ -12,5 +12,11 @@
   "browser_completed_default": "Görev tamamlandı.",
   "browser_error": "Hata: {error}",
   "browser_status": "Durum: {status}",
-  "browser_agent_error": "Tarayıcı ajanı hatası: {error}"
+  "browser_agent_error": "Tarayıcı ajanı hatası: {error}",
+  "file_organize_no_path": "Lütfen düzenlenecek klasör yolunu belirtin (örneğin, C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Klasör bulunamadı: {path}",
+  "file_organize_error": "Dosya düzenleme hatası: {error}",
+  "file_organize_permission": "Erişim reddedildi: {path}",
+  "file_organize_nothing": "{path} içinde düzenlenecek dosya yok.",
+  "file_organize_done": "{path} içindeki {count} dosya düzenlendi:"
 }

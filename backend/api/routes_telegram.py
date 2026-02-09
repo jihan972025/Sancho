@@ -32,5 +32,6 @@ async def process_message(req: ProcessRequest) -> dict:
         app_name="telegram",
         default_model=model,
         browser_keywords=tg.browser_keywords,
+        file_organize_keywords=tg.file_organize_keywords,
     )
     return {"reply": reply}

@@ -240,6 +240,57 @@ export function saveUserProfile(data: {
   })
 }
 
+// Logs API
+export function streamLogs(
+  onLogEntry: (entry: { timestamp: string; level: string; name: string; message: string }) => void,
+  onError?: (error: string) => void,
+): { stop: () => void } {
+  const controller = new AbortController()
+
+  fetch(`${BASE_URL}/api/logs/stream`, { signal: controller.signal })
+    .then(async (res) => {
+      if (!res.ok) {
+        onError?.(`HTTP ${res.status}`)
+        return
+      }
+      const reader = res.body?.getReader()
+      if (!reader) return
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const entry = JSON.parse(line.slice(6))
+            onLogEntry(entry)
+          } catch {
+            // skip malformed data
+          }
+        }
+      }
+    })
+    .catch((err) => {
+      if (err.name !== 'AbortError') {
+        onError?.(err.message)
+      }
+    })
+
+  return { stop: () => controller.abort() }
+}
+
+export function clearLogs() {
+  return request('/api/logs', { method: 'DELETE' })
+}
+
 // Health check
 export function healthCheck() {
   return request<{ status: string }>('/api/health')

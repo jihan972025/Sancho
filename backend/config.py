@@ -58,11 +58,48 @@ _BROWSER_KEYWORDS: list[str] = [
 ]
 
 
+_FILE_ORGANIZE_KEYWORDS: list[str] = [
+    # English
+    "organize files", "sort files", "clean up folder", "tidy up",
+    # Korean (한국어)
+    "정리해", "정리 해", "정리하", "파일 정리", "폴더 정리", "폴더를 만들고",
+    # Japanese (日本語)
+    "整理して", "ファイル整理", "フォルダ整理",
+    # Chinese Simplified (简体中文)
+    "整理文件", "整理文件夹", "文件归类",
+    # Chinese Traditional (繁體中文)
+    "整理檔案", "整理資料夾", "檔案歸類",
+    # Spanish
+    "organizar archivos", "ordenar archivos",
+    # French
+    "organiser fichiers", "ranger fichiers",
+    # German
+    "dateien organisieren", "dateien sortieren",
+    # Portuguese
+    "organizar arquivos", "ordenar arquivos",
+    # Russian
+    "организовать файлы", "упорядочить файлы",
+    # Arabic
+    "تنظيم الملفات", "ترتيب الملفات",
+    # Hindi
+    "फाइलें व्यवस्थित", "फाइल व्यवस्थित",
+    # Vietnamese
+    "sắp xếp tệp", "dọn dẹp thư mục",
+    # Thai
+    "จัดระเบียบไฟล์", "จัดเรียงไฟล์",
+    # Indonesian
+    "atur file", "rapikan folder",
+    # Turkish
+    "dosyaları düzenle", "dosyaları sırala",
+]
+
+
 class WhatsAppConfig(BaseModel):
     enabled: bool = False
     wa_version: str = "2,3000,1027934701"  # WhatsApp Web protocol version
     default_model: str = ""  # Falls back to llm.default_model when empty
     browser_keywords: list[str] = _BROWSER_KEYWORDS
+    file_organize_keywords: list[str] = _FILE_ORGANIZE_KEYWORDS
 
 
 class TelegramConfig(BaseModel):
@@ -71,6 +108,7 @@ class TelegramConfig(BaseModel):
     api_hash: str = ""  # From https://my.telegram.org
     default_model: str = ""
     browser_keywords: list[str] = _BROWSER_KEYWORDS
+    file_organize_keywords: list[str] = _FILE_ORGANIZE_KEYWORDS
 
 
 class MatrixConfig(BaseModel):
@@ -81,6 +119,7 @@ class MatrixConfig(BaseModel):
     access_token: str = ""  # Saved after login, or manually entered
     default_model: str = ""
     browser_keywords: list[str] = _BROWSER_KEYWORDS
+    file_organize_keywords: list[str] = _FILE_ORGANIZE_KEYWORDS
 
 
 class CustomApiDef(BaseModel):
@@ -96,6 +135,7 @@ class CustomApiDef(BaseModel):
 
 class ApiConfig(BaseModel):
     duckduckgo_enabled: bool = True
+    yfinance_enabled: bool = True
     tavily_api_key: str = ""
     outlook_client_id: str = ""
     outlook_client_secret: str = ""

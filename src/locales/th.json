@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "รหัสผ่านบัญชี Element X ของคุณ หากสมัครด้วย SSO (Gmail เป็นต้น) ให้ใช้โทเค็นการเข้าถึงด้านล่าง",
     "matrixTokenHelp": "หากสมัครผ่าน SSO โดยไม่มีรหัสผ่าน: Element Web → Settings → Help & About → คัดลอกโทเค็นการเข้าถึง"
   },
+  "logs": {
+    "title": "บันทึกเซิร์ฟเวอร์",
+    "clear": "ล้างบันทึก",
+    "noLogs": "ยังไม่มีบันทึก"
+  },
   "common": {
     "rateLimitError": "เกินขีดจำกัดคำขอ API กรุณาลองใหม่อีกครั้งในภายหลัง"
   }

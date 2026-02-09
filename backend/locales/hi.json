@@ -12,5 +12,11 @@
   "browser_completed_default": "कार्य पूरा हुआ।",
   "browser_error": "त्रुटि: {error}",
   "browser_status": "स्थिति: {status}",
-  "browser_agent_error": "ब्राउज़र एजेंट त्रुटि: {error}"
+  "browser_agent_error": "ब्राउज़र एजेंट त्रुटि: {error}",
+  "file_organize_no_path": "कृपया व्यवस्थित करने के लिए फ़ोल्डर पथ निर्दिष्ट करें (उदाहरण: C:\\Users\\user\\Downloads)।",
+  "file_organize_not_found": "फ़ोल्डर नहीं मिला: {path}",
+  "file_organize_error": "फ़ाइल व्यवस्था त्रुटि: {error}",
+  "file_organize_permission": "पहुँच अस्वीकृत: {path}",
+  "file_organize_nothing": "{path} में व्यवस्थित करने के लिए कोई फ़ाइल नहीं है।",
+  "file_organize_done": "{path} में {count} फ़ाइलें व्यवस्थित की गईं:"
 }

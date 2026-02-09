@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Mật khẩu tài khoản Element X của bạn. Nếu bạn đăng ký bằng SSO (Gmail, v.v.), hãy sử dụng Mã truy cập bên dưới.",
     "matrixTokenHelp": "Nếu đăng ký qua SSO không có mật khẩu: Element Web → Settings → Help & About → Sao chép Mã truy cập"
   },
+  "logs": {
+    "title": "Nhật ký máy chủ",
+    "clear": "Xóa nhật ký",
+    "noLogs": "Chưa có nhật ký nào"
+  },
   "common": {
     "rateLimitError": "Đã vượt quá giới hạn yêu cầu API. Vui lòng thử lại sau."
   }

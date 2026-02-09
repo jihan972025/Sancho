@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Element X hesabınızın şifresi. SSO (Gmail vb.) ile kaydolduysanız, aşağıdaki Erişim Tokenını kullanın.",
     "matrixTokenHelp": "Şifresiz SSO ile kaydolduysanız: Element Web → Settings → Help & About → Erişim Tokenını Kopyala"
   },
+  "logs": {
+    "title": "Sunucu Günlükleri",
+    "clear": "Günlükleri temizle",
+    "noLogs": "Henüz günlük yok"
+  },
   "common": {
     "rateLimitError": "API istek limiti aşıldı. Lütfen kısa bir süre sonra tekrar deneyin."
   }

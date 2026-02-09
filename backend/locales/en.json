@@ -12,5 +12,11 @@
   "browser_completed_default": "Task completed.",
   "browser_error": "Error: {error}",
   "browser_status": "Status: {status}",
-  "browser_agent_error": "Browser agent error: {error}"
+  "browser_agent_error": "Browser agent error: {error}",
+  "file_organize_no_path": "Please specify a folder path to organize (e.g., C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Folder not found: {path}",
+  "file_organize_error": "File organization error: {error}",
+  "file_organize_permission": "Access denied: {path}",
+  "file_organize_nothing": "No files to organize in {path}.",
+  "file_organize_done": "Organized {count} files in {path}:"
 }

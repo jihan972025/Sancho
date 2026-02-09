@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Mot de passe de votre compte Element X. Si vous vous êtes inscrit via SSO (Gmail, etc.), utilisez le jeton d'accès ci-dessous.",
     "matrixTokenHelp": "Si inscrit via SSO sans mot de passe : Element Web → Settings → Help & About → Copier le jeton d'accès"
   },
+  "logs": {
+    "title": "Journaux du serveur",
+    "clear": "Effacer les journaux",
+    "noLogs": "Aucun journal pour le moment"
+  },
   "common": {
     "rateLimitError": "Limite de requêtes API dépassée. Veuillez réessayer dans un instant."
   }

@@ -12,5 +12,11 @@
   "browser_completed_default": "Tugas selesai.",
   "browser_error": "Kesalahan: {error}",
   "browser_status": "Status: {status}",
-  "browser_agent_error": "Kesalahan agen browser: {error}"
+  "browser_agent_error": "Kesalahan agen browser: {error}",
+  "file_organize_no_path": "Silakan tentukan jalur folder yang akan diatur (contoh: C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Folder tidak ditemukan: {path}",
+  "file_organize_error": "Kesalahan pengaturan file: {error}",
+  "file_organize_permission": "Akses ditolak: {path}",
+  "file_organize_nothing": "Tidak ada file untuk diatur di {path}.",
+  "file_organize_done": "{count} file telah diatur di {path}:"
 }

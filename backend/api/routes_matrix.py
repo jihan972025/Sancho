@@ -32,5 +32,6 @@ async def process_message(req: ProcessRequest) -> dict:
         app_name="matrix",
         default_model=model,
         browser_keywords=mx.browser_keywords,
+        file_organize_keywords=mx.file_organize_keywords,
     )
     return {"reply": reply}

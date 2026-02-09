@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Element X 계정의 비밀번호. SSO(Gmail 등)로 가입한 경우 아래 Access Token을 사용하세요.",
     "matrixTokenHelp": "비밀번호 없이 SSO로 가입한 경우: Element Web → Settings → Help & About → Access Token 복사"
   },
+  "logs": {
+    "title": "서버 로그",
+    "clear": "로그 지우기",
+    "noLogs": "아직 로그가 없습니다"
+  },
   "common": {
     "rateLimitError": "API 요청 한도 초과입니다. 잠시 후 다시 시도해주세요."
   }

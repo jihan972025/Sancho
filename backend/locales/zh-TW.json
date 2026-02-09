@@ -12,5 +12,11 @@
   "browser_completed_default": "任務已完成。",
   "browser_error": "錯誤: {error}",
   "browser_status": "狀態: {status}",
-  "browser_agent_error": "瀏覽器代理錯誤: {error}"
+  "browser_agent_error": "瀏覽器代理錯誤: {error}",
+  "file_organize_no_path": "請指定要整理的資料夾路徑（例如: C:\\Users\\user\\Downloads）。",
+  "file_organize_not_found": "找不到資料夾: {path}",
+  "file_organize_error": "檔案整理錯誤: {error}",
+  "file_organize_permission": "存取被拒絕: {path}",
+  "file_organize_nothing": "{path} 中沒有需要整理的檔案。",
+  "file_organize_done": "已整理 {path} 中的 {count} 個檔案:"
 }

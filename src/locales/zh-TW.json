@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Element X帳號的密碼。如果使用SSO（Gmail等）註冊，請使用下方的存取權杖。",
     "matrixTokenHelp": "如果透過SSO註冊且沒有密碼：Element Web → Settings → Help & About → 複製存取權杖"
   },
+  "logs": {
+    "title": "伺服器日誌",
+    "clear": "清除日誌",
+    "noLogs": "尚無日誌"
+  },
   "common": {
     "rateLimitError": "API請求頻率超過限制。請稍後再試。"
   }

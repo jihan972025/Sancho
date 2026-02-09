@@ -12,5 +12,11 @@
   "browser_completed_default": "Задача выполнена.",
   "browser_error": "Ошибка: {error}",
   "browser_status": "Статус: {status}",
-  "browser_agent_error": "Ошибка агента браузера: {error}"
+  "browser_agent_error": "Ошибка агента браузера: {error}",
+  "file_organize_no_path": "Пожалуйста, укажите путь к папке для организации (например, C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Папка не найдена: {path}",
+  "file_organize_error": "Ошибка организации файлов: {error}",
+  "file_organize_permission": "Доступ запрещён: {path}",
+  "file_organize_nothing": "Нет файлов для организации в {path}.",
+  "file_organize_done": "Организовано {count} файлов в {path}:"
 }

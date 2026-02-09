@@ -22,7 +22,9 @@ export default function SettingsPanel() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const updated = await updateSettings(config)
+      // Always read the latest config from the store to avoid stale closure
+      const latestConfig = useSettingsStore.getState().config
+      const updated = await updateSettings(latestConfig)
       setConfig(updated as any)
       const { models } = await getModels()
       setModels(models)

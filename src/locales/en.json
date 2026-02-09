@@ -74,6 +74,11 @@
     "matrixPasswordHelp": "Password for your Element X account. If you signed up with SSO (Gmail, etc.), use Access Token below.",
     "matrixTokenHelp": "If signed up via SSO without password: Element Web → Settings → Help & About → Copy Access Token"
   },
+  "logs": {
+    "title": "Server Logs",
+    "clear": "Clear logs",
+    "noLogs": "No logs yet"
+  },
   "common": {
     "rateLimitError": "API rate limit exceeded. Please try again shortly."
   }

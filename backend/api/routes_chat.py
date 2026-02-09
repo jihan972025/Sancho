@@ -7,12 +7,13 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from ..config import get_config, load_user_md, _BROWSER_KEYWORDS
+from ..config import get_config, load_user_md, _BROWSER_KEYWORDS, _FILE_ORGANIZE_KEYWORDS
 from ..i18n import t, lang_instruction
 from ..llm.registry import get_provider_for_model, get_available_models
 from ..skills.loader import build_skill_system_prompt
 from ..skills.executor import parse_skill_call, execute_skill_call
 from ..agents.browser_agent import get_browser_agent, AgentStatus
+from ..agents.file_agent import organize_directory
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,15 @@ def _is_browser_intent(text: str) -> bool:
     return any(kw.lower() in lower for kw in _BROWSER_KEYWORDS)
 
 
+def _is_file_organize_intent(text: str) -> bool:
+    lower = text.lower()
+    return any(kw.lower() in lower for kw in _FILE_ORGANIZE_KEYWORDS)
+
+
+import re
+_PATH_PATTERN = re.compile(r'[A-Za-z]:\\[^\s"\'<>|*?]+')
+
+
 @router.post("/send")
 async def send_message(req: ChatRequest):
     provider = get_provider_for_model(req.model)
@@ -50,12 +60,15 @@ async def send_message(req: ChatRequest):
     messages = [m.model_dump() for m in req.messages]
     session_id = req.session_id or "default"
 
-    # Check if the last user message is a browser intent
+    # Check if the last user message is a browser or file organize intent
     last_user_msg = ""
     for m in reversed(messages):
         if m["role"] == "user":
             last_user_msg = m["content"]
             break
+
+    if last_user_msg and _is_file_organize_intent(last_user_msg):
+        return await _handle_file_organize_stream(last_user_msg, req.model, session_id)
 
     if last_user_msg and _is_browser_intent(last_user_msg):
         return await _handle_browser_stream(last_user_msg, req.model, session_id)
@@ -241,6 +254,61 @@ async def send_message(req: ChatRequest):
             raise HTTPException(status_code=500, detail=str(e))
 
 
+async def _handle_file_organize_stream(task: str, model: str, session_id: str):
+    """Handle file organization and return SSE stream."""
+    cancel_event = asyncio.Event()
+    _cancel_events[session_id] = cancel_event
+    lang = get_config().language
+
+    async def organize_stream():
+        try:
+            match = _PATH_PATTERN.search(task)
+            if not match:
+                msg = t("file_organize_no_path", lang)
+                yield f"data: {json.dumps({'type': 'token', 'content': msg})}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'reason': 'complete'})}\n\n"
+                return
+
+            path = match.group(0).rstrip(".,;:!?")
+
+            yield f"data: {json.dumps({'type': 'skill_start', 'content': 'filesystem'})}\n\n"
+
+            results = await organize_directory(path, model, instructions=task)
+
+            yield f"data: {json.dumps({'type': 'skill_result', 'content': 'filesystem'})}\n\n"
+
+            if not results:
+                reply = t("file_organize_nothing", lang, path=path)
+            else:
+                ok = [r for r in results if r["status"] == "ok"]
+                errors = [r for r in results if r["status"] != "ok"]
+                lines = [f"  {r['src']} → {r['dst']}" for r in ok]
+                reply = t("file_organize_done", lang, count=str(len(ok)), path=path)
+                if lines:
+                    reply += "\n" + "\n".join(lines)
+                if errors:
+                    reply += f"\n\n({len(errors)} failed)"
+
+            for chunk in _chunk_text(reply):
+                if cancel_event.is_set():
+                    yield f"data: {json.dumps({'type': 'done', 'reason': 'cancelled'})}\n\n"
+                    return
+                yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'reason': 'complete'})}\n\n"
+
+        except Exception as e:
+            logger.error(f"File organize stream error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+        finally:
+            _cancel_events.pop(session_id, None)
+
+    return StreamingResponse(
+        organize_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 async def _handle_browser_stream(task: str, model: str, session_id: str):
     """Handle browser agent task and return SSE stream."""
     cancel_event = asyncio.Event()
@@ -252,11 +320,10 @@ async def _handle_browser_stream(task: str, model: str, session_id: str):
             agent = get_browser_agent()
             state = agent.get_state()
 
+            # Cancel running task so new command can take over the browser
             if state.status == AgentStatus.RUNNING:
-                msg = t("browser_running", lang)
-                yield f"data: {json.dumps({'type': 'token', 'content': msg})}\n\n"
-                yield f"data: {json.dumps({'type': 'done', 'reason': 'complete'})}\n\n"
-                return
+                logger.info("Cancelling running browser task for new command")
+                await agent.cancel_and_wait()
 
             yield f"data: {json.dumps({'type': 'skill_start', 'content': 'browser'})}\n\n"
 

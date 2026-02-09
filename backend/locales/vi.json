@@ -12,5 +12,11 @@
   "browser_completed_default": "Nhiệm vụ đã hoàn thành.",
   "browser_error": "Lỗi: {error}",
   "browser_status": "Trạng thái: {status}",
-  "browser_agent_error": "Lỗi tác nhân trình duyệt: {error}"
+  "browser_agent_error": "Lỗi tác nhân trình duyệt: {error}",
+  "file_organize_no_path": "Vui lòng chỉ định đường dẫn thư mục cần sắp xếp (ví dụ: C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "Không tìm thấy thư mục: {path}",
+  "file_organize_error": "Lỗi sắp xếp tệp: {error}",
+  "file_organize_permission": "Truy cập bị từ chối: {path}",
+  "file_organize_nothing": "Không có tệp nào để sắp xếp trong {path}.",
+  "file_organize_done": "Đã sắp xếp {count} tệp trong {path}:"
 }

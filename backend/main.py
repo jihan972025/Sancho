@@ -13,12 +13,14 @@ from backend.api.routes_whatsapp import router as whatsapp_router
 from backend.api.routes_telegram import router as telegram_router
 from backend.api.routes_matrix import router as matrix_router
 from backend.api.routes_scheduler import router as scheduler_router
+from backend.api.routes_logs import router as logs_router, log_handler
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     stream=sys.stdout,
 )
+logging.getLogger().addHandler(log_handler)
 
 
 @asynccontextmanager
@@ -34,7 +36,7 @@ app = FastAPI(title="Sancho Backend", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -47,6 +49,7 @@ app.include_router(whatsapp_router)
 app.include_router(telegram_router)
 app.include_router(matrix_router)
 app.include_router(scheduler_router)
+app.include_router(logs_router)
 
 
 @app.get("/api/health")

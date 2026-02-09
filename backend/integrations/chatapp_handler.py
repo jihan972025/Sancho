@@ -2,11 +2,13 @@
 
 import json
 import logging
+import re
 
 from ..config import get_config, load_user_md
 from ..i18n import t, lang_instruction
 from ..llm.registry import get_provider_for_model, get_available_models
 from ..agents.browser_agent import get_browser_agent, AgentStatus
+from ..agents.file_agent import organize_directory
 from ..skills.loader import build_skill_system_prompt
 from ..skills.executor import parse_skill_call, execute_skill_call
 from .whatsapp_history import history
@@ -20,6 +22,7 @@ async def process_chat_message(
     app_name: str,
     default_model: str,
     browser_keywords: list[str],
+    file_organize_keywords: list[str] | None = None,
 ) -> str:
     """Process an incoming message from any chat app. Returns reply text.
 
@@ -29,9 +32,15 @@ async def process_chat_message(
         app_name: Chat app name for logging ("whatsapp", "telegram", etc.)
         default_model: Model to use for this chat app
         browser_keywords: Keywords that trigger browser agent
+        file_organize_keywords: Keywords that trigger file organization
     """
-    lang = get_config().language
+    config = get_config()
+    lang = config.language
     lower = text.strip().lower()
+
+    if file_organize_keywords is None:
+        from ..config import _FILE_ORGANIZE_KEYWORDS
+        file_organize_keywords = _FILE_ORGANIZE_KEYWORDS
 
     # Special commands
     if lower == "/clear":
@@ -54,12 +63,15 @@ async def process_chat_message(
         )
 
     # Classify intent
-    is_browser = _is_browser_intent(text, browser_keywords)
+    is_file_organize = _is_file_organize_intent(text, file_organize_keywords)
+    is_browser = not is_file_organize and _is_browser_intent(text, browser_keywords)
     effective_model = _resolve_model(default_model)
-    logger.info("[%s] model=%s (requested=%s), browser=%s", app_name, effective_model, default_model, is_browser)
+    logger.info("[%s] model=%s (requested=%s), browser=%s, file_organize=%s", app_name, effective_model, default_model, is_browser, is_file_organize)
 
     try:
-        if is_browser:
+        if is_file_organize:
+            return await _handle_file_organize(sender, text, default_model, lang)
+        elif is_browser:
             return await _handle_browser(sender, text, default_model, lang)
         else:
             return await _handle_chat(sender, text, default_model, lang)
@@ -87,6 +99,20 @@ def _resolve_model(model: str) -> str:
 def _is_browser_intent(text: str, keywords: list[str]) -> bool:
     lower = text.lower()
     return any(kw.lower() in lower for kw in keywords)
+
+
+def _is_file_organize_intent(text: str, keywords: list[str]) -> bool:
+    lower = text.lower()
+    return any(kw.lower() in lower for kw in keywords)
+
+
+_PATH_PATTERN = re.compile(r'[A-Za-z]:\\[^\s"\'<>|*?]+')
+
+
+def _extract_path(text: str) -> str | None:
+    """Extract a Windows path from user message text."""
+    match = _PATH_PATTERN.search(text)
+    return match.group(0).rstrip(".,;:!?") if match else None
 
 
 async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> str:
@@ -211,6 +237,48 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
     return response
 
 
+async def _handle_file_organize(sender: str, text: str, model: str, lang: str = "en") -> str:
+    """Handle file organization requests by directly executing organize_directory."""
+    effective_model = _resolve_model(model)
+    if not effective_model:
+        return t("no_model", lang)
+
+    path = _extract_path(text)
+    if not path:
+        return t("file_organize_no_path", lang)
+
+    logger.info("File organize: path=%s, instructions=%s", path, text[:100])
+
+    try:
+        results = await organize_directory(path, effective_model, instructions=text)
+    except FileNotFoundError:
+        return t("file_organize_not_found", lang, path=path)
+    except ValueError as e:
+        return t("file_organize_error", lang, error=str(e))
+    except PermissionError:
+        return t("file_organize_permission", lang, path=path)
+
+    if not results:
+        return t("file_organize_nothing", lang, path=path)
+
+    ok = [r for r in results if r["status"] == "ok"]
+    errors = [r for r in results if r["status"] != "ok"]
+
+    lines = []
+    for r in ok:
+        lines.append(f"  {r['src']} → {r['dst']}")
+
+    summary = t("file_organize_done", lang, count=str(len(ok)), path=path)
+    if lines:
+        summary += "\n" + "\n".join(lines)
+    if errors:
+        summary += f"\n\n({len(errors)} failed)"
+
+    history.add_message(sender, "user", text)
+    history.add_message(sender, "assistant", summary)
+    return summary
+
+
 async def _handle_browser(sender: str, text: str, model: str, lang: str = "en") -> str:
     effective_model = _resolve_model(model)
     if not effective_model:
@@ -218,8 +286,10 @@ async def _handle_browser(sender: str, text: str, model: str, lang: str = "en") 
     agent = get_browser_agent()
     state = agent.get_state()
 
+    # Cancel running task so new command can take over the browser
     if state.status == AgentStatus.RUNNING:
-        return t("browser_running", lang)
+        logger.info("Cancelling running browser task for new command: %s", text[:80])
+        await agent.cancel_and_wait()
 
     try:
         config = get_config()

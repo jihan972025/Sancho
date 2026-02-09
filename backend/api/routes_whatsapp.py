@@ -33,5 +33,6 @@ async def process_message(req: ProcessRequest) -> dict:
         app_name="whatsapp",
         default_model=model,
         browser_keywords=wa.browser_keywords,
+        file_organize_keywords=wa.file_organize_keywords,
     )
     return {"reply": reply}

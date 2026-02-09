@@ -221,6 +221,16 @@ class BrowserAgent:
 
         return self.state
 
+    async def cancel_and_wait(self, timeout: float = 10) -> None:
+        """Cancel the running task and wait for it to stop."""
+        if self.state.status != AgentStatus.RUNNING:
+            return
+        self.stop()
+        for _ in range(int(timeout / 0.5)):
+            await asyncio.sleep(0.5)
+            if self.state.status != AgentStatus.RUNNING:
+                break
+
     def get_state(self) -> AgentState:
         return self.state
 

@@ -9,7 +9,7 @@ directories:
 files:
   - dist/**/*
   - dist-electron/**/*
-  - "!node_modules/**/*"
+  - node_modules/**/*
 
 extraResources:
   - from: dist-backend/

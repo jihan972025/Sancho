@@ -12,5 +12,11 @@
   "browser_completed_default": "작업이 완료되었습니다.",
   "browser_error": "오류 발생: {error}",
   "browser_status": "상태: {status}",
-  "browser_agent_error": "브라우저 에이전트 오류: {error}"
+  "browser_agent_error": "브라우저 에이전트 오류: {error}",
+  "file_organize_no_path": "정리할 폴더 경로를 지정해주세요 (예: C:\\Users\\user\\Downloads).",
+  "file_organize_not_found": "폴더를 찾을 수 없습니다: {path}",
+  "file_organize_error": "파일 정리 오류: {error}",
+  "file_organize_permission": "접근 권한이 없습니다: {path}",
+  "file_organize_nothing": "{path}에 정리할 파일이 없습니다.",
+  "file_organize_done": "{path}에서 {count}개 파일을 정리했습니다:"
 }
