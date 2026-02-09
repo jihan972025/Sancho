@@ -43,7 +43,7 @@ class WikipediaExecutor(SkillExecutor):
                 return (
                     f"**{page.title}**\n\n"
                     f"{summary}\n\n"
-                    f"URL: {page.url}"
+                    f"[Read on Wikipedia]({page.url})"
                 )
             except wikipedia.DisambiguationError as e:
                 options = e.options[:10]

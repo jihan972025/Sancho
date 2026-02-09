@@ -62,7 +62,7 @@ class TavilyExecutor(SkillExecutor):
                 formatted.append(
                     f"{i}. **{r.get('title', 'No title')}**\n"
                     f"   {r.get('content', 'No description')}\n"
-                    f"   URL: {r.get('url', 'N/A')}"
+                    f"   [Read more]({r.get('url', '')})"
                 )
 
             answer = data.get("answer", "")

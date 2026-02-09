@@ -2,8 +2,9 @@ import { useState } from 'react'
 import {
   Search, Globe, Mail, ClipboardList, FileText, Hash, CloudSun, TrendingUp, BarChart3,
   BookOpen, Newspaper, Coins, Wallet, MapPin, Activity, Calendar, Wifi, Clock,
-  Lightbulb, Link, Flag, Sparkles, Table,
+  Lightbulb, Link, Flag, Sparkles, Table, Key, Rss,
   Eye, EyeOff, X, Check, Lock, Plus, Plug, Pencil, Trash2,
+  ChevronDown, ChevronRight,
 } from 'lucide-react'
 import { useSettingsStore } from '../../stores/settingsStore'
 import type { ApiConfig, CustomApiDef } from '../../types'
@@ -231,6 +232,17 @@ const services: ServiceDef[] = [
     isConfigured: () => true,
     fields: [],
     description: 'Random inspirational quotes with author. Always enabled — no API key required.',
+    alwaysOn: true,
+  },
+  {
+    id: 'krnews',
+    name: 'KR News',
+    icon: Rss,
+    color: 'text-orange-300',
+    bgColor: 'bg-orange-400/10 border-orange-400/20',
+    isConfigured: () => true,
+    fields: [],
+    description: 'Korean news headlines via RSS — Yonhap, SBS, Donga, Hankyoreh, Kyunghyang, and more. Always enabled — no API key required.',
     alwaysOn: true,
   },
   {
@@ -541,48 +553,87 @@ export default function ApiTab() {
     if (editingIdx === idx) setEditingIdx(null)
   }
 
+  const freeServices = services.filter((s) => s.alwaysOn)
+  const paidServices = services.filter((s) => !s.alwaysOn)
+  const [freeCollapsed, setFreeCollapsed] = useState(false)
+  const [paidCollapsed, setPaidCollapsed] = useState(false)
+
+  const renderServiceGrid = (list: ServiceDef[]) => (
+    <div className="grid grid-cols-6 gap-2">
+      {list.map((svc) => {
+        const Icon = svc.icon
+        const configured = svc.isConfigured(api)
+        const isSelected = selected === svc.id
+        return (
+          <button
+            key={svc.id}
+            onClick={() => setSelected(isSelected ? null : svc.id)}
+            className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
+              isSelected
+                ? 'border-angel-500 bg-angel-500/10 ring-1 ring-angel-500'
+                : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+            }`}
+          >
+            {svc.alwaysOn ? (
+              <div className="absolute top-1.5 right-1.5">
+                <Lock size={10} className="text-green-400" />
+              </div>
+            ) : configured ? (
+              <div className="absolute top-1.5 right-1.5">
+                <Check size={12} className="text-green-400" />
+              </div>
+            ) : null}
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${svc.bgColor}`}>
+              <Icon size={18} className={svc.color} />
+            </div>
+            <span className="text-xs font-medium text-slate-300 truncate w-full text-center">{svc.name}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
   return (
     <div className="space-y-6">
+      {/* ── Built-in Skills (Free) ── */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-200 mb-1">API Integrations</h2>
-        <p className="text-sm text-slate-400">
+        <button
+          onClick={() => setFreeCollapsed(!freeCollapsed)}
+          className="flex items-center gap-2 w-full text-left group"
+        >
+          {freeCollapsed ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+          <Lock size={16} className="text-green-400" />
+          <h2 className="text-lg font-semibold text-slate-200">Built-in Skills</h2>
+          <span className="text-xs text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+            {freeServices.length} Free
+          </span>
+        </button>
+        <p className="text-sm text-slate-500 ml-9 mt-1">
+          No API key required. Always available.
+        </p>
+      </div>
+
+      {!freeCollapsed && renderServiceGrid(freeServices)}
+
+      {/* ── API Key Required ── */}
+      <div className="border-t border-slate-700 pt-6">
+        <button
+          onClick={() => setPaidCollapsed(!paidCollapsed)}
+          className="flex items-center gap-2 w-full text-left group"
+        >
+          {paidCollapsed ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+          <Key size={16} className="text-amber-400" />
+          <h2 className="text-lg font-semibold text-slate-200">API Key Required</h2>
+          <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+            {paidServices.filter((s) => s.isConfigured(api)).length}/{paidServices.length} Connected
+          </span>
+        </button>
+        <p className="text-sm text-slate-500 ml-9 mt-1">
           Click a service to configure its API credentials.
         </p>
       </div>
 
-      {/* Icon grid — 6 per row */}
-      <div className="grid grid-cols-6 gap-2">
-        {services.map((svc) => {
-          const Icon = svc.icon
-          const configured = svc.isConfigured(api)
-          const isSelected = selected === svc.id
-          return (
-            <button
-              key={svc.id}
-              onClick={() => setSelected(isSelected ? null : svc.id)}
-              className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all ${
-                isSelected
-                  ? 'border-angel-500 bg-angel-500/10 ring-1 ring-angel-500'
-                  : `border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800`
-              }`}
-            >
-              {svc.alwaysOn ? (
-                <div className="absolute top-1.5 right-1.5">
-                  <Lock size={10} className="text-green-400" />
-                </div>
-              ) : configured ? (
-                <div className="absolute top-1.5 right-1.5">
-                  <Check size={12} className="text-green-400" />
-                </div>
-              ) : null}
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${svc.bgColor}`}>
-                <Icon size={18} className={svc.color} />
-              </div>
-              <span className="text-xs font-medium text-slate-300 truncate w-full text-center">{svc.name}</span>
-            </button>
-          )
-        })}
-      </div>
+      {!paidCollapsed && renderServiceGrid(paidServices)}
 
       {/* Config panel for selected service */}
       {selectedService && (

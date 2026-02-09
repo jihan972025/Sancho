@@ -50,10 +50,50 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 - Switch between models freely
 
 ### Skill System
-- **Web Search**: DuckDuckGo, Tavily
-- **File Operations**: Read, write, organize, move, delete
-- **Wikipedia**: Encyclopedia lookup
-- **Custom API**: Register custom REST APIs and use them as LLM skills
+
+28 built-in skills — 20 free (no API key), 8 with API key integration.
+
+#### Built-in Skills (Free)
+
+| # | Skill | Description |
+|---|-------|-------------|
+| 1 | **duckduckgo** | Web search and news via DuckDuckGo |
+| 2 | **wttr** | Real-time weather forecasts (wttr.in) |
+| 3 | **yfinance** | Stock prices and market data (Yahoo Finance) |
+| 4 | **tradingview** | Technical analysis — RSI, MACD, Bollinger Bands, Moving Averages |
+| 5 | **frankfurter** | Foreign exchange rates for 30+ currencies (ECB) |
+| 6 | **ccxt** | Real-time cryptocurrency prices from Binance |
+| 7 | **wikipedia** | Wikipedia article search and summaries |
+| 8 | **gnews** | Google News search (141 countries, 41 languages) |
+| 9 | **geopy** | Geocoding — address to coordinates and reverse |
+| 10 | **usgs** | Real-time earthquake data (U.S. Geological Survey) |
+| 11 | **nagerdate** | Public holidays for 100+ countries |
+| 12 | **ipapi** | IP address geolocation (country, city, ISP, timezone) |
+| 13 | **timezone** | Timezone and local time lookup for any location |
+| 14 | **trivia** | Trivia quiz questions across 24 categories |
+| 15 | **pyshorteners** | URL shortening via TinyURL |
+| 16 | **restcountries** | Country details — capital, population, languages, borders |
+| 17 | **zenquotes** | Random inspirational quotes with author |
+| 18 | **filesystem** | File read, write, organize, move, and delete |
+| 19 | **info** | Combined country, holiday, timezone, geocode, and IP lookup |
+| 20 | **fun** | Combined trivia, quotes, and URL shortener |
+| 21 | **krnews** | Korean news headlines via RSS (Yonhap, SBS, Donga, Hankyoreh, etc.) |
+
+#### API Key Required
+
+| # | Skill | Description |
+|---|-------|-------------|
+| 1 | **tavily** | AI-optimized web search (Tavily API key) |
+| 2 | **outlook** | Microsoft Outlook email (Azure AD OAuth) |
+| 3 | **gmail** | Gmail email (Google OAuth 2.0) |
+| 4 | **google_calendar** | Google Calendar event management (Google OAuth 2.0) |
+| 5 | **google_sheets** | Google Sheets read/write (Google OAuth 2.0) |
+| 6 | **jira** | Atlassian Jira project management |
+| 7 | **confluence** | Atlassian Confluence documentation |
+| 8 | **slack** | Slack workspace messaging |
+
+#### Custom API
+- Register any REST API as an LLM skill from Settings > API
 - **Skill Chaining**: Automatically execute multiple skills in sequence (e.g., search → save to file)
 
 ### File Manager
@@ -62,9 +102,9 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 - Protected directory safeguards and two-step delete confirmation
 
 ### Browser Automation
-- Playwright-based browser automation
-- Screenshot → LLM Vision → Action loop (up to 20 steps)
-- Automated clicking, typing, scrolling, navigation, and more
+- playwright-cli based browser automation (text snapshot + ref-based actions)
+- Snapshot → LLM Text → ref-based Action loop (up to 20 steps)
+- 48 actions: click, fill, type, drag, select, check, hover, scroll, tabs, cookies, storage, and more
 
 ### Messenger Integration
 - **WhatsApp**: Connect via QR code, auto-reply
@@ -83,11 +123,15 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 | [Telegram Setup](docs/telegram-setup.md) | Get API keys and connect Telegram |
 | [Element X Setup](docs/elementx-setup.md) | Connect Matrix / Element X |
 | [GitHub LLM Models](docs/github-llm-setup.md) | Use free LLM models via GitHub |
+| [Gmail Setup](docs/gmail-setup.md) | Connect Gmail via Google OAuth 2.0 |
+| [Outlook Setup](docs/outlook-setup.md) | Connect Outlook via Azure AD OAuth 2.0 |
+| [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |
+| [Google Sheets Setup](docs/google-sheets-setup.md) | Connect Google Sheets via OAuth 2.0 |
 
 ## Installation
 
 ### Installer
-Download [Sancho Setup 1.0.1.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.1/Sancho.Setup.1.0.1.exe) — all dependencies are bundled (no separate installation required).
+Download [Sancho Setup 1.0.2.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.2/Sancho.Setup.1.0.2.exe) — all dependencies are bundled (no separate installation required).
 
 
 ## Tech Stack

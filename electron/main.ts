@@ -58,10 +58,17 @@ async function startBackend(): Promise<void> {
   const { command, args } = findPythonBackend()
   console.log(`Starting backend: ${command} ${args.join(' ')}`)
 
+  const playwrightCliPath = isDev
+    ? path.join(__dirname, '..', 'node_modules', '.bin', 'playwright-cli.cmd')
+    : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '.bin', 'playwright-cli.cmd')
+
   pythonProcess = spawn(command, args, {
     cwd: isDev ? path.join(__dirname, '..') : process.resourcesPath,
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env },
+    env: {
+      ...process.env,
+      SANCHO_PLAYWRIGHT_CLI_PATH: playwrightCliPath,
+    },
   })
 
   pythonProcess.stdout?.on('data', (data: Buffer) => {
@@ -99,7 +106,7 @@ function createWindow(): void {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: 'Sancho',
+    title: `Sancho v${app.getVersion()}`,
     icon: titlebarIcon,
     frame: true,
     backgroundColor: '#0f172a',

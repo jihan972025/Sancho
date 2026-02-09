@@ -83,7 +83,7 @@ class DuckDuckGoExecutor(SkillExecutor):
                 formatted.append(
                     f"{i}. {tag} **{r['title']}**\n"
                     f"   {r['body']}\n"
-                    f"   URL: {r['url']}"
+                    f"   [Read more]({r['url']})"
                 )
             return f"Search results for '{query}':\n\n" + "\n\n".join(formatted)
         except Exception as e:

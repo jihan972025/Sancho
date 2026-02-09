@@ -139,6 +139,12 @@ export function takeScreenshot() {
   })
 }
 
+export function takeSnapshot() {
+  return request<{ snapshot: string }>('/api/browser/snapshot', {
+    method: 'POST',
+  })
+}
+
 export function runBrowserAgent(task: string, model?: string) {
   return request('/api/browser/agent/run', {
     method: 'POST',

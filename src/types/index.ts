@@ -37,6 +37,7 @@ export interface BrowserAgentState {
   last_thought: string
   error: string | null
   result: string | null
+  last_snapshot: string | null
 }
 
 export interface LLMConfig {

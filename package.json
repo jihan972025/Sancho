@@ -1,6 +1,6 @@
 {
   "name": "sancho",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Windows AI Agent Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -11,6 +11,7 @@
     "electron:build": "npm run build && electron-builder"
   },
   "dependencies": {
+    "@playwright/cli": "^0.1.0",
     "@whiskeysockets/baileys": "^6.7.21",
     "i18next": "^25.8.4",
     "lucide-react": "^0.441.0",
@@ -20,6 +21,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-i18next": "^16.5.4",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^6.26.0",
     "telegram": "^2.26.22",
     "zustand": "^4.5.4"

@@ -156,7 +156,7 @@ class JiraExecutor(SkillExecutor):
                 data = resp.json()
 
             key = data.get("key", "Unknown")
-            return f"Issue created: **{key}** — {summary}\nURL: {self._url}/browse/{key}"
+            return f"Issue created: **{key}** — {summary}\n[Open in Jira]({self._url}/browse/{key})"
         except Exception as e:
             logger.error(f"Jira create failed: {e}", exc_info=True)
             return f"[SKILL_ERROR] Failed to create Jira issue: {str(e)}"

@@ -24,6 +24,9 @@ __pycache__/
 # Claude
 .claude/
 
+# Playwright CLI
+.playwright-cli/
+
 # OS
 nul
 Thumbs.db

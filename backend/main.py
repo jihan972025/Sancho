@@ -31,7 +31,7 @@ async def lifespan(app):
     stop_scheduler()
 
 
-app = FastAPI(title="Sancho Backend", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Sancho Backend", version="1.0.2", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,7 +54,7 @@ app.include_router(logs_router)
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok", "version": "1.0.2"}
 
 
 if __name__ == "__main__":

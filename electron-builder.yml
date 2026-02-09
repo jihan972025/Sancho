@@ -11,6 +11,13 @@ files:
   - dist-electron/**/*
   - node_modules/**/*
 
+asarUnpack:
+  - node_modules/.bin/playwright-cli*
+  - node_modules/@playwright/cli/**/*
+  - node_modules/playwright/**/*
+  - node_modules/playwright-core/**/*
+  - node_modules/minimist/**/*
+
 extraResources:
   - from: dist-backend/
     to: backend/

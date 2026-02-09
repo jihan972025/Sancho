@@ -22,12 +22,31 @@ You MUST use the yfinance skill for:
 - Regional market summaries
 Do NOT use web search for stock market data — always prefer yfinance.
 
+## When to use specialized data skills
+
+Use these skills DIRECTLY instead of going through search:
+- **wttr**: Weather forecasts for any city
+- **tradingview**: Technical analysis (RSI, MACD, Bollinger Bands, Moving Averages)
+- **frankfurter**: Foreign exchange rates (30+ currencies)
+- **ccxt**: Real-time cryptocurrency prices from Binance
+- **gnews**: Google News search (141 countries, 41 languages)
+- **geopy**: Address ↔ coordinates geocoding
+- **usgs**: Recent earthquake data
+- **nagerdate**: Public holidays for 100+ countries
+- **ipapi**: IP address geolocation
+- **timezone**: Timezone and current time for any location
+- **trivia**: Trivia quiz questions
+- **pyshorteners**: URL shortening
+- **restcountries**: Country information (capital, population, languages, etc.)
+- **zenquotes**: Inspirational quotes
+- **krnews**: Korean news headlines via RSS (Yonhap, SBS, Donga, Hankyoreh, etc.)
+
 ## When to use search skills (duckduckgo, tavily)
 
 You MUST use a search skill for:
 - Current events, recent news, sports results
 - Any question about dates, events, or facts from 2024 onwards
-- Weather, or any real-time data (except stock prices — use yfinance)
+- General web search when no specialized skill covers the topic
 - Anything you are not 100% certain about
 
 ## When to use the filesystem skill

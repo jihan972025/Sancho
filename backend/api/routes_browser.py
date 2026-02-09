@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -7,6 +8,8 @@ from pydantic import BaseModel
 
 from ..agents.browser_agent import get_browser_agent
 from ..config import get_config
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/browser", tags=["browser"])
 
@@ -28,7 +31,8 @@ async def start_browser():
         await agent.start_browser(headless=config.browser_headless)
         return {"status": "started"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Browser start failed")
+        raise HTTPException(status_code=500, detail=str(e) or repr(e))
 
 
 @router.post("/navigate")
@@ -48,6 +52,16 @@ async def take_screenshot():
         img_bytes = await agent.screenshot()
         b64 = base64.b64encode(img_bytes).decode()
         return {"image": b64, "format": "png"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/snapshot")
+async def take_snapshot():
+    agent = get_browser_agent()
+    try:
+        text = await agent.snapshot()
+        return {"snapshot": text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

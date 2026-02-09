@@ -1,4 +1,5 @@
 import { User, MessageCircle, Send, Globe } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import type { Message } from '../../types'
 
 interface Props {
@@ -32,7 +33,24 @@ export default function MessageBubble({ message }: Props) {
       </div>
       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${bubbleColor}`}>
         {src && <div className="text-[10px] opacity-70 mb-0.5">{src.label}</div>}
-        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+        <div className="whitespace-pre-wrap break-words prose prose-sm prose-invert max-w-none
+          prose-a:text-angel-400 prose-a:underline prose-a:underline-offset-2 hover:prose-a:text-angel-300
+          prose-strong:text-inherit prose-p:my-0 prose-ul:my-1 prose-ol:my-1 prose-li:my-0
+          prose-headings:text-inherit prose-headings:my-1 prose-hr:my-2 prose-pre:my-1
+          prose-code:text-angel-300 prose-code:bg-slate-700/50 prose-code:px-1 prose-code:rounded
+          prose-table:my-1 prose-th:text-slate-300 prose-td:text-slate-400">
+          <ReactMarkdown
+            components={{
+              a: ({ href, children }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  {children}
+                </a>
+              ),
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   )

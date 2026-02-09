@@ -1,22 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
-import { Play, Square, Globe, Camera, RefreshCw } from 'lucide-react'
+import { Play, Square, Globe, Camera, FileText } from 'lucide-react'
 import ScreenshotView from './ScreenshotView'
+import SnapshotView from './SnapshotView'
 import { useAgentStore } from '../../stores/agentStore'
 import {
   startBrowser,
   closeBrowser,
   navigateBrowser,
   takeScreenshot,
+  takeSnapshot,
   runBrowserAgent,
   stopBrowserAgent,
   getBrowserAgentStatus,
 } from '../../api/client'
+
+type ViewTab = 'screenshot' | 'snapshot'
 
 export default function BrowserView() {
   const [url, setUrl] = useState('https://www.google.com')
   const [task, setTask] = useState('')
   const [browserStarted, setBrowserStarted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [viewTab, setViewTab] = useState<ViewTab>('screenshot')
+  const [snapshotText, setSnapshotText] = useState<string | null>(null)
   const { browserAgent, lastScreenshot, setBrowserState, setScreenshot } = useAgentStore()
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -43,6 +49,7 @@ export default function BrowserView() {
       await closeBrowser()
       setBrowserStarted(false)
       setScreenshot(null)
+      setSnapshotText(null)
     } catch (err: any) {
       alert(err.message)
     }
@@ -65,6 +72,17 @@ export default function BrowserView() {
     try {
       const { image } = await takeScreenshot()
       setScreenshot(image)
+      setViewTab('screenshot')
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  const handleSnapshot = async () => {
+    try {
+      const { snapshot } = await takeSnapshot()
+      setSnapshotText(snapshot)
+      setViewTab('snapshot')
     } catch (err: any) {
       alert(err.message)
     }
@@ -80,6 +98,10 @@ export default function BrowserView() {
         try {
           const status = await getBrowserAgentStatus()
           setBrowserState(status)
+          // Update snapshot from agent state
+          if (status.last_snapshot) {
+            setSnapshotText(status.last_snapshot)
+          }
           if (status.status !== 'running') {
             if (pollRef.current) clearInterval(pollRef.current)
             // Take final screenshot
@@ -147,6 +169,13 @@ export default function BrowserView() {
               title="Screenshot"
             >
               <Camera size={16} />
+            </button>
+            <button
+              onClick={handleSnapshot}
+              className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300"
+              title="Snapshot"
+            >
+              <FileText size={16} />
             </button>
             <button
               onClick={handleCloseBrowser}
@@ -220,10 +249,47 @@ export default function BrowserView() {
         </div>
       )}
 
-      {/* Screenshot */}
-      <div className="flex-1 min-h-0">
-        <ScreenshotView screenshot={lastScreenshot} />
-      </div>
+      {/* View tabs + content */}
+      {browserStarted && (
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex gap-1 mb-2 shrink-0">
+            <button
+              onClick={() => setViewTab('screenshot')}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                viewTab === 'screenshot'
+                  ? 'bg-angel-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Screenshot
+            </button>
+            <button
+              onClick={() => setViewTab('snapshot')}
+              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                viewTab === 'snapshot'
+                  ? 'bg-angel-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Snapshot
+            </button>
+          </div>
+          <div className="flex-1 min-h-0">
+            {viewTab === 'screenshot' ? (
+              <ScreenshotView screenshot={lastScreenshot} />
+            ) : (
+              <SnapshotView snapshot={snapshotText} />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Show screenshot when browser not started yet but has screenshot */}
+      {!browserStarted && lastScreenshot && (
+        <div className="flex-1 min-h-0">
+          <ScreenshotView screenshot={lastScreenshot} />
+        </div>
+      )}
     </div>
   )
 }

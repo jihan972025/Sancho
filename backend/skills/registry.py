@@ -19,6 +19,21 @@ from .executors.wikipedia_executor import WikipediaExecutor
 from .executors.info_executor import InfoExecutor
 from .executors.fun_executor import FunExecutor
 from .executors.yfinance_executor import YFinanceExecutor
+from .executors.wttr_executor import WttrExecutor
+from .executors.tradingview_executor import TradingViewExecutor
+from .executors.frankfurter_executor import FrankfurterExecutor
+from .executors.ccxt_executor import CcxtExecutor
+from .executors.gnews_executor import GNewsExecutor
+from .executors.geopy_executor import GeopyExecutor
+from .executors.usgs_executor import UsgsExecutor
+from .executors.nagerdate_executor import NagerDateExecutor
+from .executors.ipapi_executor import IpApiExecutor
+from .executors.timezone_executor import TimezoneExecutor
+from .executors.trivia_executor import TriviaExecutor
+from .executors.pyshorteners_executor import PyShortenersExecutor
+from .executors.restcountries_executor import RestCountriesExecutor
+from .executors.zenquotes_executor import ZenQuotesExecutor
+from .executors.krnews_executor import KrNewsExecutor
 from .executors.custom_api_executor import CustomApiExecutor
 
 logger = logging.getLogger(__name__)
@@ -43,6 +58,21 @@ ALL_SKILL_EXECUTORS: list[type[SkillExecutor]] = [
     GoogleSheetsExecutor,
     SlackExecutor,
     YFinanceExecutor,
+    WttrExecutor,
+    TradingViewExecutor,
+    FrankfurterExecutor,
+    CcxtExecutor,
+    GNewsExecutor,
+    GeopyExecutor,
+    UsgsExecutor,
+    NagerDateExecutor,
+    IpApiExecutor,
+    TimezoneExecutor,
+    TriviaExecutor,
+    PyShortenersExecutor,
+    RestCountriesExecutor,
+    ZenQuotesExecutor,
+    KrNewsExecutor,
 ]
 
 _skill_instances: dict[str, SkillExecutor] = {}

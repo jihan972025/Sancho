@@ -18,6 +18,7 @@ const initialBrowserState: BrowserAgentState = {
   last_thought: '',
   error: null,
   result: null,
+  last_snapshot: null,
 }
 
 export const useAgentStore = create<AgentState>((set) => ({

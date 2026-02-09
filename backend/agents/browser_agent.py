@@ -7,7 +7,7 @@ from typing import Optional
 from openai import RateLimitError
 from pydantic import BaseModel
 
-from ..browser.automation import BrowserAutomation
+from ..browser.playwright_cli import PlaywrightCLI
 from ..llm.registry import get_provider_for_model
 from ..config import get_config
 
@@ -15,36 +15,105 @@ logger = logging.getLogger(__name__)
 
 BROWSER_SYSTEM_PROMPT = """You are a browser automation agent. You control a web browser to complete tasks.
 
-You will receive:
-1. A screenshot of the current page
-2. A list of clickable elements with their coordinates
-3. The current URL and page title
+You will receive a text snapshot of the current page as an accessibility tree. Elements have ref IDs like [ref=e5] that you use to interact with them.
 
 You must respond with a JSON object describing your next action:
 
 {
   "thought": "Brief explanation of what you're doing",
-  "action": "click" | "type" | "scroll" | "navigate" | "press_key" | "wait" | "done",
-  "params": {
-    // For "click": {"x": number, "y": number}
-    // For "type": {"text": "string to type"}
-    // For "scroll": {"direction": "up" | "down"}
-    // For "navigate": {"url": "https://..."}
-    // For "press_key": {"key": "Enter" | "Tab" | "Escape" | etc.}
-    // For "wait": {}
-    // For "done": {"result": "summary of what was accomplished"}
-  }
+  "action": "<action_name>",
+  "params": { ... }
 }
 
+Available actions:
+
+## Core Interaction
+- "click": {"ref": "e5"} — click an element (optional "button": "left"|"right"|"middle")
+- "dblclick": {"ref": "e5"} — double-click an element (optional "button")
+- "fill": {"ref": "e5", "text": "query"} — clear and fill a text input by ref
+- "type": {"text": "hello"} — type text into the currently focused element
+- "drag": {"start_ref": "e3", "end_ref": "e7"} — drag and drop between two elements
+- "hover": {"ref": "e5"} — hover over an element
+- "select": {"ref": "e5", "value": "option"} — select dropdown option
+- "upload": {"file": "C:/path/to/file.png"} — upload a file
+- "check": {"ref": "e5"} — check a checkbox or radio button
+- "uncheck": {"ref": "e5"} — uncheck a checkbox
+- "eval": {"code": "document.title"} — evaluate JavaScript (optional "ref": "e5" for element context)
+- "dialog_accept": {} — accept a dialog (optional "prompt": "text" for prompt dialogs)
+- "dialog_dismiss": {} — dismiss a dialog
+- "resize": {"width": 1280, "height": 720} — resize the browser window
+- "delete_data": {} — delete all session data (cookies, storage, etc.)
+
+## Navigation
+- "goto": {"url": "https://..."} — navigate to a URL
+- "go_back": {} — go back to previous page
+- "go_forward": {} — go forward to next page
+- "reload": {} — reload the current page
+
+## Keyboard
+- "press": {"key": "Enter"} — press a key (Enter, Tab, Escape, ArrowDown, etc.)
+- "keydown": {"key": "Shift"} — press a key down (hold)
+- "keyup": {"key": "Shift"} — release a key
+
+## Mouse
+- "mousemove": {"x": 100, "y": 200} — move mouse to coordinates
+- "mousedown": {} — press mouse button down (optional "button": "left"|"right"|"middle")
+- "mouseup": {} — release mouse button (optional "button")
+- "scroll": {"direction": "down"} — scroll the page (optional "amount": 500)
+
+## Tabs
+- "tab_list": {} — list all open tabs
+- "tab_new": {} — open a new tab (optional "url": "https://...")
+- "tab_select": {"index": 1} — switch to tab by index
+- "tab_close": {} — close current tab (optional "index": 1)
+
+## Storage — Cookies
+- "cookie_list": {} — list all cookies
+- "cookie_get": {"name": "session_id"} — get a cookie by name
+- "cookie_set": {"name": "key", "value": "val"} — set a cookie
+- "cookie_delete": {"name": "key"} — delete a cookie
+- "cookie_clear": {} — clear all cookies
+
+## Storage — LocalStorage
+- "localstorage_list": {} — list all localStorage key-value pairs
+- "localstorage_get": {"key": "theme"} — get a localStorage item
+- "localstorage_set": {"key": "theme", "value": "dark"} — set a localStorage item
+- "localstorage_delete": {"key": "theme"} — delete a localStorage item
+- "localstorage_clear": {} — clear all localStorage
+
+## Storage — SessionStorage
+- "sessionstorage_list": {} — list all sessionStorage key-value pairs
+- "sessionstorage_get": {"key": "token"} — get a sessionStorage item
+- "sessionstorage_set": {"key": "token", "value": "abc"} — set a sessionStorage item
+- "sessionstorage_delete": {"key": "token"} — delete a sessionStorage item
+- "sessionstorage_clear": {} — clear all sessionStorage
+
+## Storage — Auth State
+- "state_save": {} — save authentication state (optional "filename": "auth.json")
+- "state_load": {"filename": "auth.json"} — load saved authentication state
+
+## Network
+- "network": {} — list all network requests since page load
+- "route": {"pattern": "**/*.png"} — mock network requests matching a URL pattern
+- "route_list": {} — list all active network routes
+- "unroute": {} — remove all routes (optional "pattern": "**/*.png")
+
+## DevTools
+- "console": {} — list console messages (optional "min_level": "error")
+- "run_code": {"code": "await page.evaluate(() => ...)"} — run a Playwright code snippet
+
+## Control
+- "wait": {} — wait for page to load (2 seconds)
+- "done": {"result": "summary of what was accomplished"}
+
 IMPORTANT RULES:
-- To search: first click the search box, then type the query, then press_key "Enter". Do NOT repeat the same action.
+- Use ref IDs from the snapshot to target elements (e.g., "ref": "e12").
+- To search: click the search input, then fill it with the query, then press Enter.
 - Each action runs once per step. Never repeat the same action you already performed.
-- Look at the screenshot carefully. If the text is already typed in the input box, do NOT type it again. Instead press_key "Enter" to submit.
-- If the page has changed (new URL or new content), analyze the NEW page and decide the next action accordingly.
+- If the page has changed, analyze the NEW snapshot and decide the next action.
 - Use "done" when the task objective has been achieved.
 
-Respond ONLY with the JSON object, no other text.
-"""
+Respond ONLY with the JSON object, no other text."""
 
 
 class AgentStatus(str, Enum):
@@ -64,30 +133,184 @@ class AgentState(BaseModel):
     last_thought: str = ""
     error: Optional[str] = None
     result: Optional[str] = None
+    last_snapshot: Optional[str] = None
 
 
 class BrowserAgent:
     def __init__(self) -> None:
-        self.browser = BrowserAutomation()
+        self.cli = PlaywrightCLI()
         self.state = AgentState()
         self._cancel = asyncio.Event()
 
     async def start_browser(self, headless: bool = False) -> None:
-        self.browser.headless = headless
-        await self.browser.start()
+        headed = not headless
+        await self.cli.open(headed=headed)
 
     async def close_browser(self) -> None:
-        await self.browser.close()
+        try:
+            await self.cli.close()
+        except RuntimeError:
+            pass  # already closed
         self.state = AgentState()
 
     async def navigate(self, url: str) -> str:
-        return await self.browser.navigate(url)
+        await self.cli.goto(url)
+        info = await self.cli.get_page_info()
+        return info.get("url", url)
 
     async def screenshot(self) -> bytes:
-        return await self.browser.screenshot()
+        return await self.cli.screenshot()
+
+    async def snapshot(self) -> str:
+        text = await self.cli.snapshot()
+        self.state.last_snapshot = text
+        return text
 
     def stop(self) -> None:
         self._cancel.set()
+
+    async def _execute_action(self, action: str, params: dict) -> Optional[str]:
+        """Execute a single agent action. Returns action output or None."""
+        cli = self.cli
+
+        # ── Core Interaction ──
+        if action == "click":
+            return await cli.click(str(params["ref"]), params.get("button", "left"))
+        elif action == "dblclick":
+            return await cli.dblclick(str(params["ref"]), params.get("button", "left"))
+        elif action == "fill":
+            return await cli.fill(str(params["ref"]), params["text"])
+        elif action == "type":
+            return await cli.type_text(params["text"])
+        elif action == "drag":
+            return await cli.drag(str(params["start_ref"]), str(params["end_ref"]))
+        elif action == "hover":
+            return await cli.hover(str(params["ref"]))
+        elif action == "select":
+            return await cli.select(str(params["ref"]), params["value"])
+        elif action == "upload":
+            return await cli.upload(params["file"])
+        elif action == "check":
+            return await cli.check(str(params["ref"]))
+        elif action == "uncheck":
+            return await cli.uncheck(str(params["ref"]))
+        elif action == "eval":
+            return await cli.eval_js(params["code"], params.get("ref"))
+        elif action == "dialog_accept":
+            return await cli.dialog_accept(params.get("prompt"))
+        elif action == "dialog_dismiss":
+            return await cli.dialog_dismiss()
+        elif action == "resize":
+            return await cli.resize(params["width"], params["height"])
+        elif action == "delete_data":
+            return await cli.delete_data()
+
+        # ── Navigation ──
+        elif action == "goto":
+            return await cli.goto(params["url"])
+        elif action == "go_back":
+            return await cli.go_back()
+        elif action == "go_forward":
+            return await cli.go_forward()
+        elif action == "reload":
+            return await cli.reload()
+
+        # ── Keyboard ──
+        elif action == "press":
+            return await cli.press(params["key"])
+        elif action == "keydown":
+            return await cli.keydown(params["key"])
+        elif action == "keyup":
+            return await cli.keyup(params["key"])
+
+        # ── Mouse ──
+        elif action == "mousemove":
+            return await cli.mousemove(params["x"], params["y"])
+        elif action == "mousedown":
+            return await cli.mousedown(params.get("button", "left"))
+        elif action == "mouseup":
+            return await cli.mouseup(params.get("button", "left"))
+        elif action == "scroll":
+            return await cli.scroll(params.get("direction", "down"), params.get("amount", 500))
+
+        # ── Tabs ──
+        elif action == "tab_list":
+            return await cli.tab_list()
+        elif action == "tab_new":
+            return await cli.tab_new(params.get("url"))
+        elif action == "tab_select":
+            return await cli.tab_select(params["index"])
+        elif action == "tab_close":
+            return await cli.tab_close(params.get("index"))
+
+        # ── Storage: Cookies ──
+        elif action == "cookie_list":
+            return await cli.cookie_list()
+        elif action == "cookie_get":
+            return await cli.cookie_get(params["name"])
+        elif action == "cookie_set":
+            return await cli.cookie_set(params["name"], params["value"])
+        elif action == "cookie_delete":
+            return await cli.cookie_delete(params["name"])
+        elif action == "cookie_clear":
+            return await cli.cookie_clear()
+
+        # ── Storage: LocalStorage ──
+        elif action == "localstorage_list":
+            return await cli.localstorage_list()
+        elif action == "localstorage_get":
+            return await cli.localstorage_get(params["key"])
+        elif action == "localstorage_set":
+            return await cli.localstorage_set(params["key"], params["value"])
+        elif action == "localstorage_delete":
+            return await cli.localstorage_delete(params["key"])
+        elif action == "localstorage_clear":
+            return await cli.localstorage_clear()
+
+        # ── Storage: SessionStorage ──
+        elif action == "sessionstorage_list":
+            return await cli.sessionstorage_list()
+        elif action == "sessionstorage_get":
+            return await cli.sessionstorage_get(params["key"])
+        elif action == "sessionstorage_set":
+            return await cli.sessionstorage_set(params["key"], params["value"])
+        elif action == "sessionstorage_delete":
+            return await cli.sessionstorage_delete(params["key"])
+        elif action == "sessionstorage_clear":
+            return await cli.sessionstorage_clear()
+
+        # ── Storage: Auth State ──
+        elif action == "state_save":
+            return await cli.state_save(params.get("filename"))
+        elif action == "state_load":
+            return await cli.state_load(params["filename"])
+
+        # ── Network ──
+        elif action == "network":
+            return await cli.network()
+        elif action == "route":
+            return await cli.route(params["pattern"])
+        elif action == "route_list":
+            return await cli.route_list()
+        elif action == "unroute":
+            return await cli.unroute(params.get("pattern"))
+
+        # ── DevTools ──
+        elif action == "console":
+            return await cli.console(params.get("min_level"))
+        elif action == "run_code":
+            return await cli.run_code(params["code"])
+
+        # ── Control ──
+        elif action == "wait":
+            await asyncio.sleep(2)
+            return None
+        elif action == "done":
+            return None  # handled by caller
+
+        else:
+            logger.warning(f"Unknown action: {action}")
+            return None
 
     async def run_task(self, task: str, model: Optional[str] = None) -> AgentState:
         config = get_config()
@@ -115,27 +338,19 @@ class BrowserAgent:
 
                 self.state.current_step = step + 1
 
-                # Capture screenshot
-                screenshot_bytes = await self.browser.screenshot()
+                # Capture text snapshot
+                snapshot_text = await self.cli.snapshot()
+                self.state.last_snapshot = snapshot_text
 
-                # Get clickable elements
-                elements = await self.browser.get_clickable_elements()
-                page_info = await self.browser.get_page_info()
-
-                # Format elements for LLM
-                elements_text = "\n".join(
-                    f"[{e['index']}] <{e['tag']}> '{e.get('text', '')[:50]}' "
-                    f"placeholder='{e.get('placeholder', '')}' "
-                    f"at ({e['x']},{e['y']})"
-                    for e in elements[:50]  # Limit to 50 elements
-                )
+                # Get page info
+                page_info = await self.cli.get_page_info()
 
                 user_msg = (
                     f"Task: {task}\n\n"
                     f"Current URL: {page_info['url']}\n"
                     f"Page Title: {page_info['title']}\n\n"
                     f"Step {step + 1}/{self.state.max_steps}\n\n"
-                    f"Clickable elements:\n{elements_text}"
+                    f"Page snapshot:\n{snapshot_text}"
                 )
 
                 messages = [
@@ -143,18 +358,16 @@ class BrowserAgent:
                     {"role": "user", "content": user_msg},
                 ]
 
-                # Call LLM with vision (retry on rate limit)
-                logger.info(f"Vision call: model={model}, provider={provider.name}")
+                # Call LLM with text (no vision API needed)
+                logger.info(f"Text call: model={model}, provider={provider.name}")
                 response = None
-                for attempt in range(4):  # initial + 3 retries
+                for attempt in range(4):
                     try:
-                        response = await provider.vision(
-                            messages, [screenshot_bytes], model
-                        )
+                        response = await provider.complete(messages, model)
                         break
                     except RateLimitError:
                         if attempt < 3:
-                            wait = (attempt + 1) * 5  # 5s, 10s, 15s
+                            wait = (attempt + 1) * 5
                             logger.warning(f"Rate limit hit, waiting {wait}s (attempt {attempt + 1}/3)")
                             await asyncio.sleep(wait)
                         else:
@@ -180,28 +393,17 @@ class BrowserAgent:
                 self.state.last_thought = thought
                 logger.info(f"Step {step + 1}: {thought} -> {action} {params}")
 
-                # Execute action
-                if action == "click":
-                    await self.browser.click(params["x"], params["y"])
-                elif action == "type":
-                    await self.browser.type_text(params["text"])
-                elif action == "scroll":
-                    await self.browser.scroll(params.get("direction", "down"))
-                elif action == "navigate":
-                    await self.browser.navigate(params["url"])
-                elif action == "press_key":
-                    await self.browser.press_key(params["key"])
-                elif action == "wait":
-                    await asyncio.sleep(2)
-                elif action == "done":
+                # Handle "done" before executing
+                if action == "done":
                     self.state.status = AgentStatus.COMPLETED
                     self.state.result = params.get("result", "Task completed")
                     break
-                else:
-                    logger.warning(f"Unknown action: {action}")
 
-                # Delay between actions (helps avoid rate limits on low-concurrency models)
-                await asyncio.sleep(2)
+                # Execute action
+                await self._execute_action(action, params)
+
+                # Delay between actions
+                await asyncio.sleep(1)
             else:
                 self.state.status = AgentStatus.COMPLETED
                 self.state.result = "Max steps reached"
