@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, Tray, dialog } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -10,6 +10,8 @@ import { setSelectedModel } from './selectedModel'
 let mainWindow: BrowserWindow | null = null
 let pythonProcess: ChildProcess | null = null
 let notificationPollTimer: ReturnType<typeof setInterval> | null = null
+let tray: Tray | null = null
+let isQuitting = false
 
 const isDev = !app.isPackaged
 
@@ -115,6 +117,7 @@ function createWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: isDev,
     },
   })
 
@@ -133,6 +136,13 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   }
+
+  mainWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault()
+      mainWindow?.hide()
+    }
+  })
 
   mainWindow.on('closed', () => {
     mainWindow = null
@@ -251,9 +261,124 @@ function stopNotificationPolling(): void {
   }
 }
 
+function createTray(): void {
+  const trayIcon = isDev
+    ? path.join(__dirname, '..', 'assets', 'icon.ico')
+    : path.join(process.resourcesPath, 'assets', 'titlebar-icon.ico')
+
+  tray = new Tray(trayIcon)
+  tray.setToolTip(`Sancho v${app.getVersion()}`)
+
+  const trayMenu = Menu.buildFromTemplate([
+    {
+      label: `Sancho v${app.getVersion()}`,
+      enabled: false,
+    },
+    { type: 'separator' },
+    {
+      label: 'Show',
+      click: () => {
+        mainWindow?.show()
+        mainWindow?.focus()
+      },
+    },
+    {
+      label: 'Auto Start',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (menuItem) => {
+        app.setLoginItemSettings({ openAtLogin: menuItem.checked })
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        isQuitting = true
+        app.quit()
+      },
+    },
+  ])
+
+  tray.setContextMenu(trayMenu)
+
+  tray.on('double-click', () => {
+    mainWindow?.show()
+    mainWindow?.focus()
+  })
+}
+
 app.whenReady().then(async () => {
+  // Enable auto-start by default on first run (production only)
+  if (!isDev) {
+    const loginSettings = app.getLoginItemSettings()
+    if (!loginSettings.openAtLogin) {
+      app.setLoginItemSettings({ openAtLogin: true })
+    }
+  }
+
   await startBackend()
   createWindow()
+  createTray()
+
+  const menuTemplate: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: `Sancho v${app.getVersion()}`,
+          enabled: false,
+        },
+        { type: 'separator' },
+        {
+          label: 'About Sancho',
+          click: () => {
+            dialog.showMessageBox({
+              type: 'info',
+              title: 'About Sancho',
+              message: `Sancho v${app.getVersion()}`,
+              detail: 'Windows AI Agent Desktop App\n\nhttps://github.com/jihan972025/sancho',
+            })
+          },
+        },
+      ],
+    },
+  ]
+
+  const menu = Menu.buildFromTemplate(menuTemplate)
+  Menu.setApplicationMenu(menu)
 
   if (mainWindow) {
     initWhatsApp(mainWindow)
@@ -275,14 +400,15 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  stopNotificationPolling()
-  stopBackend()
-  app.quit()
+  // Do not quit — keep running in tray
 })
 
 app.on('before-quit', () => {
+  isQuitting = true
   stopNotificationPolling()
   stopBackend()
+  tray?.destroy()
+  tray = null
 })
 
 // IPC handlers

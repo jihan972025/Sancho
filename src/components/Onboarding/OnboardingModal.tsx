@@ -73,6 +73,7 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [country, setCountry] = useState('')
   const [city, setCity] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   const totalSteps = 4
 
@@ -85,6 +86,7 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   const handleSubmit = async () => {
     setSaving(true)
+    setError('')
     try {
       const selectedCountry = COUNTRIES.find((c) => c.code === country)
       await saveUserProfile({
@@ -97,6 +99,7 @@ export default function OnboardingModal({ onComplete }: Props) {
       onComplete()
     } catch (err) {
       console.error('Failed to save profile:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save profile')
     } finally {
       setSaving(false)
     }
@@ -262,6 +265,17 @@ export default function OnboardingModal({ onComplete }: Props) {
               <p className="text-xs text-slate-500">
                 You can update these settings later in the Settings panel.
               </p>
+              {error && (
+                <div className="bg-red-900/30 border border-red-700 rounded-lg px-3 py-2">
+                  <p className="text-xs text-red-400">{error}</p>
+                  <button
+                    onClick={onComplete}
+                    className="text-xs text-red-300 underline mt-1 hover:text-red-200"
+                  >
+                    Skip and continue
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
