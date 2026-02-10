@@ -12,31 +12,48 @@ logger = logging.getLogger(__name__)
 SESSION = "sancho"
 
 
-def _find_cli_path() -> str:
-    """Resolve playwright-cli executable path."""
-    # 1. Explicit env var (set by Electron in production)
+def _find_cli() -> list[str]:
+    """Resolve playwright-cli command as [node, script] or [cli_path]."""
+    # 1. Explicit env vars (set by Electron — node + JS file)
+    cli_js = os.environ.get("SANCHO_PLAYWRIGHT_CLI_JS")
+    node = os.environ.get("SANCHO_PLAYWRIGHT_NODE")
+    if cli_js and os.path.isfile(cli_js):
+        node_cmd = node if node else "node"
+        logger.info("playwright-cli via env: %s %s", node_cmd, cli_js)
+        return [node_cmd, cli_js]
+
+    # 2. Legacy env var (single executable path)
     env_path = os.environ.get("SANCHO_PLAYWRIGHT_CLI_PATH")
     if env_path and os.path.isfile(env_path):
-        return env_path
+        logger.info("playwright-cli found via env: %s", env_path)
+        return [env_path]
 
-    # 2. Local node_modules/.bin (dev)
+    # 3. Local node_modules (dev)
+    cli_local = Path(__file__).resolve().parents[2] / "node_modules" / "@playwright" / "cli" / "playwright-cli.js"
+    if cli_local.is_file():
+        logger.info("playwright-cli found locally: %s", cli_local)
+        return ["node", str(cli_local)]
+
+    # 4. Local .bin fallback (dev)
     if sys.platform == "win32":
-        local = Path(__file__).resolve().parents[2] / "node_modules" / ".bin" / "playwright-cli.cmd"
+        bin_local = Path(__file__).resolve().parents[2] / "node_modules" / ".bin" / "playwright-cli.cmd"
     else:
-        local = Path(__file__).resolve().parents[2] / "node_modules" / ".bin" / "playwright-cli"
-    if local.is_file():
-        return str(local)
+        bin_local = Path(__file__).resolve().parents[2] / "node_modules" / ".bin" / "playwright-cli"
+    if bin_local.is_file():
+        logger.info("playwright-cli found in .bin: %s", bin_local)
+        return [str(bin_local)]
 
-    # 3. Global fallback
-    return "playwright-cli"
+    # 5. Global fallback
+    logger.warning("playwright-cli not found — browser features may not work")
+    return ["playwright-cli"]
 
 
-CLI_PATH = _find_cli_path()
+CLI_CMD = _find_cli()
 
 
 async def _run_cmd(*args: str, timeout: float = 30) -> str:
     """Run a playwright-cli command and return stdout."""
-    cmd = [CLI_PATH, f"-s={SESSION}"] + list(args)
+    cmd = CLI_CMD + [f"-s={SESSION}"] + list(args)
     logger.debug("playwright-cli: %s", " ".join(cmd))
     try:
         proc = await asyncio.create_subprocess_exec(

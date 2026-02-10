@@ -60,16 +60,20 @@ async function startBackend(): Promise<void> {
   const { command, args } = findPythonBackend()
   console.log(`Starting backend: ${command} ${args.join(' ')}`)
 
-  const playwrightCliPath = isDev
-    ? path.join(__dirname, '..', 'node_modules', '.bin', 'playwright-cli.cmd')
-    : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '.bin', 'playwright-cli.cmd')
+  const playwrightCliJs = isDev
+    ? path.join(__dirname, '..', 'node_modules', '@playwright', 'cli', 'playwright-cli.js')
+    : path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@playwright', 'cli', 'playwright-cli.js')
+
+  // In production, use Electron's bundled node; in dev, use system node
+  const nodePath = isDev ? 'node' : process.execPath
 
   pythonProcess = spawn(command, args, {
     cwd: isDev ? path.join(__dirname, '..') : process.resourcesPath,
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
       ...process.env,
-      SANCHO_PLAYWRIGHT_CLI_PATH: playwrightCliPath,
+      SANCHO_PLAYWRIGHT_CLI_JS: playwrightCliJs,
+      SANCHO_PLAYWRIGHT_NODE: nodePath,
     },
   })
 
