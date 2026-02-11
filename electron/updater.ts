@@ -133,17 +133,31 @@ export async function applyPatch(onProgress?: (percent: number) => void): Promis
     await httpsDownload(installerAsset.browser_download_url, installerPath, onProgress)
     console.log(`[Updater] Download complete: ${installerPath}`)
 
-    // Launch installer as detached process and exit app
-    const child = spawn(installerPath, ['/S'], {
+    // Create a batch script that waits for app to exit, runs installer, then relaunches
+    const appExePath = process.execPath
+    const batchPath = path.join(tempDir, 'sancho-update.bat')
+    const batchContent = [
+      '@echo off',
+      'timeout /t 3 /nobreak > nul',
+      `start /wait "" "${installerPath}" /S`,
+      `start "" "${appExePath}"`,
+      `del "${installerPath}" 2>nul`,
+      'del "%~f0"',
+    ].join('\r\n')
+    fs.writeFileSync(batchPath, batchContent, 'utf-8')
+
+    console.log(`[Updater] Launching update script: ${batchPath}`)
+    const child = spawn('cmd.exe', ['/c', batchPath], {
       detached: true,
       stdio: 'ignore',
+      windowsHide: true,
     })
     child.unref()
 
-    // Give the installer a moment to start, then exit
+    // Exit app so installer can overwrite files
     setTimeout(() => {
       app.exit(0)
-    }, 1000)
+    }, 500)
 
     return { success: true }
   } catch (err) {
