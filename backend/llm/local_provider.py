@@ -1,6 +1,7 @@
 import base64
 from typing import AsyncGenerator
 
+import httpx
 from openai import AsyncOpenAI
 
 from .base import LLMProvider
@@ -19,6 +20,7 @@ class LocalLLMProvider(LLMProvider):
         self.client = AsyncOpenAI(
             api_key=api_key or "no-key",
             base_url=base_url,
+            timeout=httpx.Timeout(timeout=600.0, connect=30.0),
         )
 
     async def complete(
