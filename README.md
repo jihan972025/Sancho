@@ -45,9 +45,19 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 ## Features
 
 ### Multi-LLM Chat
-- **10+ LLM providers**: OpenAI, Anthropic, Google Gemini, DeepSeek, Grok, Mistral, Perplexity, Qwen, ZhipuAI, Llama (Together AI), GitHub Models
+- **14 LLM providers**: OpenAI, Anthropic, Google Gemini, DeepSeek, Grok, Mistral, Perplexity, Qwen, ZhipuAI, Llama (Together AI), GitHub Models, KIMI (Moonshot), NVIDIA NIM, Local LLM (Ollama/LM Studio)
 - Real-time SSE streaming responses
 - Switch between models freely
+
+### Chat Memory
+- Automatically extracts and remembers facts from conversations (name, preferences, instructions)
+- Memories persist across sessions in `~/.sancho/memories.json`
+- Memory panel (Brain icon) to view, toggle, and delete individual memories
+- Injected into system prompt so the AI always knows your context
+
+### Sancho Persona
+- Set a custom nickname and role for the AI during onboarding
+- Saved to `~/.sancho/SANCHO.md`, always injected into LLM context
 
 ### Skill System
 
