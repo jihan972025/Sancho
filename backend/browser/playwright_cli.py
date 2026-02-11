@@ -56,10 +56,13 @@ async def _run_cmd(*args: str, timeout: float = 30) -> str:
     cmd = CLI_CMD + [f"-s={SESSION}"] + list(args)
     logger.debug("playwright-cli: %s", " ".join(cmd))
     try:
+        env = os.environ.copy()
+        env["ELECTRON_RUN_AS_NODE"] = "1"
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            env=env,
         )
         stdout, stderr = await asyncio.wait_for(
             proc.communicate(), timeout=timeout
