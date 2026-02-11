@@ -9,6 +9,8 @@ import { healthCheck, getSettings, getModels, getUserProfile } from './api/clien
 import OnboardingModal from './components/Onboarding/OnboardingModal'
 import { useSettingsStore } from './stores/settingsStore'
 import { useChatStore } from './stores/chatStore'
+import { useMemoryStore } from './stores/memoryStore'
+import PatchNotification from './components/PatchNotification'
 
 type Tab = 'chat' | 'scheduler' | 'logs' | 'settings'
 
@@ -73,6 +75,8 @@ export default function App() {
         if (!current && models.length > 0) {
           useChatStore.getState().setSelectedModel(models[0].id)
         }
+        // Load memories
+        useMemoryStore.getState().fetchMemories()
         // Check if onboarding is needed
         try {
           const profile = await getUserProfile()
@@ -103,6 +107,7 @@ export default function App() {
   return (
     <div className="flex h-screen bg-slate-900">
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
+      <PatchNotification />
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header activeTab={activeTab} backendReady={backendReady} />

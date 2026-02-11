@@ -13,6 +13,9 @@ from .perplexity_provider import PerplexityProvider
 from .qwen_provider import QwenProvider
 from .llama_provider import LLaMAProvider
 from .github_provider import GitHubCopilotProvider
+from .kimi_provider import KimiProvider
+from .nvidia_provider import NvidiaProvider
+from .local_provider import LocalLLMProvider
 
 
 ALL_PROVIDERS = [
@@ -27,6 +30,9 @@ ALL_PROVIDERS = [
     QwenProvider,
     LLaMAProvider,
     GitHubCopilotProvider,
+    KimiProvider,
+    NvidiaProvider,
+    LocalLLMProvider,
 ]
 
 _MODEL_TO_PROVIDER: dict[str, str] = {}
@@ -58,6 +64,8 @@ _PROVIDER_KEY_MAP = {
     "qwen": "qwen_api_key",
     "llama": "llama_api_key",
     "github": "github_api_key",
+    "kimi": "kimi_api_key",
+    "nvidia": "nvidia_api_key",
 }
 
 _PROVIDER_CLASS_MAP = {cls.name: cls for cls in ALL_PROVIDERS}
@@ -66,6 +74,17 @@ _PROVIDER_CLASS_MAP = {cls.name: cls for cls in ALL_PROVIDERS}
 def _init_provider(provider_name: str) -> Optional[LLMProvider]:
     config = get_config()
     llm = config.llm
+
+    # Local LLM uses base_url instead of just an API key
+    if provider_name == "local":
+        base_url = llm.local_llm_base_url
+        if not base_url:
+            return None
+        provider_cls = _PROVIDER_CLASS_MAP.get("local")
+        if not provider_cls:
+            return None
+        return provider_cls(api_key=llm.local_llm_api_key, base_url=base_url)
+
     key_attr = _PROVIDER_KEY_MAP.get(provider_name)
     if not key_attr:
         return None
@@ -95,10 +114,16 @@ def get_available_models() -> list[dict]:
     llm = config.llm
     models = []
     for provider_cls in ALL_PROVIDERS:
+        # Local LLM: available when base_url is configured
+        if provider_cls.name == "local":
+            if llm.local_llm_base_url:
+                for m in llm.custom_models.get("local", []):
+                    models.append({"id": m, "provider": "local"})
+            continue
+
         key_attr = _PROVIDER_KEY_MAP.get(provider_cls.name, "")
         api_key = getattr(llm, key_attr, "")
         if api_key:
-            # Only user-configured models
             for m in llm.custom_models.get(provider_cls.name, []):
                 models.append({"id": m, "provider": provider_cls.name})
     return models

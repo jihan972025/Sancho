@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, Tray, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, Tray, dialog, nativeImage } from 'electron'
 import { spawn, ChildProcess } from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -6,6 +6,7 @@ import { initWhatsApp, connectWhatsApp, disconnectWhatsApp, getWhatsAppStatus, s
 import { initTelegram, connectTelegram, disconnectTelegram, getTelegramStatus, sendTelegramMessage } from './telegram'
 import { initMatrix, connectMatrix, disconnectMatrix, getMatrixStatus, sendMatrixMessage } from './matrix'
 import { setSelectedModel } from './selectedModel'
+import { startPeriodicCheck, stopPeriodicCheck, checkForUpdate, applyPatch, dismissUpdate } from './updater'
 
 let mainWindow: BrowserWindow | null = null
 let pythonProcess: ChildProcess | null = null
@@ -104,8 +105,8 @@ function stopBackend(): void {
 
 function createWindow(): void {
   const titlebarIcon = isDev
-    ? path.join(__dirname, '..', 'assets', 'titlebar-icon.ico')
-    : path.join(process.resourcesPath, 'assets', 'titlebar-icon.ico')
+    ? path.join(__dirname, '..', 'img', 'android-chrome-192x192.webp')
+    : path.join(process.resourcesPath, 'assets', 'app-icon.webp')
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -266,11 +267,12 @@ function stopNotificationPolling(): void {
 }
 
 function createTray(): void {
-  const trayIcon = isDev
-    ? path.join(__dirname, '..', 'assets', 'icon.ico')
-    : path.join(process.resourcesPath, 'assets', 'titlebar-icon.ico')
+  const trayIconPath = isDev
+    ? path.join(__dirname, '..', 'img', 'android-chrome-192x192.webp')
+    : path.join(process.resourcesPath, 'assets', 'app-icon.webp')
 
-  tray = new Tray(trayIcon)
+  const trayImage = nativeImage.createFromPath(trayIconPath).resize({ width: 16, height: 16 })
+  tray = new Tray(trayImage)
   tray.setToolTip(`Sancho v${app.getVersion()}`)
 
   const trayMenu = Menu.buildFromTemplate([
@@ -394,6 +396,9 @@ app.whenReady().then(async () => {
       autoConnectChatApps()
       startNotificationPolling()
     })
+
+    // Start periodic update checks
+    startPeriodicCheck(mainWindow)
   }
 
   app.on('activate', () => {
@@ -409,6 +414,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   isQuitting = true
+  stopPeriodicCheck()
   stopNotificationPolling()
   stopBackend()
   tray?.destroy()
@@ -434,3 +440,27 @@ ipcMain.handle('telegram:status', () => getTelegramStatus())
 ipcMain.handle('matrix:connect', (_event, homeserverUrl: string, userId: string, password: string, accessToken: string) => connectMatrix(homeserverUrl, userId, password, accessToken))
 ipcMain.handle('matrix:disconnect', () => disconnectMatrix())
 ipcMain.handle('matrix:status', () => getMatrixStatus())
+
+// Patch updater IPC handlers
+ipcMain.handle('patch:check', async () => {
+  return checkForUpdate()
+})
+
+ipcMain.handle('patch:apply', async () => {
+  const result = await applyPatch((percent) => {
+    mainWindow?.webContents.send('patch:progress', percent)
+  })
+  if (result.success) {
+    mainWindow?.webContents.send('patch:applied')
+  }
+  return result
+})
+
+ipcMain.handle('patch:dismiss', (_event, version: string) => {
+  dismissUpdate(version)
+})
+
+ipcMain.handle('patch:restart', () => {
+  app.relaunch()
+  app.exit(0)
+})

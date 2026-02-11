@@ -246,6 +246,18 @@ export function saveUserProfile(data: {
   })
 }
 
+// Sancho Profile API
+export function getSanchoProfile() {
+  return request<{ exists: boolean; content: string | null }>('/api/settings/sancho-profile')
+}
+
+export function saveSanchoProfile(data: { nickname: string; role: string }) {
+  return request('/api/settings/sancho-profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
 // Logs API
 export function streamLogs(
   onLogEntry: (entry: { timestamp: string; level: string; name: string; message: string }) => void,
@@ -295,6 +307,25 @@ export function streamLogs(
 
 export function clearLogs() {
   return request('/api/logs', { method: 'DELETE' })
+}
+
+// Memory API
+export function getMemories() {
+  return request<{ memories: any[] }>('/api/memory')
+}
+
+export function deleteMemory(id: string) {
+  return request('/api/memory/' + id, { method: 'DELETE' })
+}
+
+export function toggleMemory(id: string) {
+  return request<{ memory: any }>('/api/memory/' + id + '/toggle', {
+    method: 'POST',
+  })
+}
+
+export function clearAllMemories() {
+  return request('/api/memory', { method: 'DELETE' })
 }
 
 // Health check

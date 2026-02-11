@@ -54,6 +54,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners('telegram:chat-typing')
     },
   },
+  patch: {
+    check: () => ipcRenderer.invoke('patch:check'),
+    apply: () => ipcRenderer.invoke('patch:apply'),
+    dismiss: (version: string) => ipcRenderer.invoke('patch:dismiss', version),
+    restart: () => ipcRenderer.invoke('patch:restart'),
+    onAvailable: (cb: (info: { version: string; notes: string }) => void) => {
+      ipcRenderer.on('patch:available', (_event, info) => cb(info))
+    },
+    onProgress: (cb: (percent: number) => void) => {
+      ipcRenderer.on('patch:progress', (_event, percent) => cb(percent))
+    },
+    onApplied: (cb: () => void) => {
+      ipcRenderer.on('patch:applied', () => cb())
+    },
+    removeListeners: () => {
+      ipcRenderer.removeAllListeners('patch:available')
+      ipcRenderer.removeAllListeners('patch:progress')
+      ipcRenderer.removeAllListeners('patch:applied')
+    },
+  },
   matrix: {
     connect: (homeserverUrl: string, userId: string, password: string, accessToken: string) =>
       ipcRenderer.invoke('matrix:connect', homeserverUrl, userId, password, accessToken),

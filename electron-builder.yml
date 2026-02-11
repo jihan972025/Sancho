@@ -23,6 +23,10 @@ extraResources:
     to: backend/
   - from: assets/titlebar-icon.ico
     to: assets/titlebar-icon.ico
+  - from: assets/icon.ico
+    to: assets/icon.ico
+  - from: img/android-chrome-192x192.webp
+    to: assets/app-icon.webp
 
 win:
   target:

@@ -7,7 +7,9 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from ..config import get_config, load_user_md, _BROWSER_KEYWORDS, _FILE_ORGANIZE_KEYWORDS
+from ..config import get_config, load_user_md, load_sancho_md, _BROWSER_KEYWORDS, _FILE_ORGANIZE_KEYWORDS
+from ..memory import build_memory_prompt
+from ..memory_extractor import trigger_memory_extraction
 from ..i18n import t, lang_instruction
 from ..llm.registry import get_provider_for_model, get_available_models
 from ..skills.loader import build_skill_system_prompt
@@ -81,6 +83,15 @@ async def send_message(req: ChatRequest):
         else:
             messages.insert(0, {"role": "system", "content": li.strip()})
 
+    # Inject Sancho persona from SANCHO.md
+    sancho_md = load_sancho_md()
+    if sancho_md:
+        persona_block = f"\nYour persona (follow this identity):\n{sancho_md}\n"
+        if messages and messages[0]["role"] == "system":
+            messages[0] = {**messages[0], "content": persona_block + messages[0]["content"]}
+        else:
+            messages.insert(0, {"role": "system", "content": persona_block.strip()})
+
     # Inject user profile from USER.md
     user_md = load_user_md()
     if user_md:
@@ -89,6 +100,14 @@ async def send_message(req: ChatRequest):
             messages[0] = {**messages[0], "content": profile_block + messages[0]["content"]}
         else:
             messages.insert(0, {"role": "system", "content": profile_block.strip()})
+
+    # Inject memory from previous conversations
+    memory_prompt = build_memory_prompt()
+    if memory_prompt:
+        if messages and messages[0]["role"] == "system":
+            messages[0] = {**messages[0], "content": memory_prompt + messages[0]["content"]}
+        else:
+            messages.insert(0, {"role": "system", "content": memory_prompt.strip()})
 
     skill_prompt = build_skill_system_prompt()
 
@@ -99,17 +118,24 @@ async def send_message(req: ChatRequest):
         if skill_prompt is None:
             # No skills configured — original zero-overhead path
             async def event_stream():
+                full_response_parts: list[str] = []
                 try:
                     async for token in provider.stream(messages, req.model):
                         if cancel_event.is_set():
                             yield f"data: {json.dumps({'type': 'done', 'reason': 'cancelled'})}\n\n"
                             return
+                        full_response_parts.append(token)
                         yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
                     yield f"data: {json.dumps({'type': 'done', 'reason': 'complete'})}\n\n"
                 except Exception as e:
                     yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
                 finally:
                     _cancel_events.pop(session_id, None)
+                    if full_response_parts:
+                        extraction_msgs = messages + [
+                            {"role": "assistant", "content": "".join(full_response_parts)}
+                        ]
+                        trigger_memory_extraction(extraction_msgs, req.model)
         else:
             # Skill-enabled 2-phase path
             async def event_stream():
@@ -240,6 +266,7 @@ async def send_message(req: ChatRequest):
                     yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
                 finally:
                     _cancel_events.pop(session_id, None)
+                    trigger_memory_extraction(messages, req.model)
 
         return StreamingResponse(
             event_stream(),

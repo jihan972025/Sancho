@@ -69,7 +69,7 @@ export default function SettingsPanel() {
 
       {/* Tab content - scrollable */}
       <div className="flex-1 overflow-y-auto p-6">
-        <div className={`${activeTab === 'api' ? 'max-w-4xl' : 'max-w-2xl'} mx-auto`}>
+        <div className={`${activeTab === 'llm' || activeTab === 'api' ? 'max-w-4xl' : 'max-w-2xl'} mx-auto`}>
           {activeTab === 'llm' && <LLMModelsTab />}
           {activeTab === 'chatapp' && <ChatAppTab />}
           {activeTab === 'api' && <ApiTab />}

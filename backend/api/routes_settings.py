@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ..config import get_config, update_config, AppConfig, load_user_md, save_user_md
+from ..config import get_config, update_config, AppConfig, load_user_md, save_user_md, load_sancho_md, save_sancho_md
 from ..llm.registry import reset_providers
 from ..skills.registry import reset_skills
 
@@ -51,4 +51,26 @@ async def update_user_profile(profile: UserProfileRequest):
     config = get_config()
     config.language = profile.language
     update_config(config)
+    return {"status": "ok"}
+
+
+class SanchoProfileRequest(BaseModel):
+    nickname: str
+    role: str
+
+
+@router.get("/sancho-profile")
+async def get_sancho_profile():
+    content = load_sancho_md()
+    return {"exists": content is not None, "content": content}
+
+
+@router.put("/sancho-profile")
+async def update_sancho_profile(profile: SanchoProfileRequest):
+    md = (
+        "# Sancho Profile\n"
+        f"- Nickname: {profile.nickname}\n"
+        f"- Role: {profile.role}\n"
+    )
+    save_sancho_md(md)
     return {"status": "ok"}

@@ -18,6 +18,10 @@ class LLMConfig(BaseModel):
     qwen_api_key: str = ""
     llama_api_key: str = ""
     github_api_key: str = ""
+    kimi_api_key: str = ""
+    nvidia_api_key: str = ""
+    local_llm_base_url: str = ""  # e.g. http://localhost:11434/v1 (Ollama)
+    local_llm_api_key: str = ""   # Optional — most local LLMs don't require one
     default_model: str = ""
     custom_models: dict[str, list[str]] = {}
 
@@ -208,6 +212,21 @@ def load_user_md() -> Optional[str]:
 def save_user_md(content: str) -> None:
     _ensure_config_dir()
     _user_md_file.write_text(content, encoding="utf-8")
+
+
+_sancho_md_file = _config_dir / "SANCHO.md"
+
+
+def load_sancho_md() -> Optional[str]:
+    _ensure_config_dir()
+    if _sancho_md_file.exists():
+        return _sancho_md_file.read_text(encoding="utf-8")
+    return None
+
+
+def save_sancho_md(content: str) -> None:
+    _ensure_config_dir()
+    _sancho_md_file.write_text(content, encoding="utf-8")
 
 
 _current_config: Optional[AppConfig] = None

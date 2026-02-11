@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/apple-touch-icon.png" width="120" alt="Sancho Logo">
+  <img src="img/android-chrome-192x192.webp" width="120" alt="Sancho Logo">
 </p>
 
 <h1 align="center">Sancho</h1>

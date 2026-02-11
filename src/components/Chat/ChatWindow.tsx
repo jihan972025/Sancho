@@ -1,11 +1,15 @@
-import { useRef, useEffect } from 'react'
-import { Bot, Zap } from 'lucide-react'
+import { useRef, useEffect, useState } from 'react'
+import { Bot, Zap, Brain } from 'lucide-react'
 import MessageBubble from './MessageBubble'
 import InputBar from './InputBar'
+import MemoryPanel from './MemoryPanel'
 import { useChatStore } from '../../stores/chatStore'
+import { useMemoryStore } from '../../stores/memoryStore'
 import { sendMessageStream, stopGeneration } from '../../api/client'
 
 export default function ChatWindow() {
+  const [showMemory, setShowMemory] = useState(false)
+  const memoryCount = useMemoryStore((s) => s.memories.length)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const {
     messages,
@@ -55,8 +59,20 @@ export default function ChatWindow() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      {showMemory && <MemoryPanel onClose={() => setShowMemory(false)} />}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Memory button */}
+        <div className="flex justify-end -mb-2">
+          <button
+            onClick={() => setShowMemory(true)}
+            className="flex items-center gap-1 text-xs text-slate-500 hover:text-angel-400 transition-colors px-2 py-1 rounded hover:bg-slate-800"
+            title="View memories"
+          >
+            <Brain size={14} />
+            {memoryCount > 0 && <span>{memoryCount}</span>}
+          </button>
+        </div>
         {messages.length === 0 && !isStreaming && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <img src="./logo.svg" alt="Sancho" className="w-20 h-20 mb-4" />

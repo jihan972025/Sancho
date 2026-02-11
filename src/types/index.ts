@@ -52,6 +52,10 @@ export interface LLMConfig {
   qwen_api_key: string
   llama_api_key: string
   github_api_key: string
+  kimi_api_key: string
+  nvidia_api_key: string
+  local_llm_base_url: string
+  local_llm_api_key: string
   default_model: string
   custom_models: Record<string, string[]>
 }
@@ -144,6 +148,15 @@ export interface CustomApiDef {
   headers: Record<string, string>
   body_template: string
   response_path: string
+}
+
+export interface Memory {
+  id: string
+  content: string
+  category: 'fact' | 'preference' | 'instruction'
+  created_at: string
+  source: string
+  enabled: boolean
 }
 
 export interface AppConfig {

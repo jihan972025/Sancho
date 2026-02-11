@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { User, Globe, MapPin, ChevronRight, ChevronLeft, Check } from 'lucide-react'
-import { saveUserProfile } from '../../api/client'
+import { User, Globe, MapPin, ChevronRight, ChevronLeft, Check, Bot } from 'lucide-react'
+import { saveUserProfile, saveSanchoProfile } from '../../api/client'
 
 const LANGUAGES = [
   { code: 'en', name: 'English', native: 'English' },
@@ -69,18 +69,21 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
   const [gender, setGender] = useState('')
+  const [sanchoNickname, setSanchoNickname] = useState('Sancho')
+  const [sanchoRole, setSanchoRole] = useState('')
   const [language, setLanguage] = useState('en')
   const [country, setCountry] = useState('')
   const [city, setCity] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const totalSteps = 4
+  const totalSteps = 5
 
   const canNext = () => {
     if (step === 0) return name.trim().length > 0 && gender.length > 0
-    if (step === 1) return language.length > 0
-    if (step === 2) return country.length > 0
+    if (step === 1) return sanchoNickname.trim().length > 0
+    if (step === 2) return language.length > 0
+    if (step === 3) return country.length > 0
     return true
   }
 
@@ -95,6 +98,10 @@ export default function OnboardingModal({ onComplete }: Props) {
         language,
         country: selectedCountry?.name || country,
         city: city.trim() || '-',
+      })
+      await saveSanchoProfile({
+        nickname: sanchoNickname.trim() || 'Sancho',
+        role: sanchoRole.trim(),
       })
       onComplete()
     } catch (err) {
@@ -167,6 +174,38 @@ export default function OnboardingModal({ onComplete }: Props) {
           )}
 
           {step === 1 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-angel-400 mb-2">
+                <Bot size={18} />
+                <span className="text-sm font-medium">Sancho's Identity</span>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1.5">Nickname</label>
+                <input
+                  type="text"
+                  value={sanchoNickname}
+                  onChange={(e) => setSanchoNickname(e.target.value)}
+                  placeholder="e.g. Sancho, Buddy, Jarvis..."
+                  autoFocus
+                  className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+                />
+                <p className="text-xs text-slate-500 mt-1">What should the AI call itself?</p>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1.5">Role (optional)</label>
+                <input
+                  type="text"
+                  value={sanchoRole}
+                  onChange={(e) => setSanchoRole(e.target.value)}
+                  placeholder="e.g. Personal secretary, Programming tutor..."
+                  className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+                />
+                <p className="text-xs text-slate-500 mt-1">Define the AI's role and personality.</p>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-angel-400 mb-2">
                 <Globe size={18} />
@@ -194,7 +233,7 @@ export default function OnboardingModal({ onComplete }: Props) {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-angel-400 mb-2">
                 <MapPin size={18} />
@@ -228,7 +267,7 @@ export default function OnboardingModal({ onComplete }: Props) {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-angel-400 mb-2">
                 <Check size={18} />
@@ -243,6 +282,16 @@ export default function OnboardingModal({ onComplete }: Props) {
                   <span className="text-sm text-slate-400">Gender</span>
                   <span className="text-sm text-slate-200">{gender}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-400">AI Nickname</span>
+                  <span className="text-sm text-slate-200">{sanchoNickname || 'Sancho'}</span>
+                </div>
+                {sanchoRole && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-400">AI Role</span>
+                    <span className="text-sm text-slate-200">{sanchoRole}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-400">Language</span>
                   <span className="text-sm text-slate-200">
