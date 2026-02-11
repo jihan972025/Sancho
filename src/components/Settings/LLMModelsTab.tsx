@@ -10,6 +10,7 @@ interface ProviderDef {
   color: string
   placeholder: string
   isLocal?: boolean
+  isNvidia?: boolean
 }
 
 const providers: ProviderDef[] = [
@@ -25,7 +26,7 @@ const providers: ProviderDef[] = [
   { key: 'llama_api_key', name: 'llama', label: 'LLaMA (Together)', abbr: 'LL', color: '#8b5cf6', placeholder: '...' },
   { key: 'github_api_key', name: 'github', label: 'GitHub Copilot', abbr: 'GH', color: '#6e7681', placeholder: 'ghp_...' },
   { key: 'kimi_api_key', name: 'kimi', label: 'KIMI (Moonshot)', abbr: 'KM', color: '#3b82f6', placeholder: 'sk-...' },
-  { key: 'nvidia_api_key', name: 'nvidia', label: 'NVIDIA NIM', abbr: 'NV', color: '#76b900', placeholder: 'nvapi-...' },
+  { key: 'nvidia_code', name: 'nvidia', label: 'NVIDIA NIM', abbr: 'NV', color: '#76b900', placeholder: '', isNvidia: true },
   { key: 'local', name: 'local', label: 'Local LLM', abbr: 'LC', color: '#10b981', placeholder: '', isLocal: true },
 ]
 
@@ -33,7 +34,15 @@ function isProviderConfigured(config: any, p: ProviderDef): boolean {
   if (p.isLocal) {
     return !!(config.llm.local_llm_base_url)
   }
+  if (p.isNvidia) {
+    return !!(config.llm.nvidia_code)
+  }
   return !!(config.llm[p.key as keyof typeof config.llm])
+}
+
+function detectNvidiaModel(code: string): string {
+  const m = code.match(/"model"\s*:\s*"([^"]+)"/)
+  return m ? m[1] : ''
 }
 
 export default function LLMModelsTab() {
@@ -161,8 +170,30 @@ export default function LLMModelsTab() {
           </div>
         </div>
 
-        {/* API Key / Base URL */}
-        {selectedProvider.isLocal ? (
+        {/* API Key / Base URL / Code Snippet */}
+        {selectedProvider.isNvidia ? (
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Code Snippet</label>
+            <textarea
+              value={config.llm.nvidia_code || ''}
+              onChange={(e) => updateLLMConfig({ nvidia_code: e.target.value })}
+              placeholder={'Paste the full code from NVIDIA NIM website.\n\nExample:\ninvoke_url = "https://integrate.api.nvidia.com/v1/chat/completions"\nheaders = {\n  "Authorization": "Bearer nvapi-...",\n  ...\n}\npayload = {\n  "model": "model-name",\n  ...\n}'}
+              rows={10}
+              className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500 placeholder-slate-600 resize-none leading-relaxed"
+            />
+            {config.llm.nvidia_code && (
+              <div className="mt-2">
+                {detectNvidiaModel(config.llm.nvidia_code) ? (
+                  <p className="text-xs text-emerald-400">
+                    Detected model: <span className="font-semibold">{detectNvidiaModel(config.llm.nvidia_code)}</span>
+                  </p>
+                ) : (
+                  <p className="text-xs text-amber-400">Could not detect model from pasted code</p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : selectedProvider.isLocal ? (
           <div className="space-y-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">Base URL</label>
@@ -217,8 +248,8 @@ export default function LLMModelsTab() {
           </div>
         )}
 
-        {/* Models */}
-        <div>
+        {/* Models (hidden for NVIDIA — model auto-detected from code) */}
+        {!selectedProvider.isNvidia && <div>
           <label className="block text-xs text-slate-400 mb-2">Models</label>
           <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
             {(config.llm.custom_models[selectedProvider.name] || []).map((m) => (
@@ -266,7 +297,7 @@ export default function LLMModelsTab() {
               <Plus size={14} />
             </button>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   )

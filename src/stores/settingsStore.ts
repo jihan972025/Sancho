@@ -29,7 +29,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       llama_api_key: '',
       github_api_key: '',
       kimi_api_key: '',
-      nvidia_api_key: '',
+      nvidia_code: '',
       local_llm_base_url: '',
       local_llm_api_key: '',
       default_model: '',

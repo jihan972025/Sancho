@@ -19,7 +19,7 @@ class LLMConfig(BaseModel):
     llama_api_key: str = ""
     github_api_key: str = ""
     kimi_api_key: str = ""
-    nvidia_api_key: str = ""
+    nvidia_code: str = ""
     local_llm_base_url: str = ""  # e.g. http://localhost:11434/v1 (Ollama)
     local_llm_api_key: str = ""   # Optional — most local LLMs don't require one
     default_model: str = ""

@@ -268,8 +268,8 @@ function stopNotificationPolling(): void {
 
 function createTray(): void {
   const trayIconPath = isDev
-    ? path.join(__dirname, '..', 'img', 'android-chrome-192x192.webp')
-    : path.join(process.resourcesPath, 'assets', 'app-icon.webp')
+    ? path.join(__dirname, '..', 'assets', 'icon.ico')
+    : path.join(process.resourcesPath, 'assets', 'icon.ico')
 
   const trayImage = nativeImage.createFromPath(trayIconPath).resize({ width: 16, height: 16 })
   tray = new Tray(trayImage)

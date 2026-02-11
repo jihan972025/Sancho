@@ -44,6 +44,15 @@ def _build_model_map() -> None:
     _MODEL_TO_PROVIDER.clear()
     config = get_config()
     for provider_cls in ALL_PROVIDERS:
+        # NVIDIA: model is auto-detected from pasted code
+        if provider_cls.name == "nvidia":
+            if config.llm.nvidia_code:
+                from .nvidia_provider import parse_nvidia_code
+                parsed = parse_nvidia_code(config.llm.nvidia_code)
+                model = parsed.get("model", "")
+                if model:
+                    _MODEL_TO_PROVIDER[model] = "nvidia"
+            continue
         # Only user-configured models (from custom_models in settings)
         for model in config.llm.custom_models.get(provider_cls.name, []):
             _MODEL_TO_PROVIDER[model] = provider_cls.name
@@ -65,7 +74,6 @@ _PROVIDER_KEY_MAP = {
     "llama": "llama_api_key",
     "github": "github_api_key",
     "kimi": "kimi_api_key",
-    "nvidia": "nvidia_api_key",
 }
 
 _PROVIDER_CLASS_MAP = {cls.name: cls for cls in ALL_PROVIDERS}
@@ -84,6 +92,16 @@ def _init_provider(provider_name: str) -> Optional[LLMProvider]:
         if not provider_cls:
             return None
         return provider_cls(api_key=llm.local_llm_api_key, base_url=base_url)
+
+    # NVIDIA NIM uses full code snippet
+    if provider_name == "nvidia":
+        code = llm.nvidia_code
+        if not code:
+            return None
+        provider_cls = _PROVIDER_CLASS_MAP.get("nvidia")
+        if not provider_cls:
+            return None
+        return provider_cls(code=code)
 
     key_attr = _PROVIDER_KEY_MAP.get(provider_name)
     if not key_attr:
@@ -119,6 +137,16 @@ def get_available_models() -> list[dict]:
             if llm.local_llm_base_url:
                 for m in llm.custom_models.get("local", []):
                     models.append({"id": m, "provider": "local"})
+            continue
+
+        # NVIDIA NIM: model auto-detected from code snippet
+        if provider_cls.name == "nvidia":
+            if llm.nvidia_code:
+                from .nvidia_provider import parse_nvidia_code
+                parsed = parse_nvidia_code(llm.nvidia_code)
+                model = parsed.get("model", "")
+                if model:
+                    models.append({"id": model, "provider": "nvidia"})
             continue
 
         key_attr = _PROVIDER_KEY_MAP.get(provider_cls.name, "")

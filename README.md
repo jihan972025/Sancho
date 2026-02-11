@@ -141,7 +141,7 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 ## Installation
 
 ### Installer
-Download [Sancho Setup 1.0.4.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.4/Sancho.Setup.1.0.4.exe) — all dependencies are bundled (no separate installation required).
+Download [Sancho Setup 1.0.5.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.5/Sancho.Setup.1.0.5.exe) — all dependencies are bundled (no separate installation required).
 
 
 ## Tech Stack

@@ -53,7 +53,7 @@ export interface LLMConfig {
   llama_api_key: string
   github_api_key: string
   kimi_api_key: string
-  nvidia_api_key: string
+  nvidia_code: string
   local_llm_base_url: string
   local_llm_api_key: string
   default_model: string
