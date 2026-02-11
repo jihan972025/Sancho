@@ -114,7 +114,7 @@ export default function PatchNotification() {
 
           {state === 'success' && (
             <p className="text-xs text-slate-400 mb-3">
-              Restart to apply the update.
+              Installing update... The app will restart shortly.
             </p>
           )}
 
@@ -141,12 +141,7 @@ export default function PatchNotification() {
               </>
             )}
             {state === 'success' && (
-              <button
-                onClick={handleRestart}
-                className="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-              >
-                Restart Now
-              </button>
+              <p className="text-xs text-emerald-400 animate-pulse">Launching installer...</p>
             )}
             {state === 'error' && (
               <button
