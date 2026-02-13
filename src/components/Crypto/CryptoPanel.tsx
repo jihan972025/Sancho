@@ -140,9 +140,9 @@ export default function CryptoPanel() {
 
   const startAnalysis = async () => {
     if (!selectedCoin || selectedStrategies.length === 0 || !selectedModel) return
-    // Timeframe required only if TA strategies selected
+    // Default to ['1d'] if TA strategies selected but no timeframe chosen
     const hasTaStrategies = selectedStrategies.some((s) => !s.startsWith('bt_'))
-    if (hasTaStrategies && selectedTimeframes.length === 0) return
+    const effectiveTimeframes = hasTaStrategies && selectedTimeframes.length === 0 ? ['1d'] : selectedTimeframes
 
     setIsAnalyzing(true)
     setProgress('')
@@ -159,7 +159,7 @@ export default function CryptoPanel() {
         body: JSON.stringify({
           coin: selectedCoin,
           strategies: selectedStrategies,
-          timeframes: selectedTimeframes,
+          timeframes: effectiveTimeframes,
           model: selectedModel,
           backtest_timeframe: btTimeframe,
           backtest_period_days: btPeriodDays,

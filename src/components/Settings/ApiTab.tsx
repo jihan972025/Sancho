@@ -572,7 +572,7 @@ export default function ApiTab() {
   const [paidCollapsed, setPaidCollapsed] = useState(false)
 
   const renderServiceGrid = (list: ServiceDef[]) => (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-10 gap-2">
       {list.map((svc) => {
         const Icon = svc.icon
         const configured = svc.isConfigured(api)

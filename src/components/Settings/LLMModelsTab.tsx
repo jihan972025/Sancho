@@ -90,9 +90,9 @@ export default function LLMModelsTab() {
   return (
     <div className="flex gap-6 min-h-[480px]">
       {/* Left: Provider Icon Grid */}
-      <div className="w-[280px] flex-shrink-0">
+      <div className="w-[420px] flex-shrink-0">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Providers</h2>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-6 gap-2">
           {providers.map((p) => {
             const configured = isProviderConfigured(config, p)
             const isActive = selected === p.name

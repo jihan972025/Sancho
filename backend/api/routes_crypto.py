@@ -414,6 +414,20 @@ def _build_system_prompt(coin: str, strategies: list[str], language: str, today_
         lang_open = f"[IMPORTANT: You MUST respond ENTIRELY in {lang_name}. All headings, sentences, and explanations must be written in {lang_name}. Only technical abbreviations like RSI, MACD, SMA, OHLCV may remain in English.]\n\n"
         lang_close = f"\n\n[REMINDER: Your response language is {lang_name}. Write everything in {lang_name}.]"
 
+    backtest_guidelines = ""
+    if has_backtest:
+        backtest_guidelines = """
+## Backtest Results Analysis Guidelines
+When backtest results are provided in the data section, you MUST:
+1. Analyze each backtest strategy's performance metrics (total return, win rate, max drawdown, profit factor).
+2. Compare the strategy's return against Buy & Hold return — is the strategy adding alpha?
+3. Evaluate the risk-adjusted performance: high return with low drawdown is ideal.
+4. Review the trade history for patterns (are wins clustered? are losses getting bigger?).
+5. Assess strategy strengths and weaknesses based on the data.
+6. Combine backtest insights with the current technical analysis to form a stronger recommendation.
+7. If DRL/ML strategies are included, comment on model quality (accuracy, feature importance).
+"""
+
     return f"""{lang_open}You are a cryptocurrency technical analysis expert. Provide a detailed analysis of {coin_name}({coin}) based on the strategies below.
 
 ## IMPORTANT: Today's Reference Price
@@ -441,18 +455,7 @@ Focus your analysis ONLY on these timeframes. Data for other timeframes is not p
 11. Highlight confluence — when 2-3 indicators give the same signal. This is critical for confidence.
 12. End with a comprehensive summary: overall judgment, specific entry price, stop-loss level, take-profit targets (all with % from current price), and risk factors.
 13. Write a LONG, DETAILED analysis. Do NOT summarize briefly. Cover every angle the selected strategies require.
-
-{"" if not has_backtest else """
-## Backtest Results Analysis Guidelines
-When backtest results are provided in the data section, you MUST:
-1. Analyze each backtest strategy's performance metrics (total return, win rate, max drawdown, profit factor).
-2. Compare the strategy's return against Buy & Hold return — is the strategy adding alpha?
-3. Evaluate the risk-adjusted performance: high return with low drawdown is ideal.
-4. Review the trade history for patterns (are wins clustered? are losses getting bigger?).
-5. Assess strategy strengths and weaknesses based on the data.
-6. Combine backtest insights with the current technical analysis to form a stronger recommendation.
-7. If DRL/ML strategies are included, comment on model quality (accuracy, feature importance).
-"""}
+{backtest_guidelines}
 ## Disclaimer
 Always include at the end: "This analysis is reference material based on technical indicators. Investment decisions should be made at your own judgment and responsibility."
 
