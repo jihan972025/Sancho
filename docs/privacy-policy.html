@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sancho - Privacy Policy / 개인정보처리방침</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.7;
+      color: #e2e8f0;
+      background: #0f172a;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 3rem;
+      border: 1px solid #334155;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #f1f5f9;
+    }
+    h2 {
+      font-size: 1.3rem;
+      margin-top: 2rem;
+      margin-bottom: 0.8rem;
+      color: #38bdf8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 0.4rem;
+    }
+    p, li {
+      margin-bottom: 0.6rem;
+      color: #cbd5e1;
+    }
+    ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+    .lang-toggle {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .lang-toggle button {
+      padding: 0.5rem 1.2rem;
+      border: 1px solid #475569;
+      background: transparent;
+      color: #94a3b8;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .lang-toggle button.active {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+      font-weight: 600;
+    }
+    .lang-toggle button:hover:not(.active) {
+      border-color: #38bdf8;
+      color: #e2e8f0;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #334155;
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sancho</h1>
+    <p class="subtitle">Privacy Policy / 개인정보처리방침</p>
+
+    <div class="lang-toggle">
+      <button id="btn-ko" class="active" onclick="switchLang('ko')">한국어</button>
+      <button id="btn-en" onclick="switchLang('en')">English</button>
+    </div>
+
+    <!-- Korean -->
+    <div id="section-ko" class="section active">
+      <h2>1. 개요</h2>
+      <p>Sancho(이하 "앱")는 사용자의 개인정보를 소중히 보호합니다. 본 개인정보처리방침은 앱이 수집하는 정보와 그 사용 방법을 설명합니다.</p>
+
+      <h2>2. 수집하는 정보</h2>
+      <p>Google 계정으로 로그인 시 다음 정보를 수집합니다:</p>
+      <ul>
+        <li><strong>이메일 주소</strong> - 사용자 식별 및 프로필 표시</li>
+        <li><strong>이름</strong> - 프로필 표시</li>
+        <li><strong>프로필 사진 URL</strong> - 프로필 표시</li>
+      </ul>
+      <p>이 정보는 Google OAuth 2.0의 <code>openid</code>, <code>email</code>, <code>profile</code> 범위를 통해 수집됩니다.</p>
+
+      <h2>3. 정보 저장 방식</h2>
+      <ul>
+        <li>수집된 정보는 <strong>사용자의 로컬 컴퓨터에만</strong> 저장됩니다.</li>
+        <li>외부 서버로 전송되거나 저장되지 않습니다.</li>
+        <li>데이터는 사용자 홈 디렉토리의 설정 파일(<code>~/.sancho/config.json</code>)에 저장됩니다.</li>
+      </ul>
+
+      <h2>4. 정보 사용 목적</h2>
+      <ul>
+        <li>앱 내 사용자 프로필 표시</li>
+        <li>Google 서비스 연동 (캘린더, 이메일 등) 인증</li>
+      </ul>
+
+      <h2>5. 정보 공유</h2>
+      <p>수집된 개인정보는 <strong>제3자와 공유하지 않습니다</strong>. 모든 데이터는 사용자의 로컬 기기에만 존재합니다.</p>
+
+      <h2>6. 데이터 삭제</h2>
+      <p>사용자는 언제든지 다음 방법으로 데이터를 삭제할 수 있습니다:</p>
+      <ul>
+        <li>앱 내 Settings > 내 정보 > 로그아웃 버튼 클릭</li>
+        <li><code>~/.sancho/config.json</code> 파일에서 직접 삭제</li>
+        <li>앱 삭제 시 관련 데이터 자동 삭제</li>
+      </ul>
+
+      <h2>7. 보안</h2>
+      <p>OAuth 토큰과 개인정보는 사용자 로컬 환경에만 저장되므로 외부 노출 위험이 최소화됩니다. 앱은 필요 최소한의 권한(이메일, 프로필)만 요청합니다.</p>
+
+      <h2>8. 아동 개인정보</h2>
+      <p>본 앱은 13세 미만 아동을 대상으로 하지 않으며, 의도적으로 아동의 개인정보를 수집하지 않습니다.</p>
+
+      <h2>9. 변경사항</h2>
+      <p>본 개인정보처리방침은 변경될 수 있으며, 변경 시 이 페이지를 통해 공지합니다.</p>
+
+      <h2>10. 문의</h2>
+      <p>개인정보처리방침에 대한 문의는 GitHub 리포지토리의 <a href="https://github.com/jihan972025/Sancho/issues">Issues</a>를 통해 연락해 주세요.</p>
+
+      <div class="footer">
+        <p>최종 수정일: 2025년 2월</p>
+        <p>Sancho &copy; 2025. All rights reserved.</p>
+      </div>
+    </div>
+
+    <!-- English -->
+    <div id="section-en" class="section">
+      <h2>1. Overview</h2>
+      <p>Sancho (the "App") values and protects your personal information. This Privacy Policy explains what information the App collects and how it is used.</p>
+
+      <h2>2. Information We Collect</h2>
+      <p>When you sign in with your Google account, we collect the following information:</p>
+      <ul>
+        <li><strong>Email address</strong> - For user identification and profile display</li>
+        <li><strong>Name</strong> - For profile display</li>
+        <li><strong>Profile picture URL</strong> - For profile display</li>
+      </ul>
+      <p>This information is collected through Google OAuth 2.0 using the <code>openid</code>, <code>email</code>, and <code>profile</code> scopes.</p>
+
+      <h2>3. How We Store Information</h2>
+      <ul>
+        <li>All collected information is stored <strong>only on your local computer</strong>.</li>
+        <li>No data is transmitted to or stored on external servers.</li>
+        <li>Data is saved in a configuration file (<code>~/.sancho/config.json</code>) in your home directory.</li>
+      </ul>
+
+      <h2>4. How We Use Information</h2>
+      <ul>
+        <li>Displaying user profile within the App</li>
+        <li>Authentication for Google service integrations (Calendar, Email, etc.)</li>
+      </ul>
+
+      <h2>5. Information Sharing</h2>
+      <p>We <strong>do not share</strong> your personal information with third parties. All data exists only on your local device.</p>
+
+      <h2>6. Data Deletion</h2>
+      <p>You can delete your data at any time by:</p>
+      <ul>
+        <li>Clicking the Logout button in Settings > Profile</li>
+        <li>Manually deleting the <code>~/.sancho/config.json</code> file</li>
+        <li>Uninstalling the App (related data will be removed)</li>
+      </ul>
+
+      <h2>7. Security</h2>
+      <p>OAuth tokens and personal information are stored only in your local environment, minimizing the risk of external exposure. The App only requests the minimum necessary permissions (email, profile).</p>
+
+      <h2>8. Children's Privacy</h2>
+      <p>This App is not intended for children under 13 years of age, and we do not knowingly collect personal information from children.</p>
+
+      <h2>9. Changes</h2>
+      <p>This Privacy Policy may be updated from time to time. Any changes will be posted on this page.</p>
+
+      <h2>10. Contact</h2>
+      <p>For questions about this Privacy Policy, please contact us through the <a href="https://github.com/jihan972025/Sancho/issues">Issues</a> section of our GitHub repository.</p>
+
+      <div class="footer">
+        <p>Last updated: February 2025</p>
+        <p>Sancho &copy; 2025. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchLang(lang) {
+      document.getElementById('section-ko').classList.toggle('active', lang === 'ko');
+      document.getElementById('section-en').classList.toggle('active', lang === 'en');
+      document.getElementById('btn-ko').classList.toggle('active', lang === 'ko');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    }
+  </script>
+</body>
+</html>
