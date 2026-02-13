@@ -1,4 +1,4 @@
-import { MessageSquare, CalendarClock, Settings, ScrollText } from 'lucide-react'
+import { MessageSquare, CandlestickChart, CalendarClock, Settings, ScrollText } from 'lucide-react'
 
 interface Props {
   activeTab: string
@@ -7,6 +7,7 @@ interface Props {
 
 const tabs = [
   { id: 'chat', icon: MessageSquare, label: 'Chat' },
+  { id: 'crypto', icon: CandlestickChart, label: 'Crypto Analysis' },
   { id: 'scheduler', icon: CalendarClock, label: 'Scheduler' },
   { id: 'logs', icon: ScrollText, label: 'Logs' },
   { id: 'settings', icon: Settings, label: 'Settings' },

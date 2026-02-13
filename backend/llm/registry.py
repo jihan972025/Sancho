@@ -14,6 +14,9 @@ from .qwen_provider import QwenProvider
 from .llama_provider import LLaMAProvider
 from .github_provider import GitHubCopilotProvider
 from .kimi_provider import KimiProvider
+from .openrouter_provider import OpenRouterProvider
+from .cloudflare_provider import CloudflareProvider
+from .google_ai_studio_provider import GoogleAIStudioProvider
 from .nvidia_provider import NvidiaProvider
 from .local_provider import LocalLLMProvider
 
@@ -31,6 +34,9 @@ ALL_PROVIDERS = [
     LLaMAProvider,
     GitHubCopilotProvider,
     KimiProvider,
+    OpenRouterProvider,
+    CloudflareProvider,
+    GoogleAIStudioProvider,
     NvidiaProvider,
     LocalLLMProvider,
 ]
@@ -74,6 +80,8 @@ _PROVIDER_KEY_MAP = {
     "llama": "llama_api_key",
     "github": "github_api_key",
     "kimi": "kimi_api_key",
+    "openrouter": "openrouter_api_key",
+    "google_ai_studio": "google_ai_studio_api_key",
 }
 
 _PROVIDER_CLASS_MAP = {cls.name: cls for cls in ALL_PROVIDERS}
@@ -92,6 +100,17 @@ def _init_provider(provider_name: str) -> Optional[LLMProvider]:
         if not provider_cls:
             return None
         return provider_cls(api_key=llm.local_llm_api_key, base_url=base_url)
+
+    # Cloudflare Workers AI needs account_id + api_key
+    if provider_name == "cloudflare":
+        account_id = llm.cloudflare_account_id
+        api_key = llm.cloudflare_api_key
+        if not account_id or not api_key:
+            return None
+        provider_cls = _PROVIDER_CLASS_MAP.get("cloudflare")
+        if not provider_cls:
+            return None
+        return provider_cls(api_key=api_key, account_id=account_id)
 
     # NVIDIA NIM uses full code snippet
     if provider_name == "nvidia":
@@ -137,6 +156,13 @@ def get_available_models() -> list[dict]:
             if llm.local_llm_base_url:
                 for m in llm.custom_models.get("local", []):
                     models.append({"id": m, "provider": "local"})
+            continue
+
+        # Cloudflare: available when both account_id and api_key are set
+        if provider_cls.name == "cloudflare":
+            if llm.cloudflare_account_id and llm.cloudflare_api_key:
+                for m in llm.custom_models.get("cloudflare", []):
+                    models.append({"id": m, "provider": "cloudflare"})
             continue
 
         # NVIDIA NIM: model auto-detected from code snippet

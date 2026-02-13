@@ -350,6 +350,19 @@ const services: ServiceDef[] = [
     ],
     description: 'Slack workspace messaging.',
   },
+  {
+    id: 'upbit',
+    name: 'Upbit',
+    icon: TrendingUp,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10 border-blue-500/20',
+    isConfigured: (api) => !!(api.upbit_access_key && api.upbit_secret_key),
+    fields: [
+      { key: 'upbit_access_key', label: 'Access Key', placeholder: 'Upbit Open API Access Key', secret: true },
+      { key: 'upbit_secret_key', label: 'Secret Key', placeholder: 'Upbit Open API Secret Key', secret: true },
+    ],
+    description: 'Upbit cryptocurrency exchange API (KRW market). Get keys at upbit.com/mypage/open_api_management.',
+  },
 ]
 
 const EMPTY_CUSTOM_API: CustomApiDef = {

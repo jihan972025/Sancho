@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Sidebar from './components/Layout/Sidebar'
 import Header from './components/Layout/Header'
 import ChatWindow from './components/Chat/ChatWindow'
+import CryptoPanel from './components/Crypto/CryptoPanel'
 import SchedulerPanel from './components/Scheduler/SchedulerPanel'
 import SettingsPanel from './components/Settings/SettingsPanel'
 import LogPanel from './components/Log/LogPanel'
@@ -12,7 +13,7 @@ import { useChatStore } from './stores/chatStore'
 import { useMemoryStore } from './stores/memoryStore'
 import PatchNotification from './components/PatchNotification'
 
-type Tab = 'chat' | 'scheduler' | 'logs' | 'settings'
+type Tab = 'chat' | 'crypto' | 'scheduler' | 'logs' | 'settings'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
@@ -122,6 +123,7 @@ export default function App() {
           ) : (
             <>
               {activeTab === 'chat' && <ChatWindow />}
+              {activeTab === 'crypto' && <CryptoPanel />}
               {activeTab === 'scheduler' && <SchedulerPanel />}
               {activeTab === 'logs' && <LogPanel />}
               {activeTab === 'settings' && <SettingsPanel />}

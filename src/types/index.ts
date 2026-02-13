@@ -53,6 +53,10 @@ export interface LLMConfig {
   llama_api_key: string
   github_api_key: string
   kimi_api_key: string
+  openrouter_api_key: string
+  cloudflare_account_id: string
+  cloudflare_api_key: string
+  google_ai_studio_api_key: string
   nvidia_code: string
   local_llm_base_url: string
   local_llm_api_key: string
@@ -104,6 +108,8 @@ export interface ApiConfig {
   confluence_api_token: string
   slack_bot_token: string
   slack_app_token: string
+  upbit_access_key: string
+  upbit_secret_key: string
 }
 
 export interface NotifyApps {

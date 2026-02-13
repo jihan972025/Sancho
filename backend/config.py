@@ -19,6 +19,10 @@ class LLMConfig(BaseModel):
     llama_api_key: str = ""
     github_api_key: str = ""
     kimi_api_key: str = ""
+    openrouter_api_key: str = ""
+    cloudflare_account_id: str = ""
+    cloudflare_api_key: str = ""
+    google_ai_studio_api_key: str = ""
     nvidia_code: str = ""
     local_llm_base_url: str = ""  # e.g. http://localhost:11434/v1 (Ollama)
     local_llm_api_key: str = ""   # Optional — most local LLMs don't require one
@@ -157,6 +161,8 @@ class ApiConfig(BaseModel):
     confluence_api_token: str = ""
     slack_bot_token: str = ""
     slack_app_token: str = ""
+    upbit_access_key: str = ""
+    upbit_secret_key: str = ""
 
 
 class AppConfig(BaseModel):

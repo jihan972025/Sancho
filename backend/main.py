@@ -14,6 +14,7 @@ from backend.api.routes_telegram import router as telegram_router
 from backend.api.routes_matrix import router as matrix_router
 from backend.api.routes_scheduler import router as scheduler_router
 from backend.api.routes_memory import router as memory_router
+from backend.api.routes_crypto import router as crypto_router
 from backend.api.routes_logs import router as logs_router, log_handler
 
 logging.basicConfig(
@@ -51,6 +52,7 @@ app.include_router(telegram_router)
 app.include_router(matrix_router)
 app.include_router(scheduler_router)
 app.include_router(memory_router)
+app.include_router(crypto_router)
 app.include_router(logs_router)
 
 

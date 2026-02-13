@@ -11,6 +11,7 @@ interface ProviderDef {
   placeholder: string
   isLocal?: boolean
   isNvidia?: boolean
+  isCloudflare?: boolean
 }
 
 const providers: ProviderDef[] = [
@@ -26,6 +27,9 @@ const providers: ProviderDef[] = [
   { key: 'llama_api_key', name: 'llama', label: 'LLaMA (Together)', abbr: 'LL', color: '#8b5cf6', placeholder: '...' },
   { key: 'github_api_key', name: 'github', label: 'GitHub Copilot', abbr: 'GH', color: '#6e7681', placeholder: 'ghp_...' },
   { key: 'kimi_api_key', name: 'kimi', label: 'KIMI (Moonshot)', abbr: 'KM', color: '#3b82f6', placeholder: 'sk-...' },
+  { key: 'openrouter_api_key', name: 'openrouter', label: 'OpenRouter', abbr: 'OR', color: '#ff6b6b', placeholder: 'sk-or-...' },
+  { key: 'cloudflare_api_key', name: 'cloudflare', label: 'Cloudflare AI', abbr: 'CF', color: '#f48120', placeholder: '', isCloudflare: true },
+  { key: 'google_ai_studio_api_key', name: 'google_ai_studio', label: 'Google AI Studio', abbr: 'AS', color: '#ea4335', placeholder: 'AI...' },
   { key: 'nvidia_code', name: 'nvidia', label: 'NVIDIA NIM', abbr: 'NV', color: '#76b900', placeholder: '', isNvidia: true },
   { key: 'local', name: 'local', label: 'Local LLM', abbr: 'LC', color: '#10b981', placeholder: '', isLocal: true },
 ]
@@ -36,6 +40,9 @@ function isProviderConfigured(config: any, p: ProviderDef): boolean {
   }
   if (p.isNvidia) {
     return !!(config.llm.nvidia_code)
+  }
+  if (p.isCloudflare) {
+    return !!(config.llm.cloudflare_account_id && config.llm.cloudflare_api_key)
   }
   return !!(config.llm[p.key as keyof typeof config.llm])
 }
@@ -171,7 +178,38 @@ export default function LLMModelsTab() {
         </div>
 
         {/* API Key / Base URL / Code Snippet */}
-        {selectedProvider.isNvidia ? (
+        {selectedProvider.isCloudflare ? (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Account ID</label>
+              <input
+                type="text"
+                value={config.llm.cloudflare_account_id || ''}
+                onChange={(e) => updateLLMConfig({ cloudflare_account_id: e.target.value })}
+                placeholder="e.g. 1a2b3c4d5e6f..."
+                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-orange-500 placeholder-slate-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">API Token</label>
+              <div className="flex gap-2">
+                <input
+                  type={showKeys['cloudflare_api_key'] ? 'text' : 'password'}
+                  value={config.llm.cloudflare_api_key || ''}
+                  onChange={(e) => updateLLMConfig({ cloudflare_api_key: e.target.value })}
+                  placeholder="Bearer token"
+                  className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-orange-500 placeholder-slate-600"
+                />
+                <button
+                  onClick={() => toggleShow('cloudflare_api_key')}
+                  className="w-10 h-10 bg-slate-900 border border-slate-600 rounded-lg flex items-center justify-center text-slate-400 hover:text-white"
+                >
+                  {showKeys['cloudflare_api_key'] ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : selectedProvider.isNvidia ? (
           <div>
             <label className="block text-xs text-slate-400 mb-1">Code Snippet</label>
             <textarea
