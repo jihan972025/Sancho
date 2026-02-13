@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "Мой профиль",
     "language": "Язык",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "Язык",
     "matrixPasswordHelp": "Пароль вашей учётной записи Element X. Если вы зарегистрировались через SSO (Gmail и т.д.), используйте токен доступа ниже.",
     "matrixTokenHelp": "Если зарегистрированы через SSO без пароля: Element Web → Settings → Help & About → Скопировать токен доступа"
+  },
+  "profile": {
+    "googleAccount": "Аккаунт Google",
+    "signInWithGoogle": "Войти через Google",
+    "logout": "Выйти",
+    "userInfo": "Информация о пользователе",
+    "name": "Имя",
+    "gender": "Пол",
+    "language": "Язык",
+    "country": "Страна",
+    "city": "Город",
+    "sanchoIdentity": "Информация о Sancho",
+    "nickname": "Псевдоним",
+    "role": "Роль",
+    "saveProfile": "Сохранить профиль",
+    "needGoogleCredentials": "Сначала настройте Gmail Client ID/Secret в Settings > API."
   },
   "logs": {
     "title": "Логи сервера",

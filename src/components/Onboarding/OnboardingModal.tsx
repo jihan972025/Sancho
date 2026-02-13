@@ -1,65 +1,7 @@
 import { useState } from 'react'
 import { User, Globe, MapPin, ChevronRight, ChevronLeft, Check, Bot } from 'lucide-react'
 import { saveUserProfile, saveSanchoProfile } from '../../api/client'
-
-const LANGUAGES = [
-  { code: 'en', name: 'English', native: 'English' },
-  { code: 'ko', name: 'Korean', native: '한국어' },
-  { code: 'ja', name: 'Japanese', native: '日本語' },
-  { code: 'zh', name: 'Chinese (Simplified)', native: '简体中文' },
-  { code: 'zh-TW', name: 'Chinese (Traditional)', native: '繁體中文' },
-  { code: 'es', name: 'Spanish', native: 'Español' },
-  { code: 'fr', name: 'French', native: 'Français' },
-  { code: 'de', name: 'German', native: 'Deutsch' },
-  { code: 'pt', name: 'Portuguese', native: 'Português' },
-  { code: 'ru', name: 'Russian', native: 'Русский' },
-  { code: 'ar', name: 'Arabic', native: 'العربية' },
-  { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
-  { code: 'vi', name: 'Vietnamese', native: 'Tiếng Việt' },
-  { code: 'th', name: 'Thai', native: 'ไทย' },
-  { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia' },
-  { code: 'tr', name: 'Turkish', native: 'Türkçe' },
-]
-
-const GENDERS = [
-  { value: 'Male', label: 'Male' },
-  { value: 'Female', label: 'Female' },
-  { value: 'Other', label: 'Other' },
-  { value: 'Prefer not to say', label: 'Prefer not to say' },
-]
-
-const COUNTRIES = [
-  { code: 'US', name: 'United States', native: '🇺🇸 United States' },
-  { code: 'KR', name: 'South Korea', native: '🇰🇷 대한민국' },
-  { code: 'JP', name: 'Japan', native: '🇯🇵 日本' },
-  { code: 'CN', name: 'China', native: '🇨🇳 中国' },
-  { code: 'TW', name: 'Taiwan', native: '🇹🇼 台灣' },
-  { code: 'GB', name: 'United Kingdom', native: '🇬🇧 United Kingdom' },
-  { code: 'CA', name: 'Canada', native: '🇨🇦 Canada' },
-  { code: 'AU', name: 'Australia', native: '🇦🇺 Australia' },
-  { code: 'DE', name: 'Germany', native: '🇩🇪 Deutschland' },
-  { code: 'FR', name: 'France', native: '🇫🇷 France' },
-  { code: 'ES', name: 'Spain', native: '🇪🇸 España' },
-  { code: 'IT', name: 'Italy', native: '🇮🇹 Italia' },
-  { code: 'PT', name: 'Portugal', native: '🇵🇹 Portugal' },
-  { code: 'BR', name: 'Brazil', native: '🇧🇷 Brasil' },
-  { code: 'MX', name: 'Mexico', native: '🇲🇽 México' },
-  { code: 'AR', name: 'Argentina', native: '🇦🇷 Argentina' },
-  { code: 'IN', name: 'India', native: '🇮🇳 India' },
-  { code: 'RU', name: 'Russia', native: '🇷🇺 Россия' },
-  { code: 'TR', name: 'Turkey', native: '🇹🇷 Türkiye' },
-  { code: 'SA', name: 'Saudi Arabia', native: '🇸🇦 السعودية' },
-  { code: 'AE', name: 'UAE', native: '🇦🇪 الإمارات' },
-  { code: 'TH', name: 'Thailand', native: '🇹🇭 ประเทศไทย' },
-  { code: 'VN', name: 'Vietnam', native: '🇻🇳 Việt Nam' },
-  { code: 'ID', name: 'Indonesia', native: '🇮🇩 Indonesia' },
-  { code: 'PH', name: 'Philippines', native: '🇵🇭 Philippines' },
-  { code: 'MY', name: 'Malaysia', native: '🇲🇾 Malaysia' },
-  { code: 'SG', name: 'Singapore', native: '🇸🇬 Singapore' },
-  { code: 'NL', name: 'Netherlands', native: '🇳🇱 Nederland' },
-  { code: 'SE', name: 'Sweden', native: '🇸🇪 Sverige' },
-  { code: 'PL', name: 'Poland', native: '🇵🇱 Polska' },
-]
+import { LANGUAGES, GENDERS, COUNTRIES } from '../../constants/profileOptions'
 
 interface Props {
   onComplete: () => void

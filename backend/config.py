@@ -165,6 +165,16 @@ class ApiConfig(BaseModel):
     upbit_secret_key: str = ""
 
 
+class GoogleAuthConfig(BaseModel):
+    access_token: str = ""
+    refresh_token: str = ""
+    token_expiry: str = ""
+    email: str = ""
+    name: str = ""
+    picture_url: str = ""
+    logged_in: bool = False
+
+
 class AppConfig(BaseModel):
     llm: LLMConfig = LLMConfig()
     whatsapp: WhatsAppConfig = WhatsAppConfig()
@@ -174,6 +184,7 @@ class AppConfig(BaseModel):
     custom_apis: list[CustomApiDef] = []
     safe_directories: list[str] = []
     browser_headless: bool = False
+    google_auth: GoogleAuthConfig = GoogleAuthConfig()
     language: str = "en"
 
 

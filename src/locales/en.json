@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "My Profile",
     "language": "Language",
     "languageEn": "English",
     "languageKo": "Korean",
@@ -73,6 +74,22 @@
     "languageDesc": "Select your preferred language for the Sancho interface.",
     "matrixPasswordHelp": "Password for your Element X account. If you signed up with SSO (Gmail, etc.), use Access Token below.",
     "matrixTokenHelp": "If signed up via SSO without password: Element Web → Settings → Help & About → Copy Access Token"
+  },
+  "profile": {
+    "googleAccount": "Google Account",
+    "signInWithGoogle": "Sign in with Google",
+    "logout": "Logout",
+    "userInfo": "User Information",
+    "name": "Name",
+    "gender": "Gender",
+    "language": "Language",
+    "country": "Country",
+    "city": "City",
+    "sanchoIdentity": "Sancho's Identity",
+    "nickname": "Nickname",
+    "role": "Role",
+    "saveProfile": "Save Profile",
+    "needGoogleCredentials": "Please set Gmail Client ID/Secret in Settings > API first."
   },
   "logs": {
     "title": "Server Logs",

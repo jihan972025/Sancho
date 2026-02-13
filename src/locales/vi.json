@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "Thông tin cá nhân",
     "language": "Ngôn ngữ",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "Ngôn ngữ",
     "matrixPasswordHelp": "Mật khẩu tài khoản Element X của bạn. Nếu bạn đăng ký bằng SSO (Gmail, v.v.), hãy sử dụng Mã truy cập bên dưới.",
     "matrixTokenHelp": "Nếu đăng ký qua SSO không có mật khẩu: Element Web → Settings → Help & About → Sao chép Mã truy cập"
+  },
+  "profile": {
+    "googleAccount": "Tài khoản Google",
+    "signInWithGoogle": "Đăng nhập bằng Google",
+    "logout": "Đăng xuất",
+    "userInfo": "Thông tin người dùng",
+    "name": "Tên",
+    "gender": "Giới tính",
+    "language": "Ngôn ngữ",
+    "country": "Quốc gia",
+    "city": "Thành phố",
+    "sanchoIdentity": "Thông tin Sancho",
+    "nickname": "Biệt danh",
+    "role": "Vai trò",
+    "saveProfile": "Lưu hồ sơ",
+    "needGoogleCredentials": "Vui lòng thiết lập Gmail Client ID/Secret trong Settings > API trước."
   },
   "logs": {
     "title": "Nhật ký máy chủ",

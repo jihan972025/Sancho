@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "ข้อมูลของฉัน",
     "language": "ภาษา",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "ภาษา",
     "matrixPasswordHelp": "รหัสผ่านบัญชี Element X ของคุณ หากสมัครด้วย SSO (Gmail เป็นต้น) ให้ใช้โทเค็นการเข้าถึงด้านล่าง",
     "matrixTokenHelp": "หากสมัครผ่าน SSO โดยไม่มีรหัสผ่าน: Element Web → Settings → Help & About → คัดลอกโทเค็นการเข้าถึง"
+  },
+  "profile": {
+    "googleAccount": "บัญชี Google",
+    "signInWithGoogle": "เข้าสู่ระบบด้วย Google",
+    "logout": "ออกจากระบบ",
+    "userInfo": "ข้อมูลผู้ใช้",
+    "name": "ชื่อ",
+    "gender": "เพศ",
+    "language": "ภาษา",
+    "country": "ประเทศ",
+    "city": "เมือง",
+    "sanchoIdentity": "ข้อมูล Sancho",
+    "nickname": "ชื่อเล่น",
+    "role": "บทบาท",
+    "saveProfile": "บันทึกโปรไฟล์",
+    "needGoogleCredentials": "กรุณาตั้งค่า Gmail Client ID/Secret ใน Settings > API ก่อน"
   },
   "logs": {
     "title": "บันทึกเซิร์ฟเวอร์",

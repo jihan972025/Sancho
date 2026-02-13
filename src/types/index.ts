@@ -165,6 +165,16 @@ export interface Memory {
   enabled: boolean
 }
 
+export interface GoogleAuthConfig {
+  access_token: string
+  refresh_token: string
+  token_expiry: string
+  email: string
+  name: string
+  picture_url: string
+  logged_in: boolean
+}
+
 export interface AppConfig {
   llm: LLMConfig
   whatsapp: WhatsAppConfig
@@ -174,6 +184,7 @@ export interface AppConfig {
   custom_apis: CustomApiDef[]
   safe_directories: string[]
   browser_headless: boolean
+  google_auth: GoogleAuthConfig
   language: string
 }
 

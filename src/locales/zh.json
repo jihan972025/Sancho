@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "我的信息",
     "language": "语言",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "语言",
     "matrixPasswordHelp": "Element X账户的密码。如果使用SSO（Gmail等）注册，请使用下方的访问令牌。",
     "matrixTokenHelp": "如果通过SSO注册且没有密码：Element Web → Settings → Help & About → 复制访问令牌"
+  },
+  "profile": {
+    "googleAccount": "Google账号",
+    "signInWithGoogle": "使用Google登录",
+    "logout": "退出登录",
+    "userInfo": "用户信息",
+    "name": "姓名",
+    "gender": "性别",
+    "language": "语言",
+    "country": "国家",
+    "city": "城市",
+    "sanchoIdentity": "Sancho信息",
+    "nickname": "昵称",
+    "role": "角色",
+    "saveProfile": "保存资料",
+    "needGoogleCredentials": "请先在 Settings > API 中设置 Gmail Client ID/Secret。"
   },
   "logs": {
     "title": "服务器日志",

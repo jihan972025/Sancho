@@ -7,6 +7,7 @@ import { initTelegram, connectTelegram, disconnectTelegram, getTelegramStatus, s
 import { initMatrix, connectMatrix, disconnectMatrix, getMatrixStatus, sendMatrixMessage } from './matrix'
 import { setSelectedModel } from './selectedModel'
 import { startPeriodicCheck, stopPeriodicCheck, checkForUpdate, applyPatch, dismissUpdate } from './updater'
+import { startGoogleOAuth } from './googleAuth'
 
 let mainWindow: BrowserWindow | null = null
 let pythonProcess: ChildProcess | null = null
@@ -463,4 +464,38 @@ ipcMain.handle('patch:dismiss', (_event, version: string) => {
 ipcMain.handle('patch:restart', () => {
   app.relaunch()
   app.exit(0)
+})
+
+// Google OAuth IPC handlers
+ipcMain.handle('google-auth:login', async () => {
+  return startGoogleOAuth()
+})
+
+ipcMain.handle('google-auth:status', async () => {
+  const http = await import('http')
+  const data: string = await new Promise((resolve, reject) => {
+    http.get('http://127.0.0.1:8765/api/auth/google/status', (res) => {
+      let body = ''
+      res.on('data', (chunk: Buffer) => { body += chunk.toString() })
+      res.on('end', () => resolve(body))
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+  return JSON.parse(data)
+})
+
+ipcMain.handle('google-auth:logout', async () => {
+  const http = await import('http')
+  await new Promise<void>((resolve, reject) => {
+    const req = http.request('http://127.0.0.1:8765/api/auth/google/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, (res) => {
+      res.on('data', () => {})
+      res.on('end', () => resolve())
+      res.on('error', reject)
+    })
+    req.on('error', reject)
+    req.end()
+  })
 })

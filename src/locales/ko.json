@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "내 정보",
     "language": "언어",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageDesc": "Sancho 인터페이스에 사용할 언어를 선택하세요.",
     "matrixPasswordHelp": "Element X 계정의 비밀번호. SSO(Gmail 등)로 가입한 경우 아래 Access Token을 사용하세요.",
     "matrixTokenHelp": "비밀번호 없이 SSO로 가입한 경우: Element Web → Settings → Help & About → Access Token 복사"
+  },
+  "profile": {
+    "googleAccount": "Google 계정",
+    "signInWithGoogle": "Google로 로그인",
+    "logout": "로그아웃",
+    "userInfo": "사용자 정보",
+    "name": "이름",
+    "gender": "성별",
+    "language": "언어",
+    "country": "국가",
+    "city": "도시",
+    "sanchoIdentity": "Sancho 정보",
+    "nickname": "닉네임",
+    "role": "역할",
+    "saveProfile": "프로필 저장",
+    "needGoogleCredentials": "Settings > API에서 Gmail Client ID/Secret을 먼저 설정하세요."
   },
   "logs": {
     "title": "서버 로그",

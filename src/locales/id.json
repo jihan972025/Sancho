@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "Profil Saya",
     "language": "Bahasa",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "Bahasa",
     "matrixPasswordHelp": "Kata sandi akun Element X Anda. Jika mendaftar dengan SSO (Gmail, dll.), gunakan Token Akses di bawah.",
     "matrixTokenHelp": "Jika mendaftar melalui SSO tanpa kata sandi: Element Web → Settings → Help & About → Salin Token Akses"
+  },
+  "profile": {
+    "googleAccount": "Akun Google",
+    "signInWithGoogle": "Masuk dengan Google",
+    "logout": "Keluar",
+    "userInfo": "Informasi Pengguna",
+    "name": "Nama",
+    "gender": "Jenis Kelamin",
+    "language": "Bahasa",
+    "country": "Negara",
+    "city": "Kota",
+    "sanchoIdentity": "Identitas Sancho",
+    "nickname": "Nama Panggilan",
+    "role": "Peran",
+    "saveProfile": "Simpan Profil",
+    "needGoogleCredentials": "Silakan atur Gmail Client ID/Secret di Settings > API terlebih dahulu."
   },
   "logs": {
     "title": "Log Server",

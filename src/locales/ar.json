@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "معلوماتي",
     "language": "اللغة",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "اللغة",
     "matrixPasswordHelp": "كلمة مرور حساب Element X الخاص بك. إذا سجلت عبر SSO (Gmail، إلخ)، استخدم رمز الوصول أدناه.",
     "matrixTokenHelp": "إذا سجلت عبر SSO بدون كلمة مرور: Element Web → Settings → Help & About → نسخ رمز الوصول"
+  },
+  "profile": {
+    "googleAccount": "حساب Google",
+    "signInWithGoogle": "تسجيل الدخول بـ Google",
+    "logout": "تسجيل الخروج",
+    "userInfo": "معلومات المستخدم",
+    "name": "الاسم",
+    "gender": "الجنس",
+    "language": "اللغة",
+    "country": "البلد",
+    "city": "المدينة",
+    "sanchoIdentity": "معلومات Sancho",
+    "nickname": "الاسم المستعار",
+    "role": "الدور",
+    "saveProfile": "حفظ الملف الشخصي",
+    "needGoogleCredentials": "يرجى إعداد Gmail Client ID/Secret في Settings > API أولاً."
   },
   "logs": {
     "title": "سجلات الخادم",

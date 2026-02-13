@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "मेरी जानकारी",
     "language": "भाषा",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "भाषा",
     "matrixPasswordHelp": "आपके Element X खाते का पासवर्ड। यदि आपने SSO (Gmail, आदि) से साइन अप किया है, तो नीचे दिए गए एक्सेस टोकन का उपयोग करें।",
     "matrixTokenHelp": "यदि SSO से बिना पासवर्ड के साइन अप किया है: Element Web → Settings → Help & About → एक्सेस टोकन कॉपी करें"
+  },
+  "profile": {
+    "googleAccount": "Google खाता",
+    "signInWithGoogle": "Google से साइन इन",
+    "logout": "लॉग आउट",
+    "userInfo": "उपयोगकर्ता जानकारी",
+    "name": "नाम",
+    "gender": "लिंग",
+    "language": "भाषा",
+    "country": "देश",
+    "city": "शहर",
+    "sanchoIdentity": "Sancho की जानकारी",
+    "nickname": "उपनाम",
+    "role": "भूमिका",
+    "saveProfile": "प्रोफ़ाइल सहेजें",
+    "needGoogleCredentials": "कृपया पहले Settings > API में Gmail Client ID/Secret सेट करें।"
   },
   "logs": {
     "title": "सर्वर लॉग",

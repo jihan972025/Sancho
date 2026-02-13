@@ -97,4 +97,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners('matrix:chat-typing')
     },
   },
+  googleAuth: {
+    login: () => ipcRenderer.invoke('google-auth:login'),
+    getStatus: () => ipcRenderer.invoke('google-auth:status'),
+    logout: () => ipcRenderer.invoke('google-auth:logout'),
+  },
 })

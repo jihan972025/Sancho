@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "Profilim",
     "language": "Dil",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "Dil",
     "matrixPasswordHelp": "Element X hesabınızın şifresi. SSO (Gmail vb.) ile kaydolduysanız, aşağıdaki Erişim Tokenını kullanın.",
     "matrixTokenHelp": "Şifresiz SSO ile kaydolduysanız: Element Web → Settings → Help & About → Erişim Tokenını Kopyala"
+  },
+  "profile": {
+    "googleAccount": "Google Hesabı",
+    "signInWithGoogle": "Google ile giriş yap",
+    "logout": "Çıkış yap",
+    "userInfo": "Kullanıcı Bilgileri",
+    "name": "Ad",
+    "gender": "Cinsiyet",
+    "language": "Dil",
+    "country": "Ülke",
+    "city": "Şehir",
+    "sanchoIdentity": "Sancho Bilgileri",
+    "nickname": "Takma Ad",
+    "role": "Rol",
+    "saveProfile": "Profili Kaydet",
+    "needGoogleCredentials": "Lütfen önce Settings > API'de Gmail Client ID/Secret ayarlayın."
   },
   "logs": {
     "title": "Sunucu Günlükleri",

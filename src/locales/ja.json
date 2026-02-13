@@ -60,6 +60,7 @@
     "tzUTC": "UTC"
   },
   "settings": {
+    "profile": "マイ情報",
     "language": "言語",
     "languageEn": "English",
     "languageKo": "한국어",
@@ -73,6 +74,22 @@
     "languageTab": "言語",
     "matrixPasswordHelp": "Element Xアカウントのパスワード。SSO（Gmailなど）で登録した場合は、下のアクセストークンを使用してください。",
     "matrixTokenHelp": "パスワードなしでSSOで登録した場合：Element Web → Settings → Help & About → アクセストークンをコピー"
+  },
+  "profile": {
+    "googleAccount": "Googleアカウント",
+    "signInWithGoogle": "Googleでログイン",
+    "logout": "ログアウト",
+    "userInfo": "ユーザー情報",
+    "name": "名前",
+    "gender": "性別",
+    "language": "言語",
+    "country": "国",
+    "city": "都市",
+    "sanchoIdentity": "Sanchoの情報",
+    "nickname": "ニックネーム",
+    "role": "役割",
+    "saveProfile": "プロフィール保存",
+    "needGoogleCredentials": "Settings > APIでGmail Client ID/Secretを設定してください。"
   },
   "logs": {
     "title": "サーバーログ",

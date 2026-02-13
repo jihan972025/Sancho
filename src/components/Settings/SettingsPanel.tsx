@@ -4,18 +4,19 @@ import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useChatStore } from '../../stores/chatStore'
 import { updateSettings, getModels } from '../../api/client'
+import ProfileTab from './ProfileTab'
 import LLMModelsTab from './LLMModelsTab'
 import ChatAppTab from './ChatAppTab'
 import ApiTab from './ApiTab'
 import LanguageTab from './LanguageTab'
 
-type Tab = 'llm' | 'chatapp' | 'api' | 'language'
+type Tab = 'profile' | 'llm' | 'chatapp' | 'api' | 'language'
 
 export default function SettingsPanel() {
   const { t } = useTranslation()
   const { config, setConfig } = useSettingsStore()
   const setModels = useChatStore((s) => s.setModels)
-  const [activeTab, setActiveTab] = useState<Tab>('llm')
+  const [activeTab, setActiveTab] = useState<Tab>('profile')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -42,6 +43,7 @@ export default function SettingsPanel() {
   }
 
   const tabs: { id: Tab; labelKey: string }[] = [
+    { id: 'profile', labelKey: 'settings.profile' },
     { id: 'llm', labelKey: 'settings.llmModels' },
     { id: 'chatapp', labelKey: 'settings.chatApp' },
     { id: 'api', labelKey: 'settings.api' },
@@ -70,6 +72,7 @@ export default function SettingsPanel() {
       {/* Tab content - scrollable */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className={`${activeTab === 'llm' || activeTab === 'api' ? 'max-w-4xl' : 'max-w-2xl'} mx-auto`}>
+          {activeTab === 'profile' && <ProfileTab />}
           {activeTab === 'llm' && <LLMModelsTab />}
           {activeTab === 'chatapp' && <ChatAppTab />}
           {activeTab === 'api' && <ApiTab />}
@@ -77,19 +80,21 @@ export default function SettingsPanel() {
         </div>
       </div>
 
-      {/* Fixed save button */}
-      <div className="border-t border-slate-700 px-6 py-3">
-        <div className="max-w-2xl mx-auto">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 bg-angel-600 hover:bg-angel-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-          >
-            {saved ? <CheckCircle size={16} /> : <Save size={16} />}
-            {saving ? t('settings.saving') : saved ? t('settings.saved') : t('settings.saveSettings')}
-          </button>
+      {/* Fixed save button - hidden on profile tab (has its own save) */}
+      {activeTab !== 'profile' && (
+        <div className="border-t border-slate-700 px-6 py-3">
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 bg-angel-600 hover:bg-angel-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+            >
+              {saved ? <CheckCircle size={16} /> : <Save size={16} />}
+              {saving ? t('settings.saving') : saved ? t('settings.saved') : t('settings.saveSettings')}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
