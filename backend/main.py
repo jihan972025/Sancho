@@ -16,6 +16,7 @@ from backend.api.routes_scheduler import router as scheduler_router
 from backend.api.routes_memory import router as memory_router
 from backend.api.routes_crypto import router as crypto_router
 from backend.api.routes_logs import router as logs_router, log_handler
+from backend.api.routes_conversation import router as conversation_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,6 +55,7 @@ app.include_router(scheduler_router)
 app.include_router(memory_router)
 app.include_router(crypto_router)
 app.include_router(logs_router)
+app.include_router(conversation_router)
 
 
 @app.get("/api/health")

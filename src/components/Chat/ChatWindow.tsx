@@ -1,10 +1,12 @@
 import { useRef, useEffect, useState } from 'react'
-import { Bot, Zap, Brain } from 'lucide-react'
+import { Bot, Zap, Brain, PanelLeft } from 'lucide-react'
 import MessageBubble from './MessageBubble'
 import InputBar from './InputBar'
 import MemoryPanel from './MemoryPanel'
+import ConversationList from './ConversationList'
 import { useChatStore } from '../../stores/chatStore'
 import { useMemoryStore } from '../../stores/memoryStore'
+import { useConversationStore } from '../../stores/conversationStore'
 import { sendMessageStream, stopGeneration } from '../../api/client'
 
 export default function ChatWindow() {
@@ -17,6 +19,7 @@ export default function ChatWindow() {
     isStreaming,
     streamingContent,
     skillStatus,
+    conversationId,
     addMessage,
     setStreaming,
     appendStreamContent,
@@ -24,12 +27,28 @@ export default function ChatWindow() {
     setSkillStatus,
   } = useChatStore()
 
+  const {
+    isSidebarOpen,
+    newConversation,
+    toggleSidebar,
+    refreshAfterMessage,
+  } = useConversationStore()
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streamingContent])
 
-
   const handleSend = async (content: string) => {
+    // Auto-create conversation if none active
+    let convId = conversationId
+    if (!convId) {
+      try {
+        convId = await newConversation(selectedModel)
+      } catch {
+        // fallback: proceed without conversation persistence
+      }
+    }
+
     addMessage({ role: 'user', content })
     setStreaming(true)
 
@@ -42,7 +61,10 @@ export default function ChatWindow() {
       allMessages,
       selectedModel,
       (token) => appendStreamContent(token),
-      () => finalizeStream(),
+      () => {
+        finalizeStream()
+        refreshAfterMessage()
+      },
       (error) => {
         addMessage({ role: 'assistant', content: `Error: ${error}` })
         setStreaming(false)
@@ -50,6 +72,7 @@ export default function ChatWindow() {
       (skill) => setSkillStatus(`Using ${skill}...`),
       () => setSkillStatus(null),
       (thinking) => setSkillStatus(thinking),
+      convId || undefined,
     )
   }
 
@@ -59,67 +82,83 @@ export default function ChatWindow() {
   }
 
   return (
-    <div className="flex flex-col h-full relative">
-      {showMemory && <MemoryPanel onClose={() => setShowMemory(false)} />}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Memory button */}
-        <div className="flex justify-end -mb-2">
-          <button
-            onClick={() => setShowMemory(true)}
-            className="flex items-center gap-1 text-xs text-slate-500 hover:text-angel-400 transition-colors px-2 py-1 rounded hover:bg-slate-800"
-            title="View memories"
-          >
-            <Brain size={14} />
-            {memoryCount > 0 && <span>{memoryCount}</span>}
-          </button>
-        </div>
-        {messages.length === 0 && !isStreaming && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <img src="./logo.svg" alt="Sancho" className="w-20 h-20 mb-4" />
-            <h2 className="text-xl font-semibold text-slate-200 mb-2">Sancho</h2>
-            <p className="text-slate-400 text-sm max-w-md">
-              Your AI assistant for chat, file management, and browser automation.
-              Select a model and start a conversation.
-            </p>
-          </div>
-        )}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-        {isStreaming && streamingContent && (
-          <MessageBubble
-            message={{
-              id: 'streaming',
-              role: 'assistant',
-              content: streamingContent,
-              timestamp: Date.now(),
-            }}
-          />
-        )}
-        {isStreaming && !streamingContent && (
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
-              <Bot size={16} />
-            </div>
-            <div className="bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3">
-              {skillStatus ? (
-                <div className="flex items-center gap-2 text-angel-400 text-sm">
-                  <Zap size={14} className="animate-pulse" />
-                  <span>{skillStatus}</span>
-                </div>
-              ) : (
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" />
-                  <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:0.15s]" />
-                  <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:0.3s]" />
-                </div>
+    <div className="flex h-full">
+      {isSidebarOpen && <ConversationList />}
+      <div className="flex flex-col flex-1 relative overflow-hidden">
+        {showMemory && <MemoryPanel onClose={() => setShowMemory(false)} />}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Top bar: sidebar toggle + memory button */}
+          <div className="flex items-center justify-between -mb-2">
+            <div>
+              {!isSidebarOpen && (
+                <button
+                  onClick={toggleSidebar}
+                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-angel-400 transition-colors px-2 py-1 rounded hover:bg-slate-800"
+                  title="Show conversations"
+                >
+                  <PanelLeft size={14} />
+                </button>
               )}
             </div>
+            <button
+              onClick={() => setShowMemory(true)}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-angel-400 transition-colors px-2 py-1 rounded hover:bg-slate-800"
+              title="View memories"
+            >
+              <Brain size={14} />
+              {memoryCount > 0 && <span>{memoryCount}</span>}
+            </button>
           </div>
-        )}
-        <div ref={messagesEndRef} />
+          {messages.length === 0 && !isStreaming && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <img src="./logo.svg" alt="Sancho" className="w-20 h-20 mb-4" />
+              <h2 className="text-xl font-semibold text-slate-200 mb-2">
+                Sancho
+              </h2>
+              <p className="text-slate-400 text-sm max-w-md">
+                Your AI assistant for chat, file management, and browser
+                automation. Select a model and start a conversation.
+              </p>
+            </div>
+          )}
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} message={msg} />
+          ))}
+          {isStreaming && streamingContent && (
+            <MessageBubble
+              message={{
+                id: 'streaming',
+                role: 'assistant',
+                content: streamingContent,
+                timestamp: Date.now(),
+              }}
+            />
+          )}
+          {isStreaming && !streamingContent && (
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0">
+                <Bot size={16} />
+              </div>
+              <div className="bg-slate-800 rounded-2xl rounded-tl-md px-4 py-3">
+                {skillStatus ? (
+                  <div className="flex items-center gap-2 text-angel-400 text-sm">
+                    <Zap size={14} className="animate-pulse" />
+                    <span>{skillStatus}</span>
+                  </div>
+                ) : (
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:0.15s]" />
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce [animation-delay:0.3s]" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+        <InputBar onSend={handleSend} onStop={handleStop} />
       </div>
-      <InputBar onSend={handleSend} onStop={handleStop} />
     </div>
   )
 }

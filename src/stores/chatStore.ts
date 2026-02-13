@@ -8,6 +8,7 @@ interface ChatState {
   isStreaming: boolean
   streamingContent: string
   skillStatus: string | null
+  conversationId: string | null
   addMessage: (msg: Omit<Message, 'id' | 'timestamp'>) => void
   setModels: (models: ModelInfo[]) => void
   setSelectedModel: (model: string) => void
@@ -16,6 +17,8 @@ interface ChatState {
   finalizeStream: () => void
   clearMessages: () => void
   setSkillStatus: (status: string | null) => void
+  setConversationId: (id: string | null) => void
+  loadConversationMessages: (id: string, msgs: Message[]) => void
 }
 
 let msgCounter = 0
@@ -27,6 +30,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isStreaming: false,
   streamingContent: '',
   skillStatus: null,
+  conversationId: null,
 
   addMessage: (msg) =>
     set((state) => ({
@@ -57,7 +61,14 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ isStreaming: false, streamingContent: '', skillStatus: null })
   },
 
-  clearMessages: () => set({ messages: [], streamingContent: '' }),
+  clearMessages: () => set({ messages: [], streamingContent: '', conversationId: null }),
 
   setSkillStatus: (status) => set({ skillStatus: status }),
+
+  setConversationId: (id) => set({ conversationId: id }),
+
+  loadConversationMessages: (id, msgs) => {
+    msgCounter = msgs.length
+    set({ messages: msgs, conversationId: id, streamingContent: '' })
+  },
 }))

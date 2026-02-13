@@ -22,11 +22,17 @@ export async function sendMessageStream(
   onSkillStart?: (skill: string) => void,
   onSkillResult?: (skill: string) => void,
   onThinking?: (content: string) => void,
+  conversationId?: string,
 ): Promise<void> {
   const res = await fetch(`${BASE_URL}/api/chat/send`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, model, stream: true }),
+    body: JSON.stringify({
+      messages,
+      model,
+      stream: true,
+      conversation_id: conversationId,
+    }),
   })
 
   if (!res.ok) {
@@ -326,6 +332,33 @@ export function toggleMemory(id: string) {
 
 export function clearAllMemories() {
   return request('/api/memory', { method: 'DELETE' })
+}
+
+// Conversation API
+export function getConversations() {
+  return request<{ conversations: any[] }>('/api/conversations')
+}
+
+export function createConversation(title = '', model = '') {
+  return request<{ conversation: any }>('/api/conversations', {
+    method: 'POST',
+    body: JSON.stringify({ title, model }),
+  })
+}
+
+export function getConversation(id: string) {
+  return request<{ conversation: any }>(`/api/conversations/${id}`)
+}
+
+export function renameConversation(id: string, title: string) {
+  return request<{ conversation: any }>(`/api/conversations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  })
+}
+
+export function deleteConversationApi(id: string) {
+  return request('/api/conversations/' + id, { method: 'DELETE' })
 }
 
 // Health check

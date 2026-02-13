@@ -11,6 +11,7 @@ import OnboardingModal from './components/Onboarding/OnboardingModal'
 import { useSettingsStore } from './stores/settingsStore'
 import { useChatStore } from './stores/chatStore'
 import { useMemoryStore } from './stores/memoryStore'
+import { useConversationStore } from './stores/conversationStore'
 import PatchNotification from './components/PatchNotification'
 
 type Tab = 'chat' | 'crypto' | 'scheduler' | 'logs' | 'settings'
@@ -76,8 +77,9 @@ export default function App() {
         if (!current && models.length > 0) {
           useChatStore.getState().setSelectedModel(models[0].id)
         }
-        // Load memories
+        // Load memories and conversations
         useMemoryStore.getState().fetchMemories()
+        useConversationStore.getState().fetchConversations()
         // Check if onboarding is needed
         try {
           const profile = await getUserProfile()

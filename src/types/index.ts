@@ -176,3 +176,27 @@ export interface AppConfig {
   browser_headless: boolean
   language: string
 }
+
+export interface ConversationSummary {
+  id: string
+  title: string
+  model: string
+  message_count: number
+  preview: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ConversationDetail {
+  id: string
+  title: string
+  model: string
+  messages: {
+    role: 'user' | 'assistant' | 'system'
+    content: string
+    timestamp: string
+    source?: string
+  }[]
+  created_at: string
+  updated_at: string
+}

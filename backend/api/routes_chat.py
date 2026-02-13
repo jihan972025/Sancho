@@ -34,6 +34,7 @@ class ChatRequest(BaseModel):
     model: str
     stream: bool = True
     session_id: Optional[str] = None
+    conversation_id: Optional[str] = None
 
 
 def _is_browser_intent(text: str) -> bool:
@@ -48,6 +49,60 @@ def _is_file_organize_intent(text: str) -> bool:
 
 import re
 _PATH_PATTERN = re.compile(r'[A-Za-z]:\\[^\s"\'<>|*?]+')
+
+# Context window management
+_MAX_MESSAGES_BEFORE_WINDOW = 40
+_WINDOW_SIZE = 20
+
+
+def _apply_context_window(messages: list[dict]) -> list[dict]:
+    """If messages exceed threshold, keep system prompt + last N messages."""
+    if len(messages) <= _MAX_MESSAGES_BEFORE_WINDOW:
+        return messages
+    system_msgs = []
+    non_system = []
+    for m in messages:
+        if m["role"] == "system" and not non_system:
+            system_msgs.append(m)
+        else:
+            non_system.append(m)
+    return system_msgs + non_system[-_WINDOW_SIZE:]
+
+
+def _save_to_conversation(
+    conversation_id: str,
+    user_content: str,
+    assistant_content: str,
+    model: str = "",
+) -> None:
+    """Save user + assistant messages to conversation file."""
+    try:
+        from datetime import datetime, timezone
+        from ..conversation import storage as conv_storage
+        from ..conversation.models import ConversationMessage
+
+        conv = conv_storage.get_conversation(conversation_id)
+        if not conv:
+            return
+        conv.messages.append(
+            ConversationMessage(role="user", content=user_content)
+        )
+        conv.messages.append(
+            ConversationMessage(role="assistant", content=assistant_content)
+        )
+        conv.updated_at = datetime.now(timezone.utc).isoformat()
+        if conv.model != model and model:
+            conv.model = model
+        # Auto-title from first user message
+        if conv.title == "New conversation":
+            for cm in conv.messages:
+                if cm.role == "user":
+                    title = cm.content[:50].strip()
+                    conv.title = title + ("..." if len(cm.content) > 50 else "")
+                    break
+        conv_storage.save_conversation(conv)
+    except Exception as e:
+        logger.error("Failed to save conversation %s: %s", conversation_id, e)
 
 
 @router.post("/send")
@@ -109,6 +164,9 @@ async def send_message(req: ChatRequest):
         else:
             messages.insert(0, {"role": "system", "content": memory_prompt.strip()})
 
+    # Apply context window to prevent exceeding LLM context limits
+    messages = _apply_context_window(messages)
+
     skill_prompt = build_skill_system_prompt()
 
     if req.stream:
@@ -132,13 +190,20 @@ async def send_message(req: ChatRequest):
                 finally:
                     _cancel_events.pop(session_id, None)
                     if full_response_parts:
+                        full_text = "".join(full_response_parts)
                         extraction_msgs = messages + [
-                            {"role": "assistant", "content": "".join(full_response_parts)}
+                            {"role": "assistant", "content": full_text}
                         ]
                         trigger_memory_extraction(extraction_msgs, req.model)
+                        # Auto-save to conversation
+                        if req.conversation_id and last_user_msg:
+                            _save_to_conversation(
+                                req.conversation_id, last_user_msg, full_text, req.model
+                            )
         else:
             # Skill-enabled 2-phase path
             async def event_stream():
+                skill_final_response = ""
                 try:
                     # Inject skill system prompt
                     skill_messages = [
@@ -179,6 +244,7 @@ async def send_message(req: ChatRequest):
 
                     if not skill_call:
                         # No skill needed — send Phase 1 response as tokens
+                        skill_final_response = phase1_response
                         for char in _chunk_text(phase1_response):
                             if cancel_event.is_set():
                                 yield f"data: {json.dumps({'type': 'done', 'reason': 'cancelled'})}\n\n"
@@ -237,11 +303,14 @@ async def send_message(req: ChatRequest):
 
                             if step == max_chain - 1:
                                 # Last allowed step — stream response directly
+                                stream_parts: list[str] = []
                                 async for token in provider.stream(phase2_messages, req.model):
                                     if cancel_event.is_set():
                                         yield f"data: {json.dumps({'type': 'done', 'reason': 'cancelled'})}\n\n"
                                         return
+                                    stream_parts.append(token)
                                     yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+                                skill_final_response = "".join(stream_parts)
                                 yield f"data: {json.dumps({'type': 'done', 'reason': 'complete'})}\n\n"
                                 break
                             else:
@@ -253,6 +322,7 @@ async def send_message(req: ChatRequest):
                                     continue
                                 else:
                                     # No more skill calls — stream the final response
+                                    skill_final_response = phase2_response
                                     for char in _chunk_text(phase2_response):
                                         if cancel_event.is_set():
                                             yield f"data: {json.dumps({'type': 'done', 'reason': 'cancelled'})}\n\n"
@@ -267,6 +337,12 @@ async def send_message(req: ChatRequest):
                 finally:
                     _cancel_events.pop(session_id, None)
                     trigger_memory_extraction(messages, req.model)
+                    # Auto-save to conversation (skill path)
+                    if req.conversation_id and last_user_msg and skill_final_response:
+                        _save_to_conversation(
+                            req.conversation_id, last_user_msg,
+                            skill_final_response, req.model
+                        )
 
         return StreamingResponse(
             event_stream(),
