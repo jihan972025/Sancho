@@ -138,10 +138,27 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 | [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |
 | [Google Sheets Setup](docs/google-sheets-setup.md) | Connect Google Sheets via OAuth 2.0 |
 
+## Coin Price & Technical Analysis (v1.0.7)
+
+Sancho provides real-time cryptocurrency prices and technical analysis through two built-in skills:
+
+### Real-time Crypto Prices (ccxt + Binance)
+- Live prices for BTC, ETH, XRP, SOL, DOGE, ADA, DOT, AVAX, LINK, MATIC and more
+- 24h price change (%), 24h trading volume
+- Korean and English name input (e.g., "비트코인", "ethereum", "솔라나")
+
+### Technical Analysis (TradingView)
+- **Oscillators**: RSI(14), MACD, Stochastic %K/%D, ADX, CCI(20), ATR(14)
+- **Bollinger Bands**: Upper / Lower bands
+- **Moving Averages**: EMA(10, 20, 50, 200), SMA(10, 20, 50, 200)
+- **Timeframes**: 1h, 4h, Daily, Weekly, Monthly
+- **Overall signal**: Buy / Sell / Neutral recommendation
+- Works with crypto (Binance), Korean stocks (KRX), and US stocks (NASDAQ/NYSE)
+
 ## Installation
 
 ### Installer
-Download [Sancho Setup 1.0.5.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.5/Sancho.Setup.1.0.5.exe) — all dependencies are bundled (no separate installation required).
+Download [Sancho Setup 1.0.7.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.7/Sancho.Setup.1.0.7.exe) — all dependencies are bundled (no separate installation required).
 
 
 ## Tech Stack
