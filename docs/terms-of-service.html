@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sancho - Terms of Service / 서비스 이용약관</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.7;
+      color: #e2e8f0;
+      background: #0f172a;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 3rem;
+      border: 1px solid #334155;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #f1f5f9;
+    }
+    h2 {
+      font-size: 1.3rem;
+      margin-top: 2rem;
+      margin-bottom: 0.8rem;
+      color: #38bdf8;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 0.4rem;
+    }
+    p, li {
+      margin-bottom: 0.6rem;
+      color: #cbd5e1;
+    }
+    ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .subtitle {
+      color: #94a3b8;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+    .lang-toggle {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .lang-toggle button {
+      padding: 0.5rem 1.2rem;
+      border: 1px solid #475569;
+      background: transparent;
+      color: #94a3b8;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+    .lang-toggle button.active {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+      font-weight: 600;
+    }
+    .lang-toggle button:hover:not(.active) {
+      border-color: #38bdf8;
+      color: #e2e8f0;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+    a { color: #38bdf8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid #334155;
+      color: #64748b;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sancho</h1>
+    <p class="subtitle">Terms of Service / 서비스 이용약관</p>
+
+    <div class="lang-toggle">
+      <button id="btn-ko" class="active" onclick="switchLang('ko')">한국어</button>
+      <button id="btn-en" onclick="switchLang('en')">English</button>
+    </div>
+
+    <!-- Korean -->
+    <div id="section-ko" class="section active">
+      <h2>1. 서비스 개요</h2>
+      <p>Sancho(이하 "앱")는 오픈소스 AI 비서 데스크톱 애플리케이션입니다. 본 약관은 앱의 사용 조건을 규정합니다.</p>
+
+      <h2>2. 서비스 이용 조건</h2>
+      <ul>
+        <li>앱은 무료로 제공되며, 오픈소스 라이선스에 따라 배포됩니다.</li>
+        <li>사용자는 관련 법률을 준수하여 앱을 사용해야 합니다.</li>
+        <li>13세 미만의 사용자는 보호자의 동의 하에 사용해야 합니다.</li>
+      </ul>
+
+      <h2>3. Google 계정 연동</h2>
+      <ul>
+        <li>앱은 Google OAuth 2.0을 통해 사용자 인증을 제공합니다.</li>
+        <li>Google 계정 연동은 선택 사항이며, 연동 없이도 핵심 기능을 사용할 수 있습니다.</li>
+        <li>Google 계정 사용 시 <a href="https://policies.google.com/terms">Google 서비스 약관</a>이 적용됩니다.</li>
+      </ul>
+
+      <h2>4. 사용자 데이터</h2>
+      <ul>
+        <li>모든 사용자 데이터는 사용자의 로컬 컴퓨터에만 저장됩니다.</li>
+        <li>앱은 사용자 데이터를 외부 서버로 전송하지 않습니다.</li>
+        <li>데이터 관리에 대한 자세한 내용은 <a href="privacy-policy.html">개인정보처리방침</a>을 참조하세요.</li>
+      </ul>
+
+      <h2>5. API 키 및 외부 서비스</h2>
+      <ul>
+        <li>앱은 다양한 LLM 제공자(OpenAI, Anthropic, Google 등)의 API를 사용합니다.</li>
+        <li>사용자는 자신의 API 키를 직접 입력하여 사용하며, 이에 따른 비용은 사용자 부담입니다.</li>
+        <li>외부 API 서비스의 이용약관은 해당 서비스 제공자의 약관을 따릅니다.</li>
+      </ul>
+
+      <h2>6. 면책 조항</h2>
+      <ul>
+        <li>앱은 "있는 그대로(AS-IS)" 제공되며, 어떠한 명시적 또는 묵시적 보증도 하지 않습니다.</li>
+        <li>AI가 생성한 응답의 정확성, 완전성, 적합성에 대해 보증하지 않습니다.</li>
+        <li>앱 사용으로 인한 직접적 또는 간접적 손해에 대해 책임지지 않습니다.</li>
+        <li>암호화폐 분석 기능은 정보 제공 목적이며, 투자 조언으로 간주해서는 안 됩니다.</li>
+      </ul>
+
+      <h2>7. 지적 재산권</h2>
+      <ul>
+        <li>앱은 오픈소스로 배포되며, 해당 라이선스 조건을 따릅니다.</li>
+        <li>사용자가 생성한 콘텐츠에 대한 권리는 사용자에게 있습니다.</li>
+      </ul>
+
+      <h2>8. 서비스 변경 및 중단</h2>
+      <p>개발자는 사전 통지 없이 앱의 기능을 변경, 추가 또는 제거할 수 있습니다. 오픈소스 특성상 사용자는 이전 버전을 계속 사용할 수 있습니다.</p>
+
+      <h2>9. 약관 변경</h2>
+      <p>본 약관은 변경될 수 있으며, 변경 시 이 페이지를 통해 공지합니다. 변경 후에도 앱을 계속 사용하는 것은 변경된 약관에 동의하는 것으로 간주합니다.</p>
+
+      <h2>10. 문의</h2>
+      <p>서비스 이용약관에 대한 문의는 GitHub 리포지토리의 <a href="https://github.com/jihan972025/Sancho/issues">Issues</a>를 통해 연락해 주세요.</p>
+
+      <div class="footer">
+        <p>최종 수정일: 2025년 2월</p>
+        <p>Sancho &copy; 2025. All rights reserved.</p>
+      </div>
+    </div>
+
+    <!-- English -->
+    <div id="section-en" class="section">
+      <h2>1. Service Overview</h2>
+      <p>Sancho (the "App") is an open-source AI assistant desktop application. These terms govern your use of the App.</p>
+
+      <h2>2. Terms of Use</h2>
+      <ul>
+        <li>The App is provided free of charge and is distributed under an open-source license.</li>
+        <li>Users must comply with all applicable laws when using the App.</li>
+        <li>Users under 13 must have parental consent to use the App.</li>
+      </ul>
+
+      <h2>3. Google Account Integration</h2>
+      <ul>
+        <li>The App provides user authentication through Google OAuth 2.0.</li>
+        <li>Google account integration is optional; core features are available without it.</li>
+        <li>Use of Google account is subject to <a href="https://policies.google.com/terms">Google's Terms of Service</a>.</li>
+      </ul>
+
+      <h2>4. User Data</h2>
+      <ul>
+        <li>All user data is stored exclusively on the user's local computer.</li>
+        <li>The App does not transmit user data to external servers.</li>
+        <li>For details on data management, please refer to our <a href="privacy-policy.html">Privacy Policy</a>.</li>
+      </ul>
+
+      <h2>5. API Keys and External Services</h2>
+      <ul>
+        <li>The App uses APIs from various LLM providers (OpenAI, Anthropic, Google, etc.).</li>
+        <li>Users provide their own API keys, and any associated costs are the user's responsibility.</li>
+        <li>Use of external API services is subject to the respective provider's terms of service.</li>
+      </ul>
+
+      <h2>6. Disclaimer</h2>
+      <ul>
+        <li>The App is provided "AS-IS" without any express or implied warranties.</li>
+        <li>We do not guarantee the accuracy, completeness, or suitability of AI-generated responses.</li>
+        <li>We are not liable for any direct or indirect damages arising from use of the App.</li>
+        <li>Cryptocurrency analysis features are for informational purposes only and should not be considered investment advice.</li>
+      </ul>
+
+      <h2>7. Intellectual Property</h2>
+      <ul>
+        <li>The App is distributed as open source and is subject to its license terms.</li>
+        <li>Users retain rights to content they create using the App.</li>
+      </ul>
+
+      <h2>8. Service Changes and Discontinuation</h2>
+      <p>The developer may change, add, or remove features without prior notice. Due to the open-source nature of the App, users may continue using previous versions.</p>
+
+      <h2>9. Changes to Terms</h2>
+      <p>These terms may be updated from time to time. Any changes will be posted on this page. Continued use of the App after changes constitutes acceptance of the updated terms.</p>
+
+      <h2>10. Contact</h2>
+      <p>For questions about these Terms of Service, please contact us through the <a href="https://github.com/jihan972025/Sancho/issues">Issues</a> section of our GitHub repository.</p>
+
+      <div class="footer">
+        <p>Last updated: February 2025</p>
+        <p>Sancho &copy; 2025. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchLang(lang) {
+      document.getElementById('section-ko').classList.toggle('active', lang === 'ko');
+      document.getElementById('section-en').classList.toggle('active', lang === 'en');
+      document.getElementById('btn-ko').classList.toggle('active', lang === 'ko');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    }
+  </script>
+</body>
+</html>
