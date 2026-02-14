@@ -205,10 +205,11 @@ async def send_message(req: ChatRequest):
             async def event_stream():
                 skill_final_response = ""
                 try:
-                    # Inject skill system prompt
+                    # Phase 1: lightweight skill detection with ONLY skill prompt + user message
+                    # Keep it lean — persona/memory go in Phase 2 only
                     skill_messages = [
                         {"role": "system", "content": skill_prompt},
-                        *messages,
+                        {"role": "user", "content": last_user_msg},
                     ]
 
                     # Phase 1: non-streaming complete to detect skill call
@@ -219,7 +220,10 @@ async def send_message(req: ChatRequest):
                         return
 
                     try:
+                        logger.debug("Phase 1 skill detection: prompt=%d chars, msg=%s",
+                                     len(skill_prompt), last_user_msg[:100] if last_user_msg else "")
                         phase1_response = await provider.complete(skill_messages, req.model)
+                        logger.debug("Phase 1 response: %s", phase1_response[:300])
                     except Exception as phase1_err:
                         # Phase 1 failed (429 rate limit, etc.) — wait and fallback
                         logger.warning("Phase 1 failed: %s — waiting 3s before fallback", phase1_err)
@@ -285,19 +289,37 @@ async def send_message(req: ChatRequest):
 
                             system_hint = (
                                 search_hint +
-                                "You have access to all skills listed above. "
+                                "IMPORTANT: The [SKILL_RESULT] below contains REAL DATA retrieved from the user's account. "
+                                "Present this data to the user in a helpful, readable format. "
+                                "NEVER say you don't have access — the data is RIGHT HERE in the skill result.\n"
                                 "If you need to call another skill to complete the task (e.g. save results to a file), "
                                 "output ONLY a [SKILL_CALL] block. Otherwise, answer the user directly."
                             )
                             user_hint = (
                                 "Based on the skill results above, either:\n"
                                 "1. Call another skill if more steps are needed (output ONLY a [SKILL_CALL] block), or\n"
-                                "2. Answer the user's question directly."
+                                "2. Answer the user's question directly using the data from [SKILL_RESULT]."
                             )
 
+                            # Build Phase 2: lightweight system (no full skill_prompt)
+                            # + persona/memory + conversation + skill results
+                            existing_system = "\n\n".join(
+                                m["content"] for m in messages if m["role"] == "system"
+                            )
+                            non_system_msgs = [
+                                m for m in messages if m["role"] != "system"
+                            ]
+
+                            phase2_system = system_hint
+                            if existing_system:
+                                phase2_system += "\n\n" + existing_system
+                            if li:
+                                phase2_system += li
+
                             phase2_messages = [
-                                {"role": "system", "content": skill_prompt + "\n\n" + system_hint + li},
-                                *messages,
+                                {"role": "system", "content": phase2_system},
+                                *non_system_msgs,
+                                {"role": "assistant", "content": f"I called the {skill_name} skill and got results."},
                                 {"role": "user", "content": results_block + user_hint},
                             ]
 

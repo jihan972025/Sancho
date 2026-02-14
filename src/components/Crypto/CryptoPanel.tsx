@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Play, Square, Loader2, ChevronDown, Check, BarChart3, TrendingUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Play, Square, Loader2, ChevronDown, Check, BarChart3, TrendingUp, Bot } from 'lucide-react'
 import { useChatStore } from '../../stores/chatStore'
 import BacktestPanel from './BacktestPanel'
+import AutoTradingPanel from '../AutoTrading/AutoTradingPanel'
 
 const BASE_URL = 'http://127.0.0.1:8765'
 
@@ -75,9 +77,10 @@ const BT_PERIOD_OPTS = [
   { id: 365, label: '1Y' },
 ]
 
-type SubTab = 'analysis' | 'backtest'
+type SubTab = 'analysis' | 'backtest' | 'autotrading'
 
 export default function CryptoPanel() {
+  const { t } = useTranslation()
   const [subTab, setSubTab] = useState<SubTab>('analysis')
   const [selectedCoin, setSelectedCoin] = useState<string>('BTC')
   const [selectedStrategies, setSelectedStrategies] = useState<string[]>(STRATEGIES.map((s) => s.id))
@@ -241,7 +244,7 @@ export default function CryptoPanel() {
             }`}
           >
             <BarChart3 size={15} />
-            Analysis
+            {t('crypto.analysis')}
           </button>
           <button
             onClick={() => setSubTab('backtest')}
@@ -252,7 +255,18 @@ export default function CryptoPanel() {
             }`}
           >
             <TrendingUp size={15} />
-            Backtest
+            {t('crypto.backtest')}
+          </button>
+          <button
+            onClick={() => setSubTab('autotrading')}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
+              subTab === 'autotrading'
+                ? 'bg-slate-800 text-amber-400 border-b-2 border-amber-500'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Bot size={15} />
+            {t('crypto.autoTrading')}
           </button>
         </div>
       </div>
@@ -546,8 +560,10 @@ export default function CryptoPanel() {
             )}
           </div>
         </>
-      ) : (
+      ) : subTab === 'backtest' ? (
         <BacktestPanel />
+      ) : (
+        <AutoTradingPanel />
       )}
     </div>
   )

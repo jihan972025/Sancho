@@ -26,6 +26,7 @@ Sancho is a local AI agent desktop app for Windows 10/11. It connects to multipl
 - **Chat with LLMs from your phone** — Connect WhatsApp, Telegram, or Element X and interact with AI models directly from your mobile chat app, anytime and anywhere.
 - **Get weekly weather forecasts** — Ask Sancho to search for the latest weather information and receive a summary via chat or messenger.
 - **Stock & crypto technical analysis** — Get real-time technical analysis for stocks, Bitcoin, Ethereum, and other assets with up-to-date market data.
+- **Crypto auto-trading** — Automated crypto trading on Upbit with LLM-based or rule-based strategies, stop-loss, take-profit, and daily loss limits.
 - **Organize files automatically** — Let the AI sort your downloads folder by file type with a single command.
 - **Automate browser tasks** — Have Sancho navigate websites, fill out forms, and extract information hands-free.
 - **Schedule recurring tasks** — Set up automated jobs that run on a schedule and send results to your messenger.
@@ -39,7 +40,8 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
   ├── 10+ LLM Providers
   ├── Skill System (Search, File, Custom API)
   ├── File Agent
-  └── Browser Agent (Playwright)
+  ├── Browser Agent (Playwright)
+  └── Auto-Trading Engine (Upbit)
 ```
 
 ## Features
@@ -121,6 +123,17 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 - **Telegram**: Connect with API key + QR code, auto-reply
 - **Matrix / Element X**: Connect with password or Access Token
 
+### Crypto Auto-Trading (v1.0.10)
+- **Supported exchanges**: Upbit (KRW markets)
+- **Supported coins**: BTC, ETH, XRP, SOL, TRX, ADA, XMR
+- **Two strategy modes**:
+  - **LLM Mode**: AI analyzes technical indicators and decides BUY/SELL/HOLD (confidence ≥ 70%). Take-profit timing is also decided by AI.
+  - **Rule-based Mode**: Automated trading using technical indicator signals — Buy when 3+ of 6 signals align, Sell when 2+ of 4 signals align. Auto take-profit at +1.5%.
+- **Risk management**: Stop-loss -2%, daily loss limit -5% (both modes)
+- **Indicators**: RSI, MACD, Bollinger Bands, SMA(20/50), EMA(12/26), ATR, Volume
+- **Configurable**: Coin, analysis interval (5m–4h), candle interval (1m–4h), trade amount
+- **Real-time monitoring**: SSE event stream with live status, signals, and trade history
+
 ### Scheduler
 - Schedule tasks for automatic execution
 - Notifications via connected messengers
@@ -138,7 +151,7 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 | [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |
 | [Google Sheets Setup](docs/google-sheets-setup.md) | Connect Google Sheets via OAuth 2.0 |
 
-## Coin Price & Technical Analysis (v1.0.7)
+## Coin Price & Technical Analysis
 
 Sancho provides real-time cryptocurrency prices and technical analysis through two built-in skills:
 
@@ -158,7 +171,7 @@ Sancho provides real-time cryptocurrency prices and technical analysis through t
 ## Installation
 
 ### Installer
-Download [Sancho Setup 1.0.9.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.9/Sancho.Setup.1.0.9.exe) — all dependencies are bundled (no separate installation required).
+Download [Sancho Setup 1.0.10.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.10/Sancho.Setup.1.0.10.exe) — all dependencies are bundled (no separate installation required).
 
 
 ## Tech Stack

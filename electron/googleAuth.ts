@@ -19,6 +19,8 @@ export function startGoogleOAuth(): Promise<GoogleAuthResult | null> {
     let callbackServer: http.Server | null = null
     let authWindow: BrowserWindow | null = null
 
+    let codeReceived = false
+
     const cleanup = () => {
       if (callbackServer) {
         try { callbackServer.close() } catch {}
@@ -51,6 +53,8 @@ export function startGoogleOAuth(): Promise<GoogleAuthResult | null> {
         finish(null)
         return
       }
+
+      codeReceived = true
 
       // Exchange the code for tokens via backend
       try {
@@ -88,7 +92,15 @@ export function startGoogleOAuth(): Promise<GoogleAuthResult | null> {
       authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID)
       authUrl.searchParams.set('redirect_uri', REDIRECT_URI)
       authUrl.searchParams.set('response_type', 'code')
-      authUrl.searchParams.set('scope', 'openid email profile')
+      authUrl.searchParams.set('scope', [
+        'openid',
+        'email',
+        'profile',
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/gmail.send',
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/spreadsheets',
+      ].join(' '))
       authUrl.searchParams.set('access_type', 'offline')
       authUrl.searchParams.set('prompt', 'consent')
 
@@ -107,7 +119,11 @@ export function startGoogleOAuth(): Promise<GoogleAuthResult | null> {
 
       authWindow.on('closed', () => {
         authWindow = null
-        finish(null)
+        // Only resolve null if we haven't received the auth code yet
+        // (user closed the window manually without completing login)
+        if (!codeReceived) {
+          finish(null)
+        }
       })
     })
 

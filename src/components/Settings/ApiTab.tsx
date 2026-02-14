@@ -44,6 +44,7 @@ interface ServiceDef {
   fields: { key: keyof ApiConfig; label: string; placeholder: string; secret?: boolean; type?: string }[]
   description: string
   alwaysOn?: boolean
+  googleAuthLinked?: boolean
 }
 
 const services: ServiceDef[] = [
@@ -276,12 +277,10 @@ const services: ServiceDef[] = [
     icon: Mail,
     color: 'text-red-400',
     bgColor: 'bg-red-500/10 border-red-500/20',
-    isConfigured: (api) => !!(api.gmail_client_id && api.gmail_client_secret),
-    fields: [
-      { key: 'gmail_client_id', label: 'Client ID', placeholder: 'Google OAuth 2.0 Client ID' },
-      { key: 'gmail_client_secret', label: 'Client Secret', placeholder: 'Google OAuth 2.0 Client Secret', secret: true },
-    ],
-    description: 'Gmail email integration via Google OAuth 2.0.',
+    isConfigured: () => false,  // Overridden by googleAuthLinked check
+    fields: [],
+    description: 'Gmail email integration. Connected via Google Login in Profile tab.',
+    googleAuthLinked: true,
   },
   {
     id: 'google_calendar',
@@ -289,12 +288,10 @@ const services: ServiceDef[] = [
     icon: Calendar,
     color: 'text-blue-300',
     bgColor: 'bg-blue-400/10 border-blue-400/20',
-    isConfigured: (api) => !!(api.google_calendar_client_id && api.google_calendar_client_secret),
-    fields: [
-      { key: 'google_calendar_client_id', label: 'Client ID', placeholder: 'Google OAuth 2.0 Client ID' },
-      { key: 'google_calendar_client_secret', label: 'Client Secret', placeholder: 'Google OAuth 2.0 Client Secret', secret: true },
-    ],
-    description: 'Google Calendar event management via Google OAuth 2.0.',
+    isConfigured: () => false,
+    fields: [],
+    description: 'Google Calendar event management. Connected via Google Login in Profile tab.',
+    googleAuthLinked: true,
   },
   {
     id: 'google_sheets',
@@ -302,12 +299,10 @@ const services: ServiceDef[] = [
     icon: Table,
     color: 'text-green-300',
     bgColor: 'bg-green-400/10 border-green-400/20',
-    isConfigured: (api) => !!(api.google_sheets_client_id && api.google_sheets_client_secret),
-    fields: [
-      { key: 'google_sheets_client_id', label: 'Client ID', placeholder: 'Google OAuth 2.0 Client ID' },
-      { key: 'google_sheets_client_secret', label: 'Client Secret', placeholder: 'Google OAuth 2.0 Client Secret', secret: true },
-    ],
-    description: 'Google Sheets spreadsheet read/write via Google OAuth 2.0.',
+    isConfigured: () => false,
+    fields: [],
+    description: 'Google Sheets spreadsheet read/write. Connected via Google Login in Profile tab.',
+    googleAuthLinked: true,
   },
   {
     id: 'jira',
@@ -540,6 +535,7 @@ function CustomApiForm({
 export default function ApiTab() {
   const { config, updateApiConfig, updateCustomApis } = useSettingsStore()
   const api = config.api
+  const googleLoggedIn = !!(config as any).google_auth?.logged_in
   const customApis = config.custom_apis ?? []
   const [selected, setSelected] = useState<string | null>(null)
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
@@ -575,7 +571,7 @@ export default function ApiTab() {
     <div className="grid grid-cols-10 gap-2">
       {list.map((svc) => {
         const Icon = svc.icon
-        const configured = svc.isConfigured(api)
+        const configured = svc.googleAuthLinked ? googleLoggedIn : svc.isConfigured(api)
         const isSelected = selected === svc.id
         return (
           <button
@@ -638,7 +634,7 @@ export default function ApiTab() {
           <Key size={16} className="text-amber-400" />
           <h2 className="text-lg font-semibold text-slate-200">API Key Required</h2>
           <span className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-            {paidServices.filter((s) => s.isConfigured(api)).length}/{paidServices.length} Connected
+            {paidServices.filter((s) => s.googleAuthLinked ? googleLoggedIn : s.isConfigured(api)).length}/{paidServices.length} Connected
           </span>
         </button>
         <p className="text-sm text-slate-500 ml-9 mt-1">
@@ -674,6 +670,26 @@ export default function ApiTab() {
                   <Lock size={12} className="text-green-400" />
                   <span className="text-sm text-green-400">Always enabled</span>
                 </div>
+              </div>
+            )}
+
+            {/* Google-auth-linked services */}
+            {selectedService.googleAuthLinked && (
+              <div className="flex items-center gap-2 py-1">
+                {googleLoggedIn ? (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <Check size={12} className="text-green-400" />
+                    <span className="text-sm text-green-400">
+                      Connected via Google Login ({(config as any).google_auth?.email || ''})
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                    <span className="text-sm text-amber-400">
+                      Sign in with Google in the Profile tab to enable
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 

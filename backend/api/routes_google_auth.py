@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from ..config import get_config, update_config, GoogleAuthConfig
+from ..skills.registry import reset_skills
 
 router = APIRouter(prefix="/api/auth/google", tags=["google-auth"])
 
@@ -67,6 +68,7 @@ async def exchange_auth_code(req: AuthCodeRequest):
     config.google_auth.picture_url = userinfo.get("picture", "")
     config.google_auth.logged_in = True
     update_config(config)
+    reset_skills()  # Activate Gmail/Calendar/Sheets executors
 
     return {
         "email": config.google_auth.email,
@@ -130,4 +132,5 @@ async def logout():
     config = get_config()
     config.google_auth = GoogleAuthConfig()
     update_config(config)
+    reset_skills()  # Deactivate Gmail/Calendar/Sheets executors
     return {"status": "ok"}
