@@ -103,6 +103,7 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 | 6 | **jira** | Atlassian Jira project management |
 | 7 | **confluence** | Atlassian Confluence documentation |
 | 8 | **slack** | Slack workspace messaging |
+| 9 | **upbit** | Crypto auto-trading on Upbit exchange (Upbit API key) |
 
 #### Custom API
 - Register any REST API as an LLM skill from Settings > API
