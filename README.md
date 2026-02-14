@@ -151,9 +151,9 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 | [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |
 | [Google Sheets Setup](docs/google-sheets-setup.md) | Connect Google Sheets via OAuth 2.0 |
 
-## Coin Price & Technical Analysis
+## Coin Price, Technical Analysis & Auto-Trading
 
-Sancho provides real-time cryptocurrency prices and technical analysis through two built-in skills:
+Sancho provides real-time cryptocurrency prices, technical analysis, and automated trading:
 
 ### Real-time Crypto Prices (ccxt + Binance)
 - Live prices for BTC, ETH, XRP, SOL, DOGE, ADA, DOT, AVAX, LINK, MATIC and more
@@ -167,6 +167,16 @@ Sancho provides real-time cryptocurrency prices and technical analysis through t
 - **Timeframes**: 1h, 4h, Daily, Weekly, Monthly
 - **Overall signal**: Buy / Sell / Neutral recommendation
 - Works with crypto (Binance), Korean stocks (KRX), and US stocks (NASDAQ/NYSE)
+
+### Auto-Trading (Upbit)
+- Automated crypto trading on Upbit exchange (KRW markets)
+- **Supported coins**: BTC, ETH, XRP, SOL, TRX, ADA, XMR
+- **LLM Mode**: AI analyzes indicators and decides BUY/SELL/HOLD (confidence ≥ 70%), take-profit decided by AI
+- **Rule-based Mode**: Buy when 3+ of 6 indicator signals align, Sell when 2+ of 4 signals align, auto take-profit at +1.5%
+- **Risk management**: Stop-loss -2%, daily loss limit -5% (both modes)
+- **Indicators**: RSI, MACD, Bollinger Bands, SMA(20/50), EMA(12/26), ATR, Volume
+- Configurable coin, analysis interval (5m–4h), candle interval (1m–4h), trade amount
+- Real-time SSE event stream with live status, signals, and trade history
 
 ## Installation
 

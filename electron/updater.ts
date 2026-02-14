@@ -135,11 +135,18 @@ export async function applyPatch(onProgress?: (percent: number) => void): Promis
 
     // Create a batch script that waits for app to exit, runs installer, then relaunches
     const appExePath = process.execPath
+    // Derive install directory from exe path (e.g. C:\Users\X\AppData\Local\Programs\Sancho)
+    const installDir = path.dirname(appExePath)
     const batchPath = path.join(tempDir, 'sancho-update.bat')
     const batchContent = [
       '@echo off',
       'timeout /t 3 /nobreak > nul',
-      `start /wait "" "${installerPath}" /S`,
+      // Kill remaining processes before install
+      'taskkill /F /IM "Sancho.exe" 2>nul',
+      'taskkill /F /IM "main.exe" 2>nul',
+      'timeout /t 2 /nobreak > nul',
+      // /S = silent install; /D= sets install dir (required for non-oneClick NSIS)
+      `start /wait "" "${installerPath}" /S /D=${installDir}`,
       `start "" "${appExePath}"`,
       `del "${installerPath}" 2>nul`,
       'del "%~f0"',
