@@ -138,12 +138,12 @@ export async function applyPatch(onProgress?: (percent: number) => void): Promis
     const batchPath = path.join(tempDir, 'sancho-update.bat')
     const batchContent = [
       '@echo off',
-      'timeout /t 3 /nobreak > nul',
       'taskkill /F /IM "Sancho.exe" 2>nul',
       'taskkill /F /IM "main.exe" 2>nul',
-      'timeout /t 2 /nobreak > nul',
+      'timeout /t 5 /nobreak > nul',
       // /S = silent install (oneClick NSIS supports /S natively)
-      `start /wait "" "${installerPath}" /S`,
+      `"${installerPath}" /S`,
+      'timeout /t 3 /nobreak > nul',
       `start "" "${appExePath}"`,
       `del "${installerPath}" 2>nul`,
       'del "%~f0"',
