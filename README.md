@@ -123,17 +123,6 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 - **Telegram**: Connect with API key + QR code, auto-reply
 - **Matrix / Element X**: Connect with password or Access Token
 
-### Crypto Auto-Trading (v1.0.10)
-- **Supported exchanges**: Upbit (KRW markets)
-- **Supported coins**: BTC, ETH, XRP, SOL, TRX, ADA, XMR
-- **Two strategy modes**:
-  - **LLM Mode**: AI analyzes technical indicators and decides BUY/SELL/HOLD (confidence ≥ 70%). Take-profit timing is also decided by AI.
-  - **Rule-based Mode**: Automated trading using technical indicator signals — Buy when 3+ of 6 signals align, Sell when 2+ of 4 signals align. Auto take-profit at +1.5%.
-- **Risk management**: Stop-loss -2%, daily loss limit -5% (both modes)
-- **Indicators**: RSI, MACD, Bollinger Bands, SMA(20/50), EMA(12/26), ATR, Volume
-- **Configurable**: Coin, analysis interval (5m–4h), candle interval (1m–4h), trade amount
-- **Real-time monitoring**: SSE event stream with live status, signals, and trade history
-
 ### Scheduler
 - Schedule tasks for automatic execution
 - Notifications via connected messengers
