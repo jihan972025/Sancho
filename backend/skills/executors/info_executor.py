@@ -126,12 +126,17 @@ class InfoExecutor(SkillExecutor):
             if lat is None or lon is None:
                 return "[SKILL_ERROR] Provide location name or lat/lon coordinates."
 
-            from timezonefinder import TimezoneFinder
+            import httpx
             from datetime import datetime, timezone as tz
             import zoneinfo
 
-            tf = TimezoneFinder()
-            tz_name = tf.timezone_at(lat=float(lat), lng=float(lon))
+            # Use free timeapi.io to get timezone from coordinates
+            resp = httpx.get(
+                f"https://timeapi.io/api/timezone/coordinate?latitude={lat}&longitude={lon}",
+                timeout=10,
+            )
+            resp.raise_for_status()
+            tz_name = resp.json().get("timeZone")
             if not tz_name:
                 return f"Could not determine timezone for ({lat}, {lon})"
 
