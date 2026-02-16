@@ -324,7 +324,16 @@ async function applyDifferentialPatch(
       channelsToUpdate.push(ch)
     }
   }
-  if (channelsToUpdate.length === 0) return { success: true }
+  if (channelsToUpdate.length === 0) {
+    // No channels changed but version is newer — update local version tracking
+    local.version = manifest.version
+    for (const ch of CHANNEL_NAMES) {
+      local.channels[ch] = manifest.version
+    }
+    saveLocalPatchVersion(local)
+    console.log(`[Updater] No channel patches needed, version bumped to ${manifest.version}`)
+    return { success: true }
+  }
 
   // Total download size for progress tracking
   const totalSize = channelsToUpdate.reduce((sum, ch) => sum + manifest.channels[ch].size, 0)
