@@ -450,8 +450,8 @@ ipcMain.handle('patch:check', async () => {
 })
 
 ipcMain.handle('patch:apply', async () => {
-  const result = await applyPatch((percent) => {
-    mainWindow?.webContents.send('patch:progress', percent)
+  const result = await applyPatch((percent, channel) => {
+    mainWindow?.webContents.send('patch:progress', { percent, channel })
   })
   if (result.success) {
     mainWindow?.webContents.send('patch:applied')

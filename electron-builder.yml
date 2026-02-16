@@ -12,6 +12,8 @@ files:
   - node_modules/**/*
 
 asarUnpack:
+  - dist/**/*
+  - dist-electron/**/*
   - node_modules/.bin/playwright-cli*
   - node_modules/@playwright/cli/**/*
   - node_modules/playwright/**/*
@@ -31,6 +33,8 @@ extraResources:
     to: cloudflared/cloudflared.exe
   - from: html/
     to: html/
+  - from: patch-version.json
+    to: patch-version.json
 
 win:
   target:

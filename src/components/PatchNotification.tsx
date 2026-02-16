@@ -6,12 +6,23 @@ type PatchState = 'idle' | 'available' | 'downloading' | 'success' | 'error'
 interface PatchInfo {
   version: string
   notes: string
+  patchSize: number
+  channels: string[]
+  fullOnly: boolean
+}
+
+function formatSize(bytes: number): string {
+  if (!bytes || bytes <= 0) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export default function PatchNotification() {
   const [state, setState] = useState<PatchState>('idle')
   const [patchInfo, setPatchInfo] = useState<PatchInfo | null>(null)
   const [progress, setProgress] = useState(0)
+  const [currentChannel, setCurrentChannel] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -25,8 +36,9 @@ export default function PatchNotification() {
       setState('available')
     })
 
-    api.onProgress((percent: number) => {
-      setProgress(percent)
+    api.onProgress((info: { percent: number; channel?: string }) => {
+      setProgress(info.percent)
+      if (info.channel) setCurrentChannel(info.channel)
     })
 
     api.onApplied(() => {
@@ -44,6 +56,7 @@ export default function PatchNotification() {
 
     setState('downloading')
     setProgress(0)
+    setCurrentChannel('')
     const result = await api.apply()
     if (!result.success) {
       setError(result.error || 'Update failed')
@@ -61,12 +74,10 @@ export default function PatchNotification() {
     setError('')
   }
 
-  const handleRestart = () => {
-    const api = (window as any).electronAPI?.patch
-    api?.restart()
-  }
-
   if (state === 'idle') return null
+
+  const sizeLabel = patchInfo ? formatSize(patchInfo.patchSize) : ''
+  const isPatch = patchInfo && !patchInfo.fullOnly && patchInfo.channels && patchInfo.channels.length > 0
 
   return (
     <div className="fixed bottom-4 right-4 z-50 animate-slide-up">
@@ -95,9 +106,24 @@ export default function PatchNotification() {
         {/* Body */}
         <div className="px-4 py-3">
           {state === 'available' && patchInfo && (
-            <p className="text-xs text-slate-400 mb-3">
-              v{patchInfo.version} is ready to install.
-            </p>
+            <div className="mb-3">
+              <p className="text-xs text-slate-400">
+                v{patchInfo.version} is ready to install.
+              </p>
+              {sizeLabel && (
+                <p className="text-xs text-slate-500 mt-1">
+                  {isPatch ? (
+                    <>
+                      <span className="text-angel-400">{sizeLabel}</span>
+                      <span className="text-slate-600"> · </span>
+                      {patchInfo.channels.join(', ')}
+                    </>
+                  ) : (
+                    <span>{sizeLabel}</span>
+                  )}
+                </p>
+              )}
+            </div>
           )}
 
           {state === 'downloading' && (
@@ -108,7 +134,12 @@ export default function PatchNotification() {
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-xs text-slate-500 text-right">{progress}%</p>
+              <div className="flex justify-between">
+                {currentChannel && (
+                  <p className="text-xs text-slate-500">{currentChannel}</p>
+                )}
+                <p className="text-xs text-slate-500 text-right ml-auto">{progress}%</p>
+              </div>
             </div>
           )}
 
@@ -136,12 +167,12 @@ export default function PatchNotification() {
                   onClick={handleUpdate}
                   className="px-3 py-1.5 text-xs bg-angel-600 hover:bg-angel-700 text-white rounded-lg transition-colors"
                 >
-                  Update
+                  Update{sizeLabel ? ` (${sizeLabel})` : ''}
                 </button>
               </>
             )}
             {state === 'success' && (
-              <p className="text-xs text-emerald-400 animate-pulse">Launching installer...</p>
+              <p className="text-xs text-emerald-400 animate-pulse">Applying update...</p>
             )}
             {state === 'error' && (
               <button

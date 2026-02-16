@@ -59,11 +59,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     apply: () => ipcRenderer.invoke('patch:apply'),
     dismiss: (version: string) => ipcRenderer.invoke('patch:dismiss', version),
     restart: () => ipcRenderer.invoke('patch:restart'),
-    onAvailable: (cb: (info: { version: string; notes: string }) => void) => {
+    onAvailable: (cb: (info: { version: string; notes: string; patchSize: number; channels: string[]; fullOnly: boolean }) => void) => {
       ipcRenderer.on('patch:available', (_event, info) => cb(info))
     },
-    onProgress: (cb: (percent: number) => void) => {
-      ipcRenderer.on('patch:progress', (_event, percent) => cb(percent))
+    onProgress: (cb: (info: { percent: number; channel?: string }) => void) => {
+      ipcRenderer.on('patch:progress', (_event, info) => cb(info))
     },
     onApplied: (cb: () => void) => {
       ipcRenderer.on('patch:applied', () => cb())
