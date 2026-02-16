@@ -28,21 +28,8 @@ if (-not (Test-Path "venv")) {
 & "venv\Scripts\activate.ps1"
 pip install -r requirements.txt --quiet
 
-# Build with PyInstaller (exclude heavy optional packages to reduce size)
-pyinstaller `
-    --noconfirm `
-    --distpath "dist-backend" `
-    --name "main" `
-    --add-data "backend/skills/definitions;backend/skills/definitions" `
-    --exclude-module timezonefinder `
-    --exclude-module h3 `
-    --exclude-module geopy `
-    --exclude-module lxml `
-    --exclude-module selectolax `
-    --exclude-module yfinance `
-    --exclude-module pandas `
-    --exclude-module numpy `
-    pyinstaller_entry.py
+# Build with PyInstaller using main.spec (single source of truth)
+pyinstaller main.spec --noconfirm --distpath "dist-backend"
 
 Write-Host "  Backend built to dist-backend/" -ForegroundColor Green
 Write-Host ""

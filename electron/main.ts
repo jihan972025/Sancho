@@ -27,7 +27,7 @@ function findPythonBackend(): { command: string; args: string[] } {
     }
   }
   // Production: use PyInstaller-built executable
-  const backendPath = path.join(process.resourcesPath, 'backend', 'main', 'main.exe')
+  const backendPath = path.join(process.resourcesPath, 'backend', 'main.exe')
   if (fs.existsSync(backendPath)) {
     return { command: backendPath, args: [] }
   }
