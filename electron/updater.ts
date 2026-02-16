@@ -294,7 +294,7 @@ async function applyFullUpdate(
   ].join('\r\n')
   fs.writeFileSync(batchPath, batchContent)
 
-  const vbsContent = `CreateObject("Wscript.Shell").Run """${batchPath.replace(/\\/g, '\\\\')}""", 0, False`
+  const vbsContent = `CreateObject("Wscript.Shell").Run """${batchPath}""", 0, False`
   fs.writeFileSync(vbsPath, vbsContent)
 
   const child = spawn('wscript.exe', [vbsPath], { detached: true, stdio: 'ignore' })
@@ -484,13 +484,24 @@ function applyWithRestart(
   ].join('\r\n')
   fs.writeFileSync(batchPath, batchContent)
 
-  const vbsContent = `CreateObject("Wscript.Shell").Run """${batchPath.replace(/\\/g, '\\\\')}""", 0, False`
+  const vbsContent = `CreateObject("Wscript.Shell").Run """${batchPath}""", 0, False`
   fs.writeFileSync(vbsPath, vbsContent)
 
   console.log(`[Updater] Launching patch script: ${vbsPath}`)
+  console.log(`[Updater] Batch path: ${batchPath}`)
+  console.log(`[Updater] VBS content: ${vbsContent}`)
+
+  // Verify files exist before spawning
+  if (!fs.existsSync(batchPath)) {
+    return { success: false, error: `Batch file not created: ${batchPath}` }
+  }
+  if (!fs.existsSync(vbsPath)) {
+    return { success: false, error: `VBS file not created: ${vbsPath}` }
+  }
+
   const child = spawn('wscript.exe', [vbsPath], { detached: true, stdio: 'ignore' })
   child.unref()
-  setTimeout(() => app.exit(0), 500)
+  setTimeout(() => app.exit(0), 1000)
 
   return { success: true }
 }
