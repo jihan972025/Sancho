@@ -272,7 +272,6 @@ async function applyFullUpdate(
 
   const appExePath = process.execPath
   const batchPath = path.join(tempDir, 'sancho-update.bat')
-  const vbsPath = path.join(tempDir, 'sancho-update.vbs')
   const logPath = path.join(tempDir, 'sancho-update.log')
 
   const batchContent = [
@@ -294,10 +293,10 @@ async function applyFullUpdate(
   ].join('\r\n')
   fs.writeFileSync(batchPath, batchContent)
 
-  const vbsContent = `CreateObject("Wscript.Shell").Run """${batchPath}""", 0, False`
-  fs.writeFileSync(vbsPath, vbsContent)
-
-  const child = spawn('wscript.exe', [vbsPath], { detached: true, stdio: 'ignore' })
+  // Use cmd.exe directly instead of VBS to avoid encoding issues with non-ASCII paths
+  const child = spawn('cmd.exe', ['/c', 'start', '/min', '""', batchPath], {
+    detached: true, stdio: 'ignore', windowsHide: true,
+  })
   child.unref()
   setTimeout(() => app.exit(0), 500)
 
@@ -435,7 +434,6 @@ function applyWithRestart(
   const appExePath = process.execPath
   const installDir = path.dirname(appExePath)
   const batchPath = path.join(tempDir, 'sancho-patch.bat')
-  const vbsPath = path.join(tempDir, 'sancho-patch.vbs')
   const logPath = path.join(tempDir, 'sancho-patch.log')
 
   // Build extraction commands per channel
@@ -493,22 +491,17 @@ function applyWithRestart(
   ].join('\r\n')
   fs.writeFileSync(batchPath, batchContent)
 
-  const vbsContent = `CreateObject("Wscript.Shell").Run """${batchPath}""", 0, False`
-  fs.writeFileSync(vbsPath, vbsContent)
+  console.log(`[Updater] Launching patch script: ${batchPath}`)
 
-  console.log(`[Updater] Launching patch script: ${vbsPath}`)
-  console.log(`[Updater] Batch path: ${batchPath}`)
-  console.log(`[Updater] VBS content: ${vbsContent}`)
-
-  // Verify files exist before spawning
+  // Verify batch file exists before spawning
   if (!fs.existsSync(batchPath)) {
     return { success: false, error: `Batch file not created: ${batchPath}` }
   }
-  if (!fs.existsSync(vbsPath)) {
-    return { success: false, error: `VBS file not created: ${vbsPath}` }
-  }
 
-  const child = spawn('wscript.exe', [vbsPath], { detached: true, stdio: 'ignore' })
+  // Use cmd.exe directly instead of VBS to avoid encoding issues with non-ASCII paths
+  const child = spawn('cmd.exe', ['/c', 'start', '/min', '""', batchPath], {
+    detached: true, stdio: 'ignore', windowsHide: true,
+  })
   child.unref()
   setTimeout(() => app.exit(0), 1000)
 
