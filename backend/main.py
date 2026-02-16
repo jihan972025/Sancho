@@ -50,6 +50,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://localhost:8765",     # Backend (voice app served locally)
         "http://127.0.0.1:8765",
+        "null",                      # Electron file:// origin
     ],
     allow_origin_regex=r"https://[a-z0-9-]+\.trycloudflare\.com",  # Cloudflare tunnel
     allow_credentials=False,
