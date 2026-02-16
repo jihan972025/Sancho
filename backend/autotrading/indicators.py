@@ -132,10 +132,20 @@ def calculate_all(candles: list) -> dict:
     Each candle: [timestamp, open, high, low, close, volume]
     Returns a flat dict with all latest indicator values.
     """
-    closes = [c[4] for c in candles]
-    highs = [c[2] for c in candles]
-    lows = [c[3] for c in candles]
-    volumes = [c[5] for c in candles]
+    # Sanitize: replace None values with previous valid value (forward-fill)
+    def _sanitize(arr: list[float | None], fallback: float = 0) -> list[float]:
+        result: list[float] = []
+        last = fallback
+        for v in arr:
+            if v is not None:
+                last = float(v)
+            result.append(last)
+        return result
+
+    closes = _sanitize([c[4] for c in candles])
+    highs = _sanitize([c[2] for c in candles])
+    lows = _sanitize([c[3] for c in candles])
+    volumes = _sanitize([c[5] for c in candles])
 
     rsi_arr = calc_rsi(closes)
     macd_data = calc_macd(closes)

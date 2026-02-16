@@ -203,8 +203,9 @@ class TradingEngine:
                     await asyncio.sleep(60)
                     continue
 
-                # 2. Indicators
+                # 2. Indicators (ensure no None values)
                 ind = indicators.calculate_all(candles)
+                ind = {k: (v if v is not None else 0) for k, v in ind.items()}
                 self.current_price = ind["current_price"]
                 recent_text = indicators.format_recent_candles(candles, 10)
 
@@ -585,6 +586,9 @@ class TradingEngine:
         # Improvement #4: Recent trade history
         recent_trades_text = self._build_recent_trades_text()
 
+        # Ensure all indicator values are numeric (never None) for prompt formatting
+        safe_ind = {k: (v if v is not None else 0) for k, v in ind.items()}
+
         prompt = _SYSTEM_PROMPT.format(
             coin=self.coin,
             timeframe=self.timeframe,
@@ -599,7 +603,7 @@ class TradingEngine:
             atr_take_profit=atr_take_profit,
             atr_take_profit_pct=atr_take_profit_pct,
             recent_trades_text=recent_trades_text,
-            **ind,
+            **safe_ind,
         )
 
         messages = [
