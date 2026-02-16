@@ -1,9 +1,9 @@
 {
-    "version":  "1.0.11",
+    "version":  "1.0.12",
     "channels":  {
-                     "html":  "1.0.11",
-                     "backend":  "1.0.11",
-                     "frontend":  "1.0.11",
-                     "electron":  "1.0.11"
+                     "html":  "1.0.12",
+                     "backend":  "1.0.12",
+                     "frontend":  "1.0.12",
+                     "electron":  "1.0.12"
                  }
 }

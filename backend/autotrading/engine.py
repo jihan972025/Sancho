@@ -36,6 +36,16 @@ TIMEFRAME_SECONDS = {
     "4h": 4 * 60 * 60,
 }
 
+# ── Higher timeframe mapping for trend filter (improvement #1) ──
+HIGHER_TF_MAP = {
+    "5m": "1h",
+    "10m": "1h",
+    "15m": "4h",
+    "30m": "4h",
+    "1h": "1d",
+    "4h": "1d",
+}
+
 # ── LLM Strategy Prompt ──
 
 _SYSTEM_PROMPT = """\
@@ -51,14 +61,22 @@ Analysis Interval: {timeframe}
 Candle Interval: {candle_interval}
 Current Price: ₩{current_price:,.0f}
 
-## Technical Indicators
+## Trend Summary
+{trend_summary}
+
+## Higher Timeframe Context
+{higher_tf_text}
+
+## Technical Indicators ({candle_interval})
 - RSI(14): {rsi}
 - MACD: {macd} | Signal: {macd_signal} | Histogram: {macd_histogram}
 - Bollinger Bands: Upper=₩{bb_upper:,.0f}  Mid=₩{bb_middle:,.0f}  Lower=₩{bb_lower:,.0f}  Position={bb_position}
 - SMA(20): ₩{sma_20:,.0f}  SMA(50): ₩{sma_50:,.0f}
 - EMA(12): ₩{ema_12:,.0f}  EMA(26): ₩{ema_26:,.0f}
 - Volume: {volume:,.2f}  (20-avg: {volume_avg_20:,.2f})
-- ATR: ₩{atr:,.0f}
+- ATR(14): ₩{atr:,.0f}
+- ATR-based Stop-Loss: ₩{atr_stop_loss:,.0f} ({atr_stop_loss_pct:+.2f}%)
+- ATR-based Take-Profit: ₩{atr_take_profit:,.0f} ({atr_take_profit_pct:+.2f}%)
 - Last candle change: {price_change_pct}%
 
 ## Recent Candles
@@ -67,14 +85,20 @@ Current Price: ₩{current_price:,.0f}
 ## Position
 {position_text}
 
+## Recent Trade History
+{recent_trades_text}
+
 ## Rules
 1. Require confluence of 3+ indicators before BUY/SELL.
 2. HOLD if uncertain – no trade is better than a losing trade.
 3. Factor in 0.05 % fee per side.
-4. If in position: recommend SELL on stop-loss (-2 %) or reversal signal.
+4. Use ATR-based dynamic stop-loss/take-profit levels. Prefer stop_loss_pct and take_profit_pct derived from ATR rather than fixed values.
 5. Avoid overtrading.
 6. Volume confirmation: prefer BUY/SELL signals backed by above-average volume; be cautious when volume is below the 20-period average.
 7. EMA crossover: EMA(12) > EMA(26) = bullish trend, EMA(12) < EMA(26) = bearish trend. Use as trend filter before entering trades.
+8. CRITICAL: Do NOT enter BUY against the higher timeframe trend. If the higher TF trend is BEARISH, only HOLD or SELL.
+9. If recent trades show consecutive losses (3+), be extra conservative — raise confidence threshold mentally and prefer HOLD.
+10. If in position: recommend SELL on ATR stop-loss breach or reversal signal.
 
 IMPORTANT: Write the "reasoning" field in {language}. All other field names and values (action, confidence, etc.) must remain in English.
 
@@ -126,6 +150,15 @@ class TradingEngine:
         self.last_decision: dict = {}
         self.current_price: float = 0
 
+        # Higher TF trend cache (improvement #1)
+        self._higher_tf_trend: str = "NEUTRAL"
+        self._higher_tf_ind: dict = {}
+        self._higher_tf_label: str = ""
+
+        # Recent trade history for feedback (improvement #4)
+        self._recent_trades: list[dict] = []
+        self._consecutive_losses: int = 0
+
     # ── Lifecycle ──
 
     async def start(self) -> None:
@@ -155,6 +188,9 @@ class TradingEngine:
         # Candle interval is independent of loop interval
         ccxt_tf = self.candle_interval
 
+        # Load recent trade history for feedback (improvement #4)
+        self._load_recent_trades()
+
         while self.is_running:
             try:
                 self._candle_count += 1
@@ -172,15 +208,47 @@ class TradingEngine:
                 self.current_price = ind["current_price"]
                 recent_text = indicators.format_recent_candles(candles, 10)
 
-                # 3. Check stop-loss / take-profit if in position
-                if self.in_position:
+                # 2.5. Higher timeframe trend filter (improvement #1)
+                higher_tf = HIGHER_TF_MAP.get(ccxt_tf)
+                if higher_tf:
+                    try:
+                        htf_candles = await loop.run_in_executor(
+                            None, self._fetch_candles, higher_tf
+                        )
+                        if htf_candles and len(htf_candles) >= 30:
+                            self._higher_tf_ind = indicators.calculate_all(htf_candles)
+                            self._higher_tf_label = higher_tf
+                            self._higher_tf_trend = self._determine_trend(self._higher_tf_ind)
+                    except Exception as e:
+                        logger.warning("Higher TF fetch failed: %s", e)
+
+                # 3. ATR-based dynamic stop-loss / take-profit (improvement #2)
+                atr_val = ind.get("atr", 0)
+                if self.in_position and atr_val > 0:
+                    atr_stop = self.entry_price - 1.5 * atr_val
+                    atr_stop_pct = (atr_stop - self.entry_price) / self.entry_price * 100
+                    unrealized_pct = (self.current_price - self.entry_price) / self.entry_price * 100
+
+                    if self.current_price <= atr_stop:
+                        self._emit({"type": "progress", "content": f"ATR stop-loss triggered: ₩{self.current_price:,.0f} <= ₩{atr_stop:,.0f} ({unrealized_pct:+.2f}%)"})
+                        await self._execute_sell(f"ATR stop-loss at ₩{atr_stop:,.0f} ({atr_stop_pct:+.2f}%)", loop)
+                        await asyncio.sleep(interval)
+                        continue
+
+                    # Hard stop at -2% as absolute safety net
+                    if unrealized_pct <= -2.0:
+                        self._emit({"type": "progress", "content": f"Hard stop-loss triggered ({unrealized_pct:+.2f}%)"})
+                        await self._execute_sell("Hard stop-loss at -2%", loop)
+                        await asyncio.sleep(interval)
+                        continue
+                elif self.in_position:
+                    # Fallback: fixed stop if ATR unavailable
                     unrealized_pct = (self.current_price - self.entry_price) / self.entry_price * 100
                     if unrealized_pct <= -2.0:
                         self._emit({"type": "progress", "content": f"Stop-loss triggered ({unrealized_pct:+.2f}%)"})
                         await self._execute_sell("Stop-loss at -2%", loop)
                         await asyncio.sleep(interval)
                         continue
-                    # Take-profit removed — let signals (LLM or rule) decide when to sell
 
                 # 4. Daily loss limit
                 if self._daily_pnl_pct <= -5.0:
@@ -202,6 +270,10 @@ class TradingEngine:
                 cooldown_ok = (self._candle_count - self._last_trade_candle) >= 2
                 confidence = decision.get("confidence", 0)
                 min_conf = 0.5 if self.strategy == "rule" else 0.7
+
+                # Raise confidence threshold after consecutive losses (improvement #4)
+                if self._consecutive_losses >= 3:
+                    min_conf = min(min_conf + 0.15, 0.95)
 
                 if decision.get("action") == "BUY" and not self.in_position and confidence >= min_conf and cooldown_ok:
                     await self._execute_buy(decision.get("reasoning", ""), loop)
@@ -328,6 +400,14 @@ class TradingEngine:
 
             storage.save_trade(trade_record)
 
+            # Update recent trade history for feedback (improvement #4)
+            self._recent_trades.insert(0, trade_record)
+            self._recent_trades = self._recent_trades[:10]  # keep last 10
+            if pnl_pct < 0:
+                self._consecutive_losses += 1
+            else:
+                self._consecutive_losses = 0
+
             self._emit({
                 "type": "trade",
                 "content": {"action": "SELL", **trade_record},
@@ -361,6 +441,15 @@ class TradingEngine:
         ema26 = ind.get("ema_26", price)
         vol = ind.get("volume", 0)
         vol_avg = ind.get("volume_avg_20", 0)
+        atr_val = ind.get("atr", 0)
+
+        # ATR-based dynamic stop/take-profit (improvement #2)
+        if atr_val > 0 and price > 0:
+            sl_pct = round(-1.5 * atr_val / price * 100, 2)
+            tp_pct = round(2.0 * atr_val / price * 100, 2)
+        else:
+            sl_pct = -2.0
+            tp_pct = 1.5
 
         if self.in_position:
             # Sell signals
@@ -381,10 +470,21 @@ class TradingEngine:
                     "confidence": round(conf, 2),
                     "reasoning": "Rule: " + ", ".join(sell_signals),
                     "expected_move_pct": -0.5,
-                    "stop_loss_pct": -2.0,
-                    "take_profit_pct": 1.5,
+                    "stop_loss_pct": sl_pct,
+                    "take_profit_pct": tp_pct,
                 }
         else:
+            # Improvement #5: Block BUY against higher TF trend
+            if self._higher_tf_trend == "BEARISH":
+                return {
+                    "action": "HOLD",
+                    "confidence": 0,
+                    "reasoning": f"Rule: higher TF ({self._higher_tf_label}) trend is BEARISH — no BUY",
+                    "expected_move_pct": 0,
+                    "stop_loss_pct": sl_pct,
+                    "take_profit_pct": tp_pct,
+                }
+
             # Buy signals
             buy_signals: list[str] = []
             if rsi < 30:
@@ -395,20 +495,35 @@ class TradingEngine:
                 buy_signals.append(f"BB pos({bb_pos:.2f})<0.2")
             if price > sma20:
                 buy_signals.append("Price>SMA20")
+            # Improvement #5: EMA trend alignment is REQUIRED for BUY
             if ema12 > ema26:
-                buy_signals.append("EMA12>EMA26")
+                buy_signals.append("EMA12>EMA26(trend✓)")
+            else:
+                # Trend not aligned — cannot buy
+                return {
+                    "action": "HOLD",
+                    "confidence": 0,
+                    "reasoning": "Rule: EMA12<EMA26 — trend not aligned for BUY",
+                    "expected_move_pct": 0,
+                    "stop_loss_pct": sl_pct,
+                    "take_profit_pct": tp_pct,
+                }
             if vol_avg > 0 and vol > vol_avg:
                 buy_signals.append("Vol>Avg")
 
+            # Higher TF bullish adds extra confidence
+            if self._higher_tf_trend == "BULLISH":
+                buy_signals.append(f"HTF({self._higher_tf_label})↑")
+
             if len(buy_signals) >= 3:
-                conf = len(buy_signals) / 6
+                conf = len(buy_signals) / 7  # max 7 signals now
                 return {
                     "action": "BUY",
                     "confidence": round(conf, 2),
                     "reasoning": "Rule: " + ", ".join(buy_signals),
-                    "expected_move_pct": 0.5,
-                    "stop_loss_pct": -2.0,
-                    "take_profit_pct": 1.5,
+                    "expected_move_pct": round(tp_pct * 0.6, 2),
+                    "stop_loss_pct": sl_pct,
+                    "take_profit_pct": tp_pct,
                 }
 
         return {
@@ -416,8 +531,8 @@ class TradingEngine:
             "confidence": 0,
             "reasoning": "Rule: insufficient signals",
             "expected_move_pct": 0,
-            "stop_loss_pct": -2.0,
-            "take_profit_pct": 1.5,
+            "stop_loss_pct": sl_pct,
+            "take_profit_pct": tp_pct,
         }
 
     # ── LLM strategy ──
@@ -447,6 +562,29 @@ class TradingEngine:
         }
         language = lang_map.get(self.language, "English")
 
+        # Improvement #3: Trend summary line
+        trend_summary = self._build_trend_summary(ind)
+
+        # Improvement #1: Higher TF context
+        higher_tf_text = self._build_higher_tf_text()
+
+        # Improvement #2: ATR-based dynamic stop/take-profit
+        price = ind.get("current_price", 0)
+        atr_val = ind.get("atr", 0)
+        if atr_val > 0 and price > 0:
+            atr_stop_loss = price - 1.5 * atr_val
+            atr_stop_loss_pct = -1.5 * atr_val / price * 100
+            atr_take_profit = price + 2.0 * atr_val
+            atr_take_profit_pct = 2.0 * atr_val / price * 100
+        else:
+            atr_stop_loss = price * 0.98
+            atr_stop_loss_pct = -2.0
+            atr_take_profit = price * 1.015
+            atr_take_profit_pct = 1.5
+
+        # Improvement #4: Recent trade history
+        recent_trades_text = self._build_recent_trades_text()
+
         prompt = _SYSTEM_PROMPT.format(
             coin=self.coin,
             timeframe=self.timeframe,
@@ -454,6 +592,13 @@ class TradingEngine:
             recent_candles=recent_candles,
             position_text=position_text,
             language=language,
+            trend_summary=trend_summary,
+            higher_tf_text=higher_tf_text,
+            atr_stop_loss=atr_stop_loss,
+            atr_stop_loss_pct=atr_stop_loss_pct,
+            atr_take_profit=atr_take_profit,
+            atr_take_profit_pct=atr_take_profit_pct,
+            recent_trades_text=recent_trades_text,
             **ind,
         )
 
@@ -475,6 +620,113 @@ class TradingEngine:
         except (json.JSONDecodeError, Exception) as e:
             logger.warning("LLM response parse error: %s", e)
             return {"action": "HOLD", "confidence": 0, "reasoning": f"Parse error: {e}"}
+
+    # ── Trend & feedback helpers ──
+
+    @staticmethod
+    def _determine_trend(ind: dict) -> str:
+        """Determine trend direction from indicators: BULLISH / BEARISH / NEUTRAL."""
+        bullish = 0
+        bearish = 0
+
+        ema12 = ind.get("ema_12", 0)
+        ema26 = ind.get("ema_26", 0)
+        if ema12 and ema26:
+            if ema12 > ema26:
+                bullish += 1
+            else:
+                bearish += 1
+
+        price = ind.get("current_price", 0)
+        sma50 = ind.get("sma_50", 0)
+        if price and sma50:
+            if price > sma50:
+                bullish += 1
+            else:
+                bearish += 1
+
+        macd_hist = ind.get("macd_histogram", 0)
+        if macd_hist > 0:
+            bullish += 1
+        elif macd_hist < 0:
+            bearish += 1
+
+        if bullish >= 2:
+            return "BULLISH"
+        elif bearish >= 2:
+            return "BEARISH"
+        return "NEUTRAL"
+
+    def _build_trend_summary(self, ind: dict) -> str:
+        """Build a 1-line trend summary for LLM context (improvement #3)."""
+        trend = self._determine_trend(ind)
+        ema12 = ind.get("ema_12", 0)
+        ema26 = ind.get("ema_26", 0)
+        price = ind.get("current_price", 0)
+        sma50 = ind.get("sma_50", 0)
+
+        parts = [f"Current Trend: {trend}"]
+        if ema12 and ema26:
+            diff_pct = (ema12 - ema26) / ema26 * 100 if ema26 else 0
+            parts.append(f"EMA12{'>' if ema12 > ema26 else '<'}EMA26 ({diff_pct:+.2f}%)")
+        if price and sma50:
+            dist_pct = (price - sma50) / sma50 * 100 if sma50 else 0
+            parts.append(f"Price{'>' if price > sma50 else '<'}SMA50 ({dist_pct:+.2f}%)")
+
+        return " | ".join(parts)
+
+    def _build_higher_tf_text(self) -> str:
+        """Build higher timeframe context text (improvement #1)."""
+        if not self._higher_tf_ind or not self._higher_tf_label:
+            return "Not available"
+
+        h = self._higher_tf_ind
+        return (
+            f"Timeframe: {self._higher_tf_label} | Trend: {self._higher_tf_trend}\n"
+            f"  EMA(12): ₩{h.get('ema_12', 0):,.0f}  EMA(26): ₩{h.get('ema_26', 0):,.0f}\n"
+            f"  SMA(50): ₩{h.get('sma_50', 0):,.0f}  RSI: {h.get('rsi', 0):.1f}\n"
+            f"  MACD Hist: {h.get('macd_histogram', 0):.4f}"
+        )
+
+    def _build_recent_trades_text(self) -> str:
+        """Build recent trades summary for LLM context (improvement #4)."""
+        if not self._recent_trades:
+            return "No recent trades"
+
+        lines = []
+        wins = sum(1 for t in self._recent_trades if t.get("pnl_pct", 0) >= 0)
+        losses = len(self._recent_trades) - wins
+        total_pnl = sum(t.get("pnl_pct", 0) for t in self._recent_trades)
+        lines.append(f"Last {len(self._recent_trades)} trades: {wins}W/{losses}L | Total PnL: {total_pnl:+.2f}%")
+
+        if self._consecutive_losses >= 2:
+            lines.append(f"⚠ {self._consecutive_losses} consecutive losses — BE CONSERVATIVE")
+
+        # Show last 3 trades detail
+        for t in self._recent_trades[:3]:
+            pnl = t.get("pnl_pct", 0)
+            entry = t.get("entry_price", 0)
+            exit_p = t.get("exit_price", 0)
+            lines.append(f"  {'✓' if pnl >= 0 else '✗'} ₩{entry:,.0f}→₩{exit_p:,.0f} ({pnl:+.2f}%)")
+
+        return "\n".join(lines)
+
+    def _load_recent_trades(self) -> None:
+        """Load recent trade history from storage on startup (improvement #4)."""
+        try:
+            trades = storage.get_trades(limit=10)
+            # Filter to same coin
+            self._recent_trades = [t for t in trades if t.get("coin") == self.coin][:10]
+            # Count consecutive losses from most recent
+            self._consecutive_losses = 0
+            for t in self._recent_trades:
+                if t.get("pnl_pct", 0) < 0:
+                    self._consecutive_losses += 1
+                else:
+                    break
+        except Exception:
+            self._recent_trades = []
+            self._consecutive_losses = 0
 
     # ── Helpers ──
 
