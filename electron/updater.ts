@@ -133,28 +133,42 @@ export async function applyPatch(onProgress?: (percent: number) => void): Promis
     await httpsDownload(installerAsset.browser_download_url, installerPath, onProgress)
     console.log(`[Updater] Download complete: ${installerPath}`)
 
-    // Create a batch script that waits for app to exit, runs installer, then relaunches
+    // Create a VBScript wrapper + batch script for truly hidden window update
     const appExePath = process.execPath
     const batchPath = path.join(tempDir, 'sancho-update.bat')
+    const vbsPath = path.join(tempDir, 'sancho-update.vbs')
+    const logPath = path.join(tempDir, 'sancho-update.log')
     const batchContent = [
       '@echo off',
+      `echo [%date% %time%] Update started >> "${logPath}"`,
       'taskkill /F /IM "Sancho.exe" 2>nul',
       'taskkill /F /IM "main.exe" 2>nul',
-      'timeout /t 5 /nobreak > nul',
-      // /S = silent install (oneClick NSIS supports /S natively)
+      'taskkill /F /IM "cloudflared.exe" 2>nul',
+      `echo [%date% %time%] Processes killed, waiting... >> "${logPath}"`,
+      // Wait for processes to fully exit
+      'ping -n 6 127.0.0.1 > nul 2>&1',
+      // Run installer silently (/S is blocking - waits until done)
+      `echo [%date% %time%] Running installer... >> "${logPath}"`,
       `"${installerPath}" /S`,
-      'timeout /t 3 /nobreak > nul',
+      `echo [%date% %time%] Installer exited with code %ERRORLEVEL% >> "${logPath}"`,
+      // Wait for installation to settle
+      'ping -n 4 127.0.0.1 > nul 2>&1',
+      `echo [%date% %time%] Launching app... >> "${logPath}"`,
       `start "" "${appExePath}"`,
       `del "${installerPath}" 2>nul`,
-      'del "%~f0"',
+      `echo [%date% %time%] Update complete >> "${logPath}"`,
+      'del "%~f0" 2>nul',
     ].join('\r\n')
-    fs.writeFileSync(batchPath, batchContent, 'utf-8')
+    fs.writeFileSync(batchPath, batchContent)
 
-    console.log(`[Updater] Launching update script: ${batchPath}`)
-    const child = spawn('cmd.exe', ['/c', batchPath], {
+    // VBScript to run batch file completely hidden (no cmd window)
+    const vbsContent = `CreateObject("Wscript.Shell").Run """${batchPath.replace(/\\/g, '\\\\')}""", 0, False`
+    fs.writeFileSync(vbsPath, vbsContent)
+
+    console.log(`[Updater] Launching update script: ${vbsPath}`)
+    const child = spawn('wscript.exe', [vbsPath], {
       detached: true,
       stdio: 'ignore',
-      windowsHide: true,
     })
     child.unref()
 
