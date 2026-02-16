@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Язык",
     "matrixPasswordHelp": "Пароль вашей учётной записи Element X. Если вы зарегистрировались через SSO (Gmail и т.д.), используйте токен доступа ниже.",
-    "matrixTokenHelp": "Если зарегистрированы через SSO без пароля: Element Web → Settings → Help & About → Скопировать токен доступа"
+    "matrixTokenHelp": "Если зарегистрированы через SSO без пароля: Element Web → Settings → Help & About → Скопировать токен доступа",
+    "voiceApp": "Голосовое приложение"
   },
   "profile": {
     "googleAccount": "Аккаунт Google",
@@ -85,6 +86,7 @@
     "language": "Язык",
     "country": "Страна",
     "city": "Город",
+    "timezone": "Часовой пояс",
     "sanchoIdentity": "Информация о Sancho",
     "nickname": "Псевдоним",
     "role": "Роль",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Мои активы",
+    "krwBalance": "Баланс KRW",
+    "totalEval": "Общая оценка",
+    "holdings": "Количество",
+    "avgBuyPrice": "Ср. цена покупки",
+    "evalAmount": "Оценка",
+    "returnRate": "Доходность",
+    "noHoldings": "Нет монет",
+    "refreshAssets": "Обновить"
+  },
+  "voice": {
+    "title": "Голосовое приложение",
+    "description": "Отсканируйте QR-код телефоном, чтобы общаться с Sancho голосом.",
+    "qrCode": "QR-код",
+    "scanGuide": "Сканируйте телефоном в той же WiFi сети",
+    "copyUrl": "Копировать URL",
+    "copied": "Скопировано!",
+    "networkWarning": "Компьютер и телефон должны быть подключены к одной WiFi сети.",
+    "voiceUrl": "URL голосового приложения",
+    "internetAccess": "Доступ через интернет",
+    "internetDesc": "Включить для доступа через мобильные данные (4G/5G) или любую сеть",
+    "tunnelStarting": "Запуск безопасного туннеля...",
+    "tunnelActive": "Доступно через интернет",
+    "tunnelError": "Не удалось запустить туннель",
+    "wifiOnly": "Только WiFi",
+    "internet": "Интернет",
+    "scanGuideInternet": "Сканируйте телефоном (работает в любой сети)",
+    "tunnelFirstTime": "Первый запуск может занять время для загрузки"
   }
 }

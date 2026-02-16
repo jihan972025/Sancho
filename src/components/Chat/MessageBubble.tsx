@@ -1,4 +1,4 @@
-import { User, MessageCircle, Send, Globe } from 'lucide-react'
+import { User, MessageCircle, Send, Globe, Mic } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import type { Message } from '../../types'
 
@@ -7,6 +7,7 @@ interface Props {
 }
 
 const sourceConfig: Record<string, { color: string; avatarColor: string; icon: typeof Send; label: string }> = {
+  voice: { color: 'bg-amber-600', avatarColor: 'bg-amber-600', icon: Mic, label: 'Voice' },
   whatsapp: { color: 'bg-green-600', avatarColor: 'bg-green-600', icon: MessageCircle, label: 'WhatsApp' },
   telegram: { color: 'bg-blue-500', avatarColor: 'bg-blue-500', icon: Send, label: 'Telegram' },
   matrix: { color: 'bg-purple-600', avatarColor: 'bg-purple-600', icon: Globe, label: 'Matrix' },

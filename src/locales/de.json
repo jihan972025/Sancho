@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Sprache",
     "matrixPasswordHelp": "Passwort für dein Element X-Konto. Wenn du dich mit SSO (Gmail usw.) registriert hast, verwende unten das Zugriffstoken.",
-    "matrixTokenHelp": "Bei Registrierung über SSO ohne Passwort: Element Web → Settings → Help & About → Zugriffstoken kopieren"
+    "matrixTokenHelp": "Bei Registrierung über SSO ohne Passwort: Element Web → Settings → Help & About → Zugriffstoken kopieren",
+    "voiceApp": "Sprach-App"
   },
   "profile": {
     "googleAccount": "Google-Konto",
@@ -85,6 +86,7 @@
     "language": "Sprache",
     "country": "Land",
     "city": "Stadt",
+    "timezone": "Zeitzone",
     "sanchoIdentity": "Sanchos Identität",
     "nickname": "Spitzname",
     "role": "Rolle",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Meine Vermögenswerte",
+    "krwBalance": "KRW-Guthaben",
+    "totalEval": "Gesamtbewertung",
+    "holdings": "Bestand",
+    "avgBuyPrice": "Ø Kaufpreis",
+    "evalAmount": "Bewertung",
+    "returnRate": "Rendite",
+    "noHoldings": "Keine Coins",
+    "refreshAssets": "Aktualisieren"
+  },
+  "voice": {
+    "title": "Sprach-App",
+    "description": "Scannen Sie den QR-Code mit Ihrem Handy, um per Sprache mit Sancho zu sprechen.",
+    "qrCode": "QR-Code",
+    "scanGuide": "Scannen Sie mit Ihrem Handy im selben WLAN",
+    "copyUrl": "URL kopieren",
+    "copied": "Kopiert!",
+    "networkWarning": "Desktop und Handy müssen mit demselben WLAN verbunden sein.",
+    "voiceUrl": "Sprach-App URL",
+    "internetAccess": "Internetzugang",
+    "internetDesc": "Aktivieren für Zugriff über mobile Daten (4G/5G) oder jedes Netzwerk",
+    "tunnelStarting": "Sicherer Tunnel wird gestartet...",
+    "tunnelActive": "Über das Internet erreichbar",
+    "tunnelError": "Tunnel konnte nicht gestartet werden",
+    "wifiOnly": "Nur WLAN",
+    "internet": "Internet",
+    "scanGuideInternet": "Mit dem Handy scannen (funktioniert in jedem Netzwerk)",
+    "tunnelFirstTime": "Beim ersten Mal kann der Download etwas dauern"
   }
 }

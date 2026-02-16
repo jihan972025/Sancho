@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -28,6 +28,11 @@ class ChatMessage(BaseModel):
     role: str
     content: str
 
+    @property
+    def safe_content(self) -> str:
+        """Return content with length cap to prevent abuse."""
+        return self.content[:50000] if self.content else ""
+
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
@@ -35,6 +40,20 @@ class ChatRequest(BaseModel):
     stream: bool = True
     session_id: Optional[str] = None
     conversation_id: Optional[str] = None
+    source: Optional[str] = None  # "voice", "whatsapp", etc.
+
+    def validate_tunnel_request(self) -> str | None:
+        """Validate request from tunnel. Returns error message or None."""
+        if len(self.messages) > 50:
+            return "Too many messages (max 50)"
+        for msg in self.messages:
+            if len(msg.content) > 50000:
+                return "Message too long (max 50000 chars)"
+            if msg.role not in ("user", "assistant", "system"):
+                return f"Invalid role: {msg.role}"
+        if len(self.model) > 100:
+            return "Model name too long"
+        return None
 
 
 def _is_browser_intent(text: str) -> bool:
@@ -74,6 +93,7 @@ def _save_to_conversation(
     user_content: str,
     assistant_content: str,
     model: str = "",
+    source: str = "",
 ) -> None:
     """Save user + assistant messages to conversation file."""
     try:
@@ -83,12 +103,13 @@ def _save_to_conversation(
 
         conv = conv_storage.get_conversation(conversation_id)
         if not conv:
+            logger.warning("Conversation %s not found, skipping save", conversation_id)
             return
         conv.messages.append(
-            ConversationMessage(role="user", content=user_content)
+            ConversationMessage(role="user", content=user_content, source=source)
         )
         conv.messages.append(
-            ConversationMessage(role="assistant", content=assistant_content)
+            ConversationMessage(role="assistant", content=assistant_content, source=source)
         )
         conv.updated_at = datetime.now(timezone.utc).isoformat()
         if conv.model != model and model:
@@ -106,7 +127,13 @@ def _save_to_conversation(
 
 
 @router.post("/send")
-async def send_message(req: ChatRequest):
+async def send_message(req: ChatRequest, request: Request):
+    # Validate input for tunnel requests (prevents abuse)
+    if "cf-connecting-ip" in request.headers:
+        validation_error = req.validate_tunnel_request()
+        if validation_error:
+            raise HTTPException(status_code=400, detail=validation_error)
+
     provider = get_provider_for_model(req.model)
     if not provider:
         raise HTTPException(
@@ -198,18 +225,22 @@ async def send_message(req: ChatRequest):
                         # Auto-save to conversation
                         if req.conversation_id and last_user_msg:
                             _save_to_conversation(
-                                req.conversation_id, last_user_msg, full_text, req.model
+                                req.conversation_id, last_user_msg, full_text, req.model,
+                                source=req.source or "",
                             )
         else:
             # Skill-enabled 2-phase path
             async def event_stream():
                 skill_final_response = ""
                 try:
-                    # Phase 1: lightweight skill detection with ONLY skill prompt + user message
-                    # Keep it lean — persona/memory go in Phase 2 only
+                    # Phase 1: skill detection with conversation context
+                    # Include user/assistant history (not system msgs like
+                    # USER.md/SANCHO.md) for better intent detection while
+                    # keeping skill_prompt as the sole system instruction.
+                    non_system_msgs = [m for m in messages if m["role"] != "system"]
                     skill_messages = [
                         {"role": "system", "content": skill_prompt},
-                        {"role": "user", "content": last_user_msg},
+                        *non_system_msgs[-6:],  # last 3 exchanges for context
                     ]
 
                     # Phase 1: non-streaming complete to detect skill call
@@ -247,13 +278,15 @@ async def send_message(req: ChatRequest):
                     skill_call = parse_skill_call(phase1_response)
 
                     if not skill_call:
-                        # No skill needed — send Phase 1 response as tokens
-                        skill_final_response = phase1_response
-                        for char in _chunk_text(phase1_response):
+                        # No skill needed — re-stream with full context
+                        # (USER.md, SANCHO.md, memory, language are in `messages`)
+                        # Phase 1 was a lean skill-router; now answer properly
+                        async for token in provider.stream(messages, req.model):
                             if cancel_event.is_set():
                                 yield f"data: {json.dumps({'type': 'done', 'reason': 'cancelled'})}\n\n"
                                 return
-                            yield f"data: {json.dumps({'type': 'token', 'content': char})}\n\n"
+                            skill_final_response += token
+                            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
                         yield f"data: {json.dumps({'type': 'done', 'reason': 'complete'})}\n\n"
                     else:
                         # Skill call detected — execute with chaining support
@@ -363,7 +396,8 @@ async def send_message(req: ChatRequest):
                     if req.conversation_id and last_user_msg and skill_final_response:
                         _save_to_conversation(
                             req.conversation_id, last_user_msg,
-                            skill_final_response, req.model
+                            skill_final_response, req.model,
+                            source=req.source or "",
                         )
 
         return StreamingResponse(

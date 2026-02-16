@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { User, Globe, MapPin, ChevronRight, ChevronLeft, Check, Bot } from 'lucide-react'
 import { saveUserProfile, saveSanchoProfile } from '../../api/client'
-import { LANGUAGES, GENDERS, COUNTRIES } from '../../constants/profileOptions'
+import { LANGUAGES, GENDERS, COUNTRIES, TIMEZONES } from '../../constants/profileOptions'
 
 interface Props {
   onComplete: () => void
@@ -16,6 +16,7 @@ export default function OnboardingModal({ onComplete }: Props) {
   const [language, setLanguage] = useState('en')
   const [country, setCountry] = useState('')
   const [city, setCity] = useState('')
+  const [timezone, setTimezone] = useState('Asia/Seoul')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -40,6 +41,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         language,
         country: selectedCountry?.name || country,
         city: city.trim() || '-',
+        timezone,
       })
       await saveSanchoProfile({
         nickname: sanchoNickname.trim() || 'Sancho',
@@ -206,6 +208,20 @@ export default function OnboardingModal({ onComplete }: Props) {
                   className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
                 />
               </div>
+              <div>
+                <label className="block text-sm text-slate-300 mb-1.5">Timezone</label>
+                <select
+                  value={timezone}
+                  onChange={(e) => setTimezone(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-900 border border-slate-600 rounded-lg text-slate-200 focus:outline-none focus:border-angel-500 transition-colors"
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 
@@ -252,6 +268,12 @@ export default function OnboardingModal({ onComplete }: Props) {
                     <span className="text-sm text-slate-200">{city}</span>
                   </div>
                 )}
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-400">Timezone</span>
+                  <span className="text-sm text-slate-200">
+                    {TIMEZONES.find((tz) => tz.value === timezone)?.label || timezone}
+                  </span>
+                </div>
               </div>
               <p className="text-xs text-slate-500">
                 You can update these settings later in the Settings panel.

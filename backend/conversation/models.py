@@ -9,7 +9,7 @@ class ConversationMessage(BaseModel):
     timestamp: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
-    source: str = ""  # "chat" | "whatsapp" | "telegram" | "matrix"
+    source: str = ""  # "chat" | "voice" | "whatsapp" | "telegram" | "matrix"
 
 
 class Conversation(BaseModel):

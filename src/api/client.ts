@@ -245,6 +245,7 @@ export function saveUserProfile(data: {
   language: string
   country: string
   city: string
+  timezone: string
 }) {
   return request('/api/settings/user-profile', {
     method: 'PUT',

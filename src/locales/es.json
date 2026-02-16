@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Idioma",
     "matrixPasswordHelp": "Contraseña de tu cuenta de Element X. Si te registraste con SSO (Gmail, etc.), usa el Token de acceso de abajo.",
-    "matrixTokenHelp": "Si te registraste con SSO sin contraseña: Element Web → Settings → Help & About → Copiar Token de acceso"
+    "matrixTokenHelp": "Si te registraste con SSO sin contraseña: Element Web → Settings → Help & About → Copiar Token de acceso",
+    "voiceApp": "App de Voz"
   },
   "profile": {
     "googleAccount": "Cuenta de Google",
@@ -85,6 +86,7 @@
     "language": "Idioma",
     "country": "País",
     "city": "Ciudad",
+    "timezone": "Zona horaria",
     "sanchoIdentity": "Identidad de Sancho",
     "nickname": "Apodo",
     "role": "Rol",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Mis Activos",
+    "krwBalance": "Saldo KRW",
+    "totalEval": "Evaluación Total",
+    "holdings": "Cantidad",
+    "avgBuyPrice": "Precio Medio",
+    "evalAmount": "Valor Estimado",
+    "returnRate": "Rendimiento",
+    "noHoldings": "Sin monedas",
+    "refreshAssets": "Actualizar"
+  },
+  "voice": {
+    "title": "App de Voz",
+    "description": "Escanea el código QR con tu teléfono para conversar con Sancho por voz.",
+    "qrCode": "Código QR",
+    "scanGuide": "Escanea con tu teléfono en la misma red WiFi",
+    "copyUrl": "Copiar URL",
+    "copied": "¡Copiado!",
+    "networkWarning": "Tu escritorio y teléfono deben estar conectados a la misma red WiFi.",
+    "voiceUrl": "URL de App de Voz",
+    "internetAccess": "Acceso a Internet",
+    "internetDesc": "Habilitar para acceder desde datos móviles (4G/5G) o cualquier red",
+    "tunnelStarting": "Iniciando túnel seguro...",
+    "tunnelActive": "Accesible desde Internet",
+    "tunnelError": "Error al iniciar el túnel",
+    "wifiOnly": "Solo WiFi",
+    "internet": "Internet",
+    "scanGuideInternet": "Escanea con tu teléfono (funciona en cualquier red)",
+    "tunnelFirstTime": "La primera vez puede tardar en descargar"
   }
 }

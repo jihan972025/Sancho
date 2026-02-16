@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "ภาษา",
     "matrixPasswordHelp": "รหัสผ่านบัญชี Element X ของคุณ หากสมัครด้วย SSO (Gmail เป็นต้น) ให้ใช้โทเค็นการเข้าถึงด้านล่าง",
-    "matrixTokenHelp": "หากสมัครผ่าน SSO โดยไม่มีรหัสผ่าน: Element Web → Settings → Help & About → คัดลอกโทเค็นการเข้าถึง"
+    "matrixTokenHelp": "หากสมัครผ่าน SSO โดยไม่มีรหัสผ่าน: Element Web → Settings → Help & About → คัดลอกโทเค็นการเข้าถึง",
+    "voiceApp": "แอปเสียง"
   },
   "profile": {
     "googleAccount": "บัญชี Google",
@@ -85,6 +86,7 @@
     "language": "ภาษา",
     "country": "ประเทศ",
     "city": "เมือง",
+    "timezone": "เขตเวลา",
     "sanchoIdentity": "ข้อมูล Sancho",
     "nickname": "ชื่อเล่น",
     "role": "บทบาท",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "สินทรัพย์ของฉัน",
+    "krwBalance": "ยอดเงิน KRW",
+    "totalEval": "มูลค่ารวม",
+    "holdings": "จำนวน",
+    "avgBuyPrice": "ราคาซื้อเฉลี่ย",
+    "evalAmount": "มูลค่าประเมิน",
+    "returnRate": "ผลตอบแทน",
+    "noHoldings": "ไม่มีเหรียญ",
+    "refreshAssets": "รีเฟรช"
+  },
+  "voice": {
+    "title": "แอปเสียง",
+    "description": "สแกน QR โค้ดด้วยโทรศัพท์เพื่อสนทนาด้วยเสียงกับ Sancho",
+    "qrCode": "QR โค้ด",
+    "scanGuide": "สแกนด้วยโทรศัพท์ที่เชื่อมต่อ WiFi เดียวกัน",
+    "copyUrl": "คัดลอก URL",
+    "copied": "คัดลอกแล้ว!",
+    "networkWarning": "เดสก์ท็อปและโทรศัพท์ต้องเชื่อมต่อเครือข่าย WiFi เดียวกัน",
+    "voiceUrl": "URL แอปเสียง",
+    "internetAccess": "การเข้าถึงอินเทอร์เน็ต",
+    "internetDesc": "เปิดใช้งานเพื่อเข้าถึงจากข้อมูลมือถือ (4G/5G) หรือเครือข่ายใดก็ได้",
+    "tunnelStarting": "กำลังเริ่มอุโมงค์ที่ปลอดภัย...",
+    "tunnelActive": "เข้าถึงได้จากอินเทอร์เน็ต",
+    "tunnelError": "ไม่สามารถเริ่มอุโมงค์ได้",
+    "wifiOnly": "WiFi เท่านั้น",
+    "internet": "อินเทอร์เน็ต",
+    "scanGuideInternet": "สแกนด้วยโทรศัพท์ (ใช้งานได้บนทุกเครือข่าย)",
+    "tunnelFirstTime": "ครั้งแรกอาจใช้เวลาในการดาวน์โหลด"
   }
 }

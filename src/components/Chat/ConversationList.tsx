@@ -34,6 +34,14 @@ export default function ConversationList() {
     if (!isLoaded) fetchConversations()
   }, [isLoaded, fetchConversations])
 
+  // Periodically refresh to pick up external conversations (voice app, etc.)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      fetchConversations()
+    }, 5000) // every 5 seconds
+    return () => clearInterval(timer)
+  }, [fetchConversations])
+
   const handleNew = async () => {
     clearMessages()
     await newConversation(selectedModel)

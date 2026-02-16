@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Langue",
     "matrixPasswordHelp": "Mot de passe de votre compte Element X. Si vous vous êtes inscrit via SSO (Gmail, etc.), utilisez le jeton d'accès ci-dessous.",
-    "matrixTokenHelp": "Si inscrit via SSO sans mot de passe : Element Web → Settings → Help & About → Copier le jeton d'accès"
+    "matrixTokenHelp": "Si inscrit via SSO sans mot de passe : Element Web → Settings → Help & About → Copier le jeton d'accès",
+    "voiceApp": "App Vocale"
   },
   "profile": {
     "googleAccount": "Compte Google",
@@ -85,6 +86,7 @@
     "language": "Langue",
     "country": "Pays",
     "city": "Ville",
+    "timezone": "Fuseau horaire",
     "sanchoIdentity": "Identité de Sancho",
     "nickname": "Surnom",
     "role": "Rôle",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Mes Actifs",
+    "krwBalance": "Solde KRW",
+    "totalEval": "Évaluation Totale",
+    "holdings": "Quantité",
+    "avgBuyPrice": "Prix Moyen",
+    "evalAmount": "Valeur Estimée",
+    "returnRate": "Rendement",
+    "noHoldings": "Aucune crypto",
+    "refreshAssets": "Actualiser"
+  },
+  "voice": {
+    "title": "App Vocale",
+    "description": "Scannez le QR code avec votre téléphone pour converser avec Sancho par la voix.",
+    "qrCode": "QR Code",
+    "scanGuide": "Scannez avec votre téléphone sur le même réseau WiFi",
+    "copyUrl": "Copier l'URL",
+    "copied": "Copié !",
+    "networkWarning": "Votre ordinateur et votre téléphone doivent être connectés au même réseau WiFi.",
+    "voiceUrl": "URL de l'App Vocale",
+    "internetAccess": "Accès Internet",
+    "internetDesc": "Activer pour accéder depuis les données mobiles (4G/5G) ou tout réseau",
+    "tunnelStarting": "Démarrage du tunnel sécurisé...",
+    "tunnelActive": "Accessible depuis Internet",
+    "tunnelError": "Échec du démarrage du tunnel",
+    "wifiOnly": "WiFi uniquement",
+    "internet": "Internet",
+    "scanGuideInternet": "Scannez avec votre téléphone (fonctionne sur tout réseau)",
+    "tunnelFirstTime": "Le premier lancement peut prendre un moment pour le téléchargement"
   }
 }

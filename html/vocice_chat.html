@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Sancho Voice</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "primary": "#135bec",
+          "accent-purple": "#a855f7",
+          "neon-pink": "#ff00ff",
+          "electric-blue": "#00f2ff",
+          "deep-purple": "#7000ff",
+          "background-dark": "#0d0d0f",
+          "charcoal": "#121214",
+        },
+        fontFamily: {
+          "display": ["Space Grotesk"]
+        },
+        borderRadius: {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "2xl": "1rem",
+          "full": "9999px"
+        },
+      },
+    },
+  }
+</script>
+<style type="text/tailwindcss">
+  @layer base {
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      @apply bg-background-dark text-slate-200 overflow-hidden;
+    }
+  }
+
+  @layer components {
+    /* ── Vibrant Orb ── */
+    .vibrant-orb-container {
+      @apply relative flex items-center justify-center;
+      width: clamp(240px, 45vw, 460px);
+      height: clamp(240px, 45vw, 460px);
+      transition: filter 0.4s ease;
+    }
+
+    .vibrant-orb-core {
+      @apply absolute rounded-full overflow-hidden;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(circle at 30% 30%, #ff00ff, #00f2ff, #7000ff);
+      filter: blur(8px);
+      box-shadow:
+        0 0 100px rgba(255, 0, 255, 0.4),
+        0 0 150px rgba(0, 242, 255, 0.2),
+        inset 0 0 60px rgba(255, 255, 255, 0.3);
+      animation: morphing 6s ease-in-out infinite;
+      transition: background 0.6s ease, box-shadow 0.6s ease;
+    }
+
+    .vibrant-wave-layer {
+      @apply absolute rounded-full border-2;
+      opacity: 0.6;
+      transition: border-color 0.4s ease;
+    }
+
+    .wave-1 {
+      width: 75%; height: 75%;
+      border-color: #ff00ff;
+      animation: pulse-vibrant 4s ease-in-out infinite;
+    }
+    .wave-2 {
+      width: 85%; height: 85%;
+      border-color: #00f2ff;
+      animation: pulse-vibrant 4s ease-in-out infinite -1.3s;
+    }
+    .wave-3 {
+      width: 100%; height: 100%;
+      border-color: #7000ff;
+      animation: pulse-vibrant 4s ease-in-out infinite -2.6s;
+    }
+
+    .spectrum-glow {
+      @apply absolute inset-0;
+      background: conic-gradient(from 0deg, #ff00ff, #00f2ff, #7000ff, #ff00ff);
+      filter: blur(120px);
+      opacity: 0.12;
+      animation: rotate-spectrum 12s linear infinite;
+    }
+
+    /* ── Orb States ── */
+
+    /* Listening */
+    .vibrant-orb-container.listening .vibrant-orb-core {
+      background: radial-gradient(circle at 30% 30%, #ef4444, #ff6b6b, #dc2626);
+      box-shadow:
+        0 0 120px rgba(239, 68, 68, 0.7),
+        0 0 200px rgba(249, 115, 22, 0.5),
+        inset 0 0 60px rgba(255, 255, 255, 0.2);
+      animation: morphing 2s ease-in-out infinite, heartbeat-orb 2s ease-in-out infinite;
+    }
+    .vibrant-orb-container.listening .wave-1 {
+      border-color: #ef4444;
+      animation: pulse-vibrant 2s ease-in-out infinite;
+    }
+    .vibrant-orb-container.listening .wave-2 {
+      border-color: #f87171;
+      animation: pulse-vibrant 2s ease-in-out infinite -0.6s;
+    }
+    .vibrant-orb-container.listening .wave-3 {
+      border-color: #dc2626;
+      animation: pulse-vibrant 2s ease-in-out infinite -1.2s;
+    }
+
+    /* Processing / Thinking */
+    .vibrant-orb-container.processing .vibrant-orb-core {
+      background: radial-gradient(circle at 30% 30%, #3b82f6, #8b5cf6, #6366f1);
+      box-shadow:
+        0 0 100px rgba(99, 102, 241, 0.5),
+        0 0 150px rgba(139, 92, 246, 0.25),
+        inset 0 0 60px rgba(255, 255, 255, 0.2);
+      animation: morphing 3s ease-in-out infinite;
+    }
+    .vibrant-orb-container.processing .wave-1 {
+      border-color: #3b82f6;
+      animation: pulse-vibrant 3s ease-in-out infinite;
+    }
+    .vibrant-orb-container.processing .wave-2 {
+      border-color: #8b5cf6;
+      animation: pulse-vibrant 3s ease-in-out infinite -1s;
+    }
+    .vibrant-orb-container.processing .wave-3 {
+      border-color: #6366f1;
+      animation: pulse-vibrant 3s ease-in-out infinite -2s;
+    }
+
+    /* Speaking — Gold/Warm (from vocice_chat2) */
+    .vibrant-orb-container.speaking .vibrant-orb-core {
+      background: radial-gradient(circle at 30% 30%, #fbbf24, #f59e0b, #d97706);
+      box-shadow:
+        0 0 120px rgba(251, 191, 36, 0.6),
+        0 0 200px rgba(245, 158, 11, 0.4),
+        inset 0 0 60px rgba(255, 255, 255, 0.3);
+      animation: morphing 6s ease-in-out infinite, orb-pulse-warm 4s ease-in-out infinite;
+    }
+    .vibrant-orb-container.speaking .wave-1 {
+      border-color: #fbbf24;
+      animation: pulse-vibrant 4s ease-in-out infinite;
+    }
+    .vibrant-orb-container.speaking .wave-2 {
+      border-color: #f59e0b;
+      animation: pulse-vibrant 4s ease-in-out infinite -1.3s;
+    }
+    .vibrant-orb-container.speaking .wave-3 {
+      border-color: #d97706;
+      animation: pulse-vibrant 4s ease-in-out infinite -2.6s;
+    }
+
+    /* ── State-based Ambient Lighting ── */
+    .ambient-lighting-system {
+      @apply absolute inset-0 pointer-events-none z-0;
+      filter: blur(80px);
+      transition: background 2s ease, opacity 2s ease, filter 2s ease;
+    }
+
+    /* Listening — Red/Urgent ambient */
+    body.state-listening .ambient-lighting-system {
+      background: radial-gradient(circle at 50% 50%, rgba(239,68,68,0.2) 0%, transparent 70%),
+                  radial-gradient(circle at 90% 50%, rgba(249,115,22,0.15) 0%, transparent 60%);
+      animation: heartbeat-ambient 4s ease-in-out infinite;
+    }
+
+    /* Processing — Blue/Crystal ambient */
+    body.state-processing .ambient-lighting-system {
+      background: radial-gradient(circle at 50% 50%, rgba(14,165,233,0.1) 0%, transparent 60%);
+    }
+
+    /* Speaking — Gold/Warm ambient */
+    body.state-speaking .ambient-lighting-system {
+      background: radial-gradient(circle at 50% 50%, rgba(251,191,36,0.15) 0%, transparent 60%),
+                  radial-gradient(circle at 90% 50%, rgba(245,158,11,0.1) 0%, transparent 50%);
+    }
+
+    /* Processing — Lighthouse rotating beam */
+    .lighthouse-beam {
+      @apply absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none;
+      width: 200%; height: 200%;
+      background: conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(96,165,250,0.15) 20deg, transparent 40deg, transparent 360deg);
+      filter: blur(60px);
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    body.state-processing .lighthouse-beam {
+      opacity: 1;
+      animation: rotate-beam 8s linear infinite;
+    }
+
+    /* Processing — Crystalline internal structure */
+    .crystalline-structure {
+      @apply absolute inset-0;
+      background: linear-gradient(135deg, transparent 0%, rgba(96,165,250,0.2) 50%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .vibrant-orb-container.processing .crystalline-structure {
+      opacity: 0.4;
+      animation: internal-shimmer 4s linear infinite;
+    }
+
+    /* Processing — Orbiting particles inside orb */
+    .internal-particle {
+      @apply absolute w-1 h-1 bg-electric-blue rounded-full;
+      filter: blur(1px);
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .vibrant-orb-container.processing .internal-particle {
+      opacity: 1;
+      animation: circular-motion 4s linear infinite;
+    }
+
+    /* ── Glass Card ── */
+    .glass-card {
+      @apply bg-white/[0.04] border border-white/10 backdrop-blur-md rounded-2xl overflow-hidden;
+    }
+
+    /* ── Fluid Flow ── */
+    .fluid-flow {
+      @apply absolute inset-0;
+      background: radial-gradient(circle at 50% 50%, rgba(112, 0, 255, 0.08), transparent 70%);
+      animation: flow-motion 15s infinite alternate;
+    }
+
+    /* ── Custom Scrollbar ── */
+    .transcript-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .transcript-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .transcript-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+    .transcript-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 242, 255, 0.3);
+    }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  }
+
+  /* ── Keyframes ── */
+  @keyframes morphing {
+    0%, 100% {
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      transform: scale(1);
+    }
+    50% {
+      border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes pulse-vibrant {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { opacity: 0.6; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  @keyframes rotate-spectrum {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes flow-motion {
+    0% { transform: translate(-5%, -5%) scale(1); }
+    100% { transform: translate(5%, 5%) scale(1.2); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease forwards;
+  }
+
+  /* ── State-based Ambient Keyframes ── */
+
+  /* Listening — heartbeat orb (from vocice_chat3) */
+  @keyframes heartbeat-orb {
+    0%, 100% { transform: scale(1); filter: brightness(1); }
+    10% { transform: scale(1.05); filter: brightness(1.3); }
+    20% { transform: scale(1); filter: brightness(1); }
+    30% { transform: scale(1.03); filter: brightness(1.2); }
+    40% { transform: scale(1); filter: brightness(1); }
+  }
+
+  /* Listening — ambient heartbeat glow (from vocice_chat3) */
+  @keyframes heartbeat-ambient {
+    0%, 100% { opacity: 0.6; }
+    15% { opacity: 1; }
+    30% { opacity: 0.7; }
+    45% { opacity: 0.9; }
+    60% { opacity: 0.6; }
+  }
+
+  /* Processing — lighthouse rotating beam (from vocice_chat4) */
+  @keyframes rotate-beam {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  /* Processing — internal crystalline shimmer (from vocice_chat4) */
+  @keyframes internal-shimmer {
+    0% { transform: scale(1) rotate(0deg); opacity: 0.2; }
+    50% { transform: scale(1.2) rotate(180deg); opacity: 0.5; }
+    100% { transform: scale(1) rotate(360deg); opacity: 0.2; }
+  }
+
+  /* Processing — orbiting particles (from vocice_chat4) */
+  @keyframes circular-motion {
+    from { transform: rotate(0deg) translateX(40px) rotate(0deg); opacity: 0; }
+    50% { opacity: 1; }
+    to { transform: rotate(360deg) translateX(40px) rotate(-360deg); opacity: 0; }
+  }
+
+  /* Speaking — warm orb pulse (from vocice_chat2) */
+  @keyframes orb-pulse-warm {
+    0%, 100% { filter: blur(4px) brightness(1); }
+    50% { filter: blur(6px) brightness(1.2);
+      box-shadow: 0 0 150px rgba(251,191,36,0.8), 0 0 250px rgba(245,158,11,0.5); }
+  }
+</style>
+</head>
+
+<body class="font-display">
+<div class="flex h-screen w-full overflow-hidden relative">
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MAIN AREA (Orb View) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <main id="orbArea" class="flex-1 flex flex-col relative overflow-hidden bg-background-dark transition-all duration-700">
+
+    <!-- Background effects -->
+    <div class="fluid-flow pointer-events-none"></div>
+    <div class="spectrum-glow pointer-events-none"></div>
+
+    <!-- State-based ambient atmosphere -->
+    <div class="ambient-lighting-system"></div>
+    <div class="lighthouse-beam"></div>
+
+    <!-- ── Header ── -->
+    <header class="h-14 lg:h-20 flex items-center justify-between px-5 lg:px-12 shrink-0 z-20">
+      <div class="flex items-center gap-4 lg:gap-6">
+        <!-- Logo -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-neon-pink via-electric-blue to-deep-purple rounded-xl flex items-center justify-center text-white shadow-[0_0_20px_rgba(255,0,255,0.4)] shrink-0">
+            <span class="material-icons text-lg lg:text-xl">graphic_eq</span>
+          </div>
+          <h1 class="text-lg lg:text-xl font-bold tracking-tight text-white uppercase">Sancho</h1>
+        </div>
+        <!-- Divider + status -->
+        <div class="hidden sm:flex items-center gap-3">
+          <div class="h-6 w-px bg-white/10"></div>
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-electric-blue shadow-[0_0_15px_#00f2ff] animate-pulse"></div>
+            <span class="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-[0.15em]">Active Neural Channel</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Model selector -->
+        <select id="modelSelect"
+          class="bg-white/5 text-slate-300 border border-white/10 rounded-xl px-3 py-1.5 text-xs lg:text-sm font-medium max-w-[160px] lg:max-w-[220px] focus:outline-none focus:border-electric-blue/40 focus:ring-1 focus:ring-electric-blue/20 transition-colors cursor-pointer">
+        </select>
+
+        <!-- Mobile transcript button -->
+        <button id="mobileTranscriptBtn" onclick="showMobileView('transcript')"
+          class="lg:hidden hidden p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+          title="View transcript">
+          <span class="material-symbols-outlined text-xl">forum</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Orb Area ── -->
+    <div class="flex-1 flex flex-col items-center justify-center px-4 relative z-20 min-h-0">
+
+      <!-- Orb — serves as mic button -->
+      <div id="orbContainer" class="vibrant-orb-container cursor-pointer select-none" onclick="toggleMic()">
+        <div class="vibrant-wave-layer wave-3"></div>
+        <div class="vibrant-wave-layer wave-2"></div>
+        <div class="vibrant-wave-layer wave-1"></div>
+        <div class="vibrant-orb-core">
+          <!-- Processing state: crystalline structure + orbiting particles -->
+          <div class="crystalline-structure"></div>
+          <div class="internal-particle" style="top:45%;left:45%;animation-delay:0s;"></div>
+          <div class="internal-particle" style="top:55%;left:50%;animation-delay:-1s;"></div>
+          <div class="internal-particle" style="top:40%;left:55%;animation-delay:-2s;"></div>
+          <div class="internal-particle" style="top:50%;left:40%;animation-delay:-3s;"></div>
+        </div>
+
+        <!-- Floating particles inside orb -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-full h-full relative">
+            <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-neon-pink rounded-full blur-[1px] animate-pulse"></div>
+            <div class="absolute top-1/2 right-1/3 w-3 h-3 bg-electric-blue rounded-full blur-[2px] animate-pulse" style="animation-delay: 0.8s"></div>
+            <div class="absolute bottom-1/4 left-1/2 w-2 h-2 bg-deep-purple rounded-full blur-[1px] animate-pulse" style="animation-delay: 1.5s"></div>
+          </div>
+        </div>
+
+        <!-- Mic icon overlay in center -->
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          <span id="orbIcon" class="material-symbols-outlined text-white/60 text-4xl lg:text-5xl drop-shadow-lg transition-all duration-300">mic</span>
+        </div>
+      </div>
+
+      <!-- Interim text (below orb) -->
+      <div id="interim" class="mt-4 lg:mt-6 text-sm lg:text-base text-slate-400 italic text-center min-h-[24px] px-6 max-w-lg transition-all"></div>
+
+      <!-- Status text -->
+      <div id="status" class="mt-2 text-xs lg:text-sm font-bold text-slate-500 uppercase tracking-[0.2em] text-center min-h-[20px] transition-all">Initializing...</div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- MOBILE FULL-SCREEN TRANSCRIPT (hidden by default) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <div id="mobileTranscript" class="lg:hidden hidden flex-1 flex-col bg-black/95 backdrop-blur-xl z-50 relative">
+    <!-- Gradient overlay -->
+    <div class="absolute inset-0 bg-gradient-to-b from-electric-blue/[0.02] to-transparent pointer-events-none"></div>
+
+    <!-- Header -->
+    <div class="p-5 border-b border-white/5 relative z-10 flex items-center justify-between">
+      <div class="flex flex-col gap-1">
+        <h3 class="text-sm font-black uppercase tracking-[0.3em] text-white">Live Transcript</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Voice Session</span>
+          <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+          <span class="text-[10px] text-electric-blue font-bold uppercase tracking-widest">Real-time</span>
+        </div>
+      </div>
+      <button onclick="showMobileView('orb')"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+        <span class="material-symbols-outlined text-sm text-electric-blue">mic</span>
+        <span class="text-[9px] font-black text-white uppercase tracking-widest">Speak</span>
+      </button>
+    </div>
+
+    <!-- Messages (same style as desktop sidebar) -->
+    <div id="mobileTranscriptMessages" class="flex-1 overflow-y-auto p-5 space-y-6 transcript-container relative z-10">
+    </div>
+
+    <!-- Footer -->
+    <div class="p-4 border-t border-white/5 bg-black/40 relative z-10">
+      <button onclick="clearConversation()"
+        class="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 hover:border-white/20 text-[11px] font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 group">
+        <span class="material-symbols-outlined text-lg group-hover:text-neon-pink group-hover:scale-110 transition-transform">delete_sweep</span>
+        Clear Session
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- DESKTOP SIDEBAR TRANSCRIPT (hidden < lg) -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <aside class="hidden lg:flex w-[380px] xl:w-[480px] bg-black/80 border-l border-white/10 backdrop-blur-3xl flex-col z-50 shrink-0 relative transition-all duration-700 shadow-[-30px_0_60px_rgba(0,0,0,0.6)]">
+    <!-- Subtle gradient overlay -->
+    <div class="absolute inset-0 bg-gradient-to-b from-electric-blue/[0.02] to-transparent pointer-events-none"></div>
+
+    <!-- Sidebar Header -->
+    <div class="p-8 xl:p-10 border-b border-white/5 relative z-10 flex items-center justify-between">
+      <div class="flex flex-col gap-1.5">
+        <h3 class="text-sm font-black uppercase tracking-[0.4em] text-white">Live Transcript</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Voice Session</span>
+          <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+          <span class="text-[10px] text-electric-blue font-bold uppercase tracking-widest">Real-time</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
+        <span id="sidebarStatusDot" class="w-2 h-2 rounded-full bg-electric-blue animate-pulse"></span>
+        <span id="sidebarStatusText" class="text-[9px] font-black text-white uppercase tracking-widest">Active</span>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div id="messages" class="flex-1 overflow-y-auto p-6 xl:p-8 space-y-8 transcript-container relative z-10">
+      <!-- Welcome message -->
+      <div class="flex items-center justify-center py-4">
+        <div class="text-center space-y-2">
+          <span class="material-symbols-outlined text-3xl text-slate-600">waving_hand</span>
+          <p class="text-xs text-slate-500 font-medium">Tap the orb to start speaking</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-6 xl:p-8 border-t border-white/5 bg-black/40 relative z-10">
+      <button onclick="clearConversation()"
+        class="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 hover:border-white/20 text-[11px] font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-3 group">
+        <span class="material-symbols-outlined text-xl group-hover:text-neon-pink group-hover:scale-110 transition-transform">delete_sweep</span>
+        Clear Session
+      </button>
+    </div>
+  </aside>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+// ── Constants & Elements ──
+const BASE = window.location.origin;
+
+const orbContainer = document.getElementById('orbContainer');
+const orbIcon = document.getElementById('orbIcon');
+const statusEl = document.getElementById('status');
+const interimEl = document.getElementById('interim');
+const modelSelect = document.getElementById('modelSelect');
+const messagesEl = document.getElementById('messages');
+const mobileTranscriptEl = document.getElementById('mobileTranscript');
+const mobileTranscriptMessages = document.getElementById('mobileTranscriptMessages');
+const mobileTranscriptBtn = document.getElementById('mobileTranscriptBtn');
+const orbArea = document.getElementById('orbArea');
+
+// ── State ──
+let chatHistory = [];
+let conversationId = null;
+let isListening = false;
+let isSpeaking = false;
+let isProcessing = false;
+let recognition = null;
+let speechLang = 'ko-KR'; // Will be set from settings
+
+// ── Language Mapping ──
+const LANG_MAP = {
+  'ko': 'ko-KR', 'en': 'en-US', 'ja': 'ja-JP',
+  'zh': 'zh-CN', 'zh-TW': 'zh-TW', 'es': 'es-ES',
+  'fr': 'fr-FR', 'de': 'de-DE', 'pt': 'pt-BR',
+  'ru': 'ru-RU', 'ar': 'ar-SA', 'hi': 'hi-IN',
+  'vi': 'vi-VN', 'th': 'th-TH', 'id': 'id-ID', 'tr': 'tr-TR'
+};
+
+// ═══════════════════════════════════════════════════════════
+// MOBILE VIEW SWITCHING
+// ═══════════════════════════════════════════════════════════
+
+function isMobile() {
+  return window.innerWidth < 1024;
+}
+
+function showMobileView(view) {
+  if (!isMobile()) return;
+
+  if (view === 'orb') {
+    orbArea.classList.remove('hidden');
+    orbArea.classList.add('flex');
+    mobileTranscriptEl.classList.add('hidden');
+    mobileTranscriptEl.classList.remove('flex');
+  } else {
+    orbArea.classList.add('hidden');
+    orbArea.classList.remove('flex');
+    mobileTranscriptEl.classList.remove('hidden');
+    mobileTranscriptEl.classList.add('flex');
+    // Scroll to bottom
+    mobileTranscriptMessages.scrollTop = mobileTranscriptMessages.scrollHeight;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// ORB STATE MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+
+function updateOrbState() {
+  // Remove all state classes from orb and body
+  orbContainer.classList.remove('listening', 'processing', 'speaking');
+  document.body.classList.remove('state-listening', 'state-processing', 'state-speaking');
+
+  if (isSpeaking) {
+    orbContainer.classList.add('speaking');
+    document.body.classList.add('state-speaking');
+    orbIcon.textContent = 'volume_up';
+    orbIcon.className = 'material-symbols-outlined text-white/80 text-4xl lg:text-5xl drop-shadow-lg transition-all duration-300';
+  } else if (isProcessing) {
+    orbContainer.classList.add('processing');
+    document.body.classList.add('state-processing');
+    orbIcon.textContent = 'neurology';
+    orbIcon.className = 'material-symbols-outlined text-white/80 text-4xl lg:text-5xl drop-shadow-lg transition-all duration-300 animate-pulse';
+  } else if (isListening) {
+    orbContainer.classList.add('listening');
+    document.body.classList.add('state-listening');
+    orbIcon.textContent = 'mic';
+    orbIcon.className = 'material-symbols-outlined text-red-400 text-4xl lg:text-5xl drop-shadow-lg transition-all duration-300 animate-pulse';
+  } else {
+    // Idle — no body state class
+    orbIcon.textContent = 'mic';
+    orbIcon.className = 'material-symbols-outlined text-white/60 text-4xl lg:text-5xl drop-shadow-lg transition-all duration-300';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONVERSATION CREATION
+// ═══════════════════════════════════════════════════════════
+
+async function createNewConversation() {
+  try {
+    const res = await fetch(BASE + '/api/conversations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: '', model: '' })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      conversationId = data.conversation?.id || null;
+      console.log('[Voice] Conversation created:', conversationId);
+    } else {
+      console.error('[Voice] Failed to create conversation:', res.status);
+    }
+  } catch (e) {
+    console.error('[Voice] Conversation creation error:', e);
+  }
+  return conversationId;
+}
+
+// ═══════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════
+
+async function init() {
+  // 1. Fetch language from voice config (safe endpoint — no API keys exposed)
+  try {
+    const res = await fetch(BASE + '/api/voice/config');
+    const config = await res.json();
+    const lang = config.language || 'en';
+    speechLang = LANG_MAP[lang] || LANG_MAP['en'] || 'en-US';
+    console.log('[Voice] Language from config:', lang, '->', speechLang);
+  } catch (e) {
+    console.warn('[Voice] Could not load config, using default language');
+    speechLang = 'ko-KR';
+  }
+
+  // 2. Load models into dropdown
+  try {
+    const res = await fetch(BASE + '/api/chat/models');
+    const data = await res.json();
+    const models = data.models || [];
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.id.length > 25 ? m.id.slice(0, 23) + '...' : m.id;
+      modelSelect.appendChild(opt);
+    });
+  } catch (e) {
+    console.warn('[Voice] Failed to load models');
+  }
+
+  // 3. Create conversation (with retry)
+  conversationId = await createNewConversation();
+  if (!conversationId) {
+    await new Promise(r => setTimeout(r, 1000));
+    conversationId = await createNewConversation();
+  }
+
+  // 4. Init SpeechRecognition
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    statusEl.textContent = 'Speech Recognition not supported';
+    statusEl.classList.add('text-red-500');
+    return;
+  }
+
+  recognition = new SR();
+  recognition.lang = speechLang;
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    let finalText = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalText += e.results[i][0].transcript;
+      } else {
+        interim += e.results[i][0].transcript;
+      }
+    }
+    interimEl.textContent = interim;
+    if (finalText) {
+      interimEl.textContent = '';
+      sendMessage(finalText.trim());
+    }
+  };
+
+  recognition.onend = () => {
+    isListening = false;
+    updateOrbState();
+    if (!isProcessing) statusEl.textContent = 'Tap to speak';
+  };
+
+  recognition.onerror = (e) => {
+    isListening = false;
+    updateOrbState();
+    if (e.error !== 'no-speech' && e.error !== 'aborted') {
+      statusEl.textContent = 'Error: ' + e.error;
+      statusEl.classList.add('text-red-400');
+      setTimeout(() => {
+        statusEl.classList.remove('text-red-400');
+        statusEl.textContent = 'Tap to speak';
+      }, 3000);
+    } else {
+      statusEl.textContent = 'Tap to speak';
+    }
+  };
+
+  // Ready
+  statusEl.textContent = 'Tap to speak';
+  updateOrbState();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MIC TOGGLE
+// ═══════════════════════════════════════════════════════════
+
+function toggleMic() {
+  if (!recognition) return;
+
+  // If on mobile transcript view, switch to orb first
+  if (isMobile() && !mobileTranscriptEl.classList.contains('hidden')) {
+    showMobileView('orb');
+  }
+
+  if (isProcessing || isSpeaking) {
+    // If speaking, stop TTS and return to idle
+    if (isSpeaking) {
+      speechSynthesis.cancel();
+      isSpeaking = false;
+      isProcessing = false;
+      updateOrbState();
+      statusEl.textContent = 'Tap to speak';
+    }
+    return;
+  }
+
+  if (isListening) {
+    recognition.stop();
+  } else {
+    isListening = true;
+    statusEl.textContent = 'Listening...';
+    interimEl.textContent = '';
+    updateOrbState();
+    try {
+      recognition.start();
+    } catch (e) {
+      // Already started — ignore
+      console.warn('[Voice] recognition.start() error:', e);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEND MESSAGE (SSE Streaming)
+// ═══════════════════════════════════════════════════════════
+
+async function sendMessage(text) {
+  if (!text) return;
+
+  // Ensure conversation exists
+  if (!conversationId) {
+    await createNewConversation();
+  }
+
+  isProcessing = true;
+  updateOrbState();
+  statusEl.textContent = 'Thinking...';
+
+  const userMsg = addMessage('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  let fullResponse = '';
+  const assistantMsg = addMessage('assistant', '');
+
+  try {
+    const payload = {
+      messages: chatHistory.slice(-20),
+      model: modelSelect.value || '',
+      stream: true,
+      source: 'voice'
+    };
+    if (conversationId) payload.conversation_id = conversationId;
+
+    const res = await fetch(BASE + '/api/chat/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (data.type === 'token') {
+            fullResponse += data.content;
+            updateMessageText(assistantMsg, fullResponse);
+          } else if (data.type === 'done') {
+            break;
+          } else if (data.type === 'error') {
+            fullResponse += '\n[Error: ' + data.content + ']';
+            updateMessageText(assistantMsg, fullResponse);
+          }
+        } catch (e) { /* skip parse errors */ }
+      }
+    }
+  } catch (e) {
+    fullResponse = 'Connection error';
+    updateMessageText(assistantMsg, fullResponse);
+  }
+
+  chatHistory.push({ role: 'assistant', content: fullResponse });
+
+  // TTS
+  if (fullResponse && fullResponse !== 'Connection error') {
+    speakText(fullResponse);
+  } else {
+    isProcessing = false;
+    updateOrbState();
+    statusEl.textContent = 'Tap to speak';
+    if (isMobile()) showMobileView('transcript');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// TEXT-TO-SPEECH
+// ═══════════════════════════════════════════════════════════
+
+function speakText(text) {
+  // Clean markdown for speech
+  let clean = text
+    .replace(/```[\s\S]*?```/g, ' code block ')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`(.*?)`/g, '$1')
+    .replace(/#{1,6}\s/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n/g, '. ')
+    .trim();
+
+  if (!clean) {
+    isProcessing = false;
+    updateOrbState();
+    statusEl.textContent = 'Tap to speak';
+    return;
+  }
+
+  // Truncate long responses
+  if (clean.length > 500) {
+    clean = clean.slice(0, 500) + '...';
+  }
+
+  isSpeaking = true;
+  statusEl.textContent = 'Speaking...';
+  updateOrbState();
+
+  const utterance = new SpeechSynthesisUtterance(clean);
+  utterance.lang = speechLang;
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+
+  // Try to find a matching voice
+  const voices = speechSynthesis.getVoices();
+  const langPrefix = speechLang.split('-')[0];
+  const langVoice = voices.find(v => v.lang.startsWith(langPrefix));
+  if (langVoice) utterance.voice = langVoice;
+
+  utterance.onend = () => {
+    isSpeaking = false;
+    isProcessing = false;
+    updateOrbState();
+    statusEl.textContent = 'Tap to speak';
+    // Auto-switch to transcript view on mobile after speaking
+    if (isMobile()) showMobileView('transcript');
+  };
+
+  utterance.onerror = () => {
+    isSpeaking = false;
+    isProcessing = false;
+    updateOrbState();
+    statusEl.textContent = 'Tap to speak';
+    if (isMobile()) showMobileView('transcript');
+  };
+
+  speechSynthesis.speak(utterance);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MESSAGE DISPLAY
+// ═══════════════════════════════════════════════════════════
+
+function getTimestamp() {
+  const now = new Date();
+  return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+/**
+ * Creates a desktop sidebar message element.
+ */
+function createDesktopMessage(role, text) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'flex flex-col gap-4 fade-in';
+
+  if (role === 'user') {
+    wrapper.innerHTML = `
+      <div class="flex items-start gap-4">
+        <div class="w-9 h-9 rounded-xl bg-electric-blue/10 border border-electric-blue/20 flex items-center justify-center shrink-0">
+          <span class="material-icons text-electric-blue text-base">person</span>
+        </div>
+        <div class="space-y-1.5 flex-1 pt-0.5">
+          <div class="flex justify-between items-center">
+            <span class="text-[11px] font-black text-electric-blue uppercase tracking-[0.2em]">You</span>
+            <span class="text-[10px] text-slate-500 font-medium">${getTimestamp()}</span>
+          </div>
+          <p class="text-[14px] text-white leading-relaxed font-medium msg-text">${escapeHtml(text)}</p>
+        </div>
+      </div>`;
+  } else if (role === 'assistant') {
+    wrapper.innerHTML = `
+      <div class="flex items-start gap-4 pl-3 border-l-2 border-deep-purple/40 ml-4">
+        <div class="w-9 h-9 rounded-xl bg-deep-purple/20 border border-deep-purple/30 flex items-center justify-center shrink-0">
+          <span class="material-icons text-deep-purple text-base">auto_awesome</span>
+        </div>
+        <div class="space-y-1.5 flex-1 pt-0.5">
+          <span class="text-[11px] font-black text-deep-purple uppercase tracking-[0.2em]">Sancho</span>
+          <p class="text-[14px] text-slate-300 leading-relaxed msg-text">${escapeHtml(text)}</p>
+        </div>
+      </div>`;
+  } else {
+    // system
+    wrapper.innerHTML = `
+      <div class="flex items-center justify-center py-2">
+        <p class="text-xs text-slate-500 font-medium msg-text">${escapeHtml(text)}</p>
+      </div>`;
+  }
+
+  return wrapper;
+}
+
+/**
+ * Adds a message to both desktop sidebar and mobile transcript.
+ * Returns an object { desktop, mobile } for later text updates.
+ */
+function addMessage(role, text) {
+  // Clear welcome message on first real message
+  if (role !== 'system' && messagesEl.querySelector('.fade-in') === null) {
+    messagesEl.innerHTML = '';
+  }
+
+  const desktopEl = createDesktopMessage(role, text);
+  messagesEl.appendChild(desktopEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  const mobileEl = createDesktopMessage(role, text);
+  mobileTranscriptMessages.appendChild(mobileEl);
+  mobileTranscriptMessages.scrollTop = mobileTranscriptMessages.scrollHeight;
+
+  // Show mobile transcript button when there are messages
+  if (mobileTranscriptBtn) mobileTranscriptBtn.classList.remove('hidden');
+
+  return { desktop: desktopEl, mobile: mobileEl };
+}
+
+/**
+ * Updates text in both desktop and mobile message elements (for streaming).
+ */
+function updateMessageText(msgObj, text) {
+  if (!msgObj) return;
+
+  // Update desktop
+  const desktopText = msgObj.desktop?.querySelector('.msg-text');
+  if (desktopText) desktopText.textContent = text;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  // Update mobile
+  const mobileText = msgObj.mobile?.querySelector('.msg-text');
+  if (mobileText) mobileText.textContent = text;
+  mobileTranscriptMessages.scrollTop = mobileTranscriptMessages.scrollHeight;
+}
+
+/**
+ * Escape HTML entities.
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/**
+ * Clear conversation — reset chat history and UI.
+ */
+function clearConversation() {
+  chatHistory = [];
+  messagesEl.innerHTML = `
+    <div class="flex items-center justify-center py-4">
+      <div class="text-center space-y-2">
+        <span class="material-symbols-outlined text-3xl text-slate-600">waving_hand</span>
+        <p class="text-xs text-slate-500 font-medium">Tap the orb to start speaking</p>
+      </div>
+    </div>`;
+  mobileTranscriptMessages.innerHTML = '';
+
+  // Hide mobile transcript button
+  if (mobileTranscriptBtn) mobileTranscriptBtn.classList.add('hidden');
+
+  // Stop any ongoing TTS
+  if (isSpeaking) {
+    speechSynthesis.cancel();
+    isSpeaking = false;
+  }
+  isProcessing = false;
+  updateOrbState();
+  statusEl.textContent = 'Tap to speak';
+
+  // Go back to orb view on mobile
+  if (isMobile()) showMobileView('orb');
+
+  // Create a new conversation
+  conversationId = null;
+  createNewConversation();
+}
+
+// ── Preload voices ──
+if (speechSynthesis.onvoiceschanged !== undefined) {
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+}
+
+// ── Start ──
+init();
+</script>
+</body>
+</html>

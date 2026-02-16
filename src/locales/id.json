@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Bahasa",
     "matrixPasswordHelp": "Kata sandi akun Element X Anda. Jika mendaftar dengan SSO (Gmail, dll.), gunakan Token Akses di bawah.",
-    "matrixTokenHelp": "Jika mendaftar melalui SSO tanpa kata sandi: Element Web → Settings → Help & About → Salin Token Akses"
+    "matrixTokenHelp": "Jika mendaftar melalui SSO tanpa kata sandi: Element Web → Settings → Help & About → Salin Token Akses",
+    "voiceApp": "Aplikasi Suara"
   },
   "profile": {
     "googleAccount": "Akun Google",
@@ -85,6 +86,7 @@
     "language": "Bahasa",
     "country": "Negara",
     "city": "Kota",
+    "timezone": "Zona waktu",
     "sanchoIdentity": "Identitas Sancho",
     "nickname": "Nama Panggilan",
     "role": "Peran",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Aset Saya",
+    "krwBalance": "Saldo KRW",
+    "totalEval": "Total Evaluasi",
+    "holdings": "Jumlah",
+    "avgBuyPrice": "Harga Beli Rata-rata",
+    "evalAmount": "Nilai Estimasi",
+    "returnRate": "Imbal Hasil",
+    "noHoldings": "Tidak ada koin",
+    "refreshAssets": "Segarkan"
+  },
+  "voice": {
+    "title": "Aplikasi Suara",
+    "description": "Pindai kode QR dengan ponsel Anda untuk berbicara dengan Sancho melalui suara.",
+    "qrCode": "Kode QR",
+    "scanGuide": "Pindai dengan ponsel yang terhubung ke WiFi yang sama",
+    "copyUrl": "Salin URL",
+    "copied": "Tersalin!",
+    "networkWarning": "Desktop dan ponsel harus terhubung ke jaringan WiFi yang sama.",
+    "voiceUrl": "URL Aplikasi Suara",
+    "internetAccess": "Akses Internet",
+    "internetDesc": "Aktifkan untuk mengakses melalui data seluler (4G/5G) atau jaringan apa pun",
+    "tunnelStarting": "Memulai tunnel aman...",
+    "tunnelActive": "Dapat diakses dari internet",
+    "tunnelError": "Gagal memulai tunnel",
+    "wifiOnly": "Hanya WiFi",
+    "internet": "Internet",
+    "scanGuideInternet": "Pindai dengan ponsel Anda (berfungsi di jaringan apa pun)",
+    "tunnelFirstTime": "Pertama kali mungkin memerlukan waktu untuk mengunduh"
   }
 }

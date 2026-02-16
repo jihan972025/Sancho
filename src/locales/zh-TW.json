@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "語言",
     "matrixPasswordHelp": "Element X帳號的密碼。如果使用SSO（Gmail等）註冊，請使用下方的存取權杖。",
-    "matrixTokenHelp": "如果透過SSO註冊且沒有密碼：Element Web → Settings → Help & About → 複製存取權杖"
+    "matrixTokenHelp": "如果透過SSO註冊且沒有密碼：Element Web → Settings → Help & About → 複製存取權杖",
+    "voiceApp": "語音應用"
   },
   "profile": {
     "googleAccount": "Google帳號",
@@ -85,6 +86,7 @@
     "language": "語言",
     "country": "國家",
     "city": "城市",
+    "timezone": "時區",
     "sanchoIdentity": "Sancho資訊",
     "nickname": "暱稱",
     "role": "角色",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "我的資產",
+    "krwBalance": "KRW餘額",
+    "totalEval": "總評估金額",
+    "holdings": "持有量",
+    "avgBuyPrice": "平均買入價",
+    "evalAmount": "評估金額",
+    "returnRate": "收益率",
+    "noHoldings": "無持有幣種",
+    "refreshAssets": "重新整理"
+  },
+  "voice": {
+    "title": "語音應用",
+    "description": "用手機掌描QR碼，即可透過語音與Sancho對話。",
+    "qrCode": "QR碼",
+    "scanGuide": "請用連接同一WiFi的手機掌描",
+    "copyUrl": "複製連結",
+    "copied": "已複製！",
+    "networkWarning": "電腦和手機必須連接同一WiFi網路。",
+    "voiceUrl": "語音應用連結",
+    "internetAccess": "網路存取",
+    "internetDesc": "啟用後可透過行動數據(4G/5G)或任何網路存取",
+    "tunnelStarting": "正在啟動安全隧道...",
+    "tunnelActive": "可從網路存取",
+    "tunnelError": "隧道啟動失敗",
+    "wifiOnly": "僅WiFi",
+    "internet": "網路",
+    "scanGuideInternet": "用手機掃描（在任何網路上均可使用）",
+    "tunnelFirstTime": "首次執行可能需要下載，請稍候"
   }
 }

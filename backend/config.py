@@ -210,6 +210,20 @@ def save_config(config: AppConfig) -> None:
         config.model_dump_json(indent=2),
         encoding="utf-8",
     )
+    # Restrict file permissions to owner only (Windows: best-effort via icacls)
+    try:
+        import platform
+        if platform.system() == "Windows":
+            import subprocess
+            subprocess.run(
+                ["icacls", str(_config_file), "/inheritance:r",
+                 "/grant:r", f"{os.environ.get('USERNAME', '')}:F"],
+                capture_output=True, timeout=5,
+            )
+        else:
+            os.chmod(str(_config_file), 0o600)
+    except Exception:
+        pass  # Best-effort — don't break on permission errors
 
 
 _user_md_file = _config_dir / "USER.md"

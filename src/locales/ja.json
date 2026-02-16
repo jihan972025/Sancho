@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "言語",
     "matrixPasswordHelp": "Element Xアカウントのパスワード。SSO（Gmailなど）で登録した場合は、下のアクセストークンを使用してください。",
-    "matrixTokenHelp": "パスワードなしでSSOで登録した場合：Element Web → Settings → Help & About → アクセストークンをコピー"
+    "matrixTokenHelp": "パスワードなしでSSOで登録した場合：Element Web → Settings → Help & About → アクセストークンをコピー",
+    "voiceApp": "ボイスアプリ"
   },
   "profile": {
     "googleAccount": "Googleアカウント",
@@ -85,6 +86,7 @@
     "language": "言語",
     "country": "国",
     "city": "都市",
+    "timezone": "タイムゾーン",
     "sanchoIdentity": "Sanchoの情報",
     "nickname": "ニックネーム",
     "role": "役割",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "マイ資産",
+    "krwBalance": "KRW残高",
+    "totalEval": "総評価額",
+    "holdings": "保有量",
+    "avgBuyPrice": "平均取得単価",
+    "evalAmount": "評価金額",
+    "returnRate": "収益率",
+    "noHoldings": "保有コインなし",
+    "refreshAssets": "更新"
+  },
+  "voice": {
+    "title": "ボイスアプリ",
+    "description": "スマホでQRコードをスキャンすると、音声でSanchoと会話できます。",
+    "qrCode": "QRコード",
+    "scanGuide": "同じWiFiに接続されたスマホでスキャンしてください",
+    "copyUrl": "URLをコピー",
+    "copied": "コピーしました！",
+    "networkWarning": "デスクトップとスマホが同じWiFiネットワークに接続されている必要があります。",
+    "voiceUrl": "ボイスアプリURL",
+    "internetAccess": "インターネット接続",
+    "internetDesc": "モバイルデータ(4G/5G)や他のネットワークからもアクセス可能",
+    "tunnelStarting": "セキュアトンネル起動中...",
+    "tunnelActive": "インターネットからアクセス可能",
+    "tunnelError": "トンネルの起動に失敗しました",
+    "wifiOnly": "WiFiのみ",
+    "internet": "インターネット",
+    "scanGuideInternet": "スマホでスキャン（どのネットワークでも動作）",
+    "tunnelFirstTime": "初回はダウンロードに時間がかかる場合があります"
   }
 }

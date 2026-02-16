@@ -8,6 +8,7 @@ import { initMatrix, connectMatrix, disconnectMatrix, getMatrixStatus, sendMatri
 import { setSelectedModel } from './selectedModel'
 import { startPeriodicCheck, stopPeriodicCheck, checkForUpdate, applyPatch, dismissUpdate } from './updater'
 import { startGoogleOAuth } from './googleAuth'
+import { startTunnel, stopTunnel, getTunnelUrl } from './tunnel'
 
 let mainWindow: BrowserWindow | null = null
 let pythonProcess: ChildProcess | null = null
@@ -123,7 +124,7 @@ function createWindow(): void {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: isDev,
+      webSecurity: true,
     },
   })
 
@@ -417,6 +418,7 @@ app.on('before-quit', () => {
   isQuitting = true
   stopPeriodicCheck()
   stopNotificationPolling()
+  stopTunnel()
   stopBackend()
   tray?.destroy()
   tray = null
@@ -483,6 +485,20 @@ ipcMain.handle('google-auth:status', async () => {
   })
   return JSON.parse(data)
 })
+
+// Tunnel IPC handlers
+ipcMain.handle('tunnel:start', async () => {
+  try {
+    const url = await startTunnel()
+    return { url, error: '' }
+  } catch (err) {
+    const msg = (err as Error).message
+    console.error('[Tunnel] Start failed:', msg)
+    return { url: '', error: msg }
+  }
+})
+ipcMain.handle('tunnel:stop', async () => stopTunnel())
+ipcMain.handle('tunnel:status', () => getTunnelUrl())
 
 ipcMain.handle('google-auth:logout', async () => {
   const http = await import('http')

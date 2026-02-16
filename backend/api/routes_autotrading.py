@@ -133,6 +133,84 @@ async def get_history(limit: int = 500, from_date: str = "", to_date: str = ""):
     return {"trades": trades}
 
 
+@router.get("/assets")
+async def get_assets():
+    """Fetch user's Upbit balance and holdings with current valuations."""
+    cfg = get_config()
+    if not cfg.api.upbit_access_key or not cfg.api.upbit_secret_key:
+        return {"krw_balance": 0, "coins": [], "total_eval_krw": 0, "error": "API keys not configured"}
+
+    try:
+        import ccxt
+
+        exchange = ccxt.upbit({
+            "enableRateLimit": True,
+            "apiKey": cfg.api.upbit_access_key,
+            "secret": cfg.api.upbit_secret_key,
+        })
+
+        loop = asyncio.get_event_loop()
+        balance = await loop.run_in_executor(None, exchange.fetch_balance)
+
+        krw_balance = float(balance.get("KRW", {}).get("free", 0))
+        coins = []
+        total_coin_eval = 0
+
+        # Iterate all currencies with positive balance
+        for currency, info in balance.items():
+            if currency in ("KRW", "info", "free", "used", "total", "debt", "timestamp", "datetime"):
+                continue
+            total_amt = float(info.get("total", 0)) if isinstance(info, dict) else 0
+            if total_amt <= 0:
+                continue
+
+            # Try to get current price and avg buy price
+            symbol = f"{currency}/KRW"
+            try:
+                ticker = await loop.run_in_executor(None, exchange.fetch_ticker, symbol)
+                current_price = ticker.get("last", 0)
+            except Exception:
+                current_price = 0
+
+            # Get avg buy price from Upbit private API
+            avg_buy_price = 0
+            try:
+                resp_info = balance.get("info", [])
+                if isinstance(resp_info, list):
+                    for item in resp_info:
+                        if item.get("currency") == currency:
+                            avg_buy_price = float(item.get("avg_buy_price", 0))
+                            break
+            except Exception:
+                pass
+
+            eval_krw = total_amt * current_price if current_price else 0
+            pnl_pct = ((current_price - avg_buy_price) / avg_buy_price * 100) if avg_buy_price > 0 else 0
+            total_coin_eval += eval_krw
+
+            coins.append({
+                "currency": currency,
+                "balance": total_amt,
+                "avg_buy_price": avg_buy_price,
+                "current_price": current_price,
+                "eval_krw": round(eval_krw),
+                "pnl_pct": round(pnl_pct, 2),
+            })
+
+        # Sort by eval_krw descending
+        coins.sort(key=lambda c: c["eval_krw"], reverse=True)
+
+        return {
+            "krw_balance": round(krw_balance),
+            "coins": coins,
+            "total_eval_krw": round(krw_balance + total_coin_eval),
+        }
+
+    except Exception as e:
+        logger.error("Failed to fetch assets: %s", e)
+        return {"krw_balance": 0, "coins": [], "total_eval_krw": 0, "error": str(e)}
+
+
 @router.get("/stream")
 async def stream_events():
     """SSE endpoint that forwards engine events to the frontend."""

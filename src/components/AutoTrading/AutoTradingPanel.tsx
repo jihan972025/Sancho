@@ -5,12 +5,15 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   ArrowUpRight,
   ArrowDownRight,
   Minus,
   AlertTriangle,
   Brain,
   HelpCircle,
+  Wallet,
+  RefreshCw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../../stores/chatStore'
@@ -121,6 +124,25 @@ export default function AutoTradingPanel() {
   const [strategy, setStrategy] = useState<'llm' | 'rule'>('llm')
   const [showStrategyHelp, setShowStrategyHelp] = useState(false)
 
+  // Assets state
+  interface CoinHolding {
+    currency: string
+    balance: number
+    avg_buy_price: number
+    current_price: number
+    eval_krw: number
+    pnl_pct: number
+  }
+  interface AssetsData {
+    krw_balance: number
+    coins: CoinHolding[]
+    total_eval_krw: number
+    error?: string
+  }
+  const [assets, setAssets] = useState<AssetsData | null>(null)
+  const [assetsLoading, setAssetsLoading] = useState(false)
+  const [assetsExpanded, setAssetsExpanded] = useState(true)
+
   const models = useChatStore((s) => s.models)
   const [selectedModel, setSelectedModel] = useState('')
   const abortRef = useRef<AbortController | null>(null)
@@ -213,6 +235,29 @@ export default function AutoTradingPanel() {
       // ignore
     }
   }
+
+  // Fetch assets
+  const fetchAssets = async () => {
+    setAssetsLoading(true)
+    try {
+      const res = await fetch(`${BASE_URL}/api/autotrading/assets`)
+      if (res.ok) {
+        const data = await res.json()
+        setAssets(data)
+      }
+    } catch {
+      // ignore
+    } finally {
+      setAssetsLoading(false)
+    }
+  }
+
+  // Auto-refresh assets every 30s
+  useEffect(() => {
+    fetchAssets()
+    const iv = setInterval(fetchAssets, 30000)
+    return () => clearInterval(iv)
+  }, [])
 
   // SSE stream
   useEffect(() => {
@@ -572,6 +617,78 @@ export default function AutoTradingPanel() {
         <div className="flex-shrink-0 mx-5 mt-3 flex items-center gap-2 text-slate-400">
           <Loader2 size={14} className="animate-spin" />
           <span className="text-xs">{progress}</span>
+        </div>
+      )}
+
+      {/* Assets */}
+      {assets && !assets.error && (
+        <div className="flex-shrink-0 border-b border-slate-800 px-5 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => setAssetsExpanded(!assetsExpanded)}
+              className="flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-slate-100 transition-colors"
+            >
+              <Wallet size={14} className="text-amber-400" />
+              {t('crypto.assets')}
+              {assetsExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            <button
+              onClick={fetchAssets}
+              disabled={assetsLoading}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <RefreshCw size={11} className={assetsLoading ? 'animate-spin' : ''} />
+              {t('crypto.refreshAssets')}
+            </button>
+          </div>
+          {assetsExpanded && (
+            <div className="space-y-2">
+              {/* KRW + Total */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2">
+                  <div className="text-xs text-slate-500">{t('crypto.krwBalance')}</div>
+                  <div className="text-sm font-bold text-slate-100">₩{(assets.krw_balance || 0).toLocaleString()}</div>
+                </div>
+                <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2">
+                  <div className="text-xs text-slate-500">{t('crypto.totalEval')}</div>
+                  <div className="text-sm font-bold text-amber-400">₩{(assets.total_eval_krw || 0).toLocaleString()}</div>
+                </div>
+              </div>
+              {/* Coin Holdings */}
+              {assets.coins.length > 0 ? (
+                <div className="overflow-x-auto rounded-lg border border-slate-800">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-slate-800/80 text-slate-400">
+                        <th className="text-left px-3 py-1.5 font-medium">{t('crypto.thCoin')}</th>
+                        <th className="text-right px-3 py-1.5 font-medium">{t('crypto.holdings')}</th>
+                        <th className="text-right px-3 py-1.5 font-medium">{t('crypto.avgBuyPrice')}</th>
+                        <th className="text-right px-3 py-1.5 font-medium">{t('crypto.currentPrice')}</th>
+                        <th className="text-right px-3 py-1.5 font-medium">{t('crypto.evalAmount')}</th>
+                        <th className="text-right px-3 py-1.5 font-medium">{t('crypto.returnRate')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {assets.coins.map((c) => (
+                        <tr key={c.currency} className="border-t border-slate-800/50">
+                          <td className="px-3 py-1.5 text-slate-200 font-medium">{c.currency}</td>
+                          <td className="px-3 py-1.5 text-right text-slate-300">{c.balance.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
+                          <td className="px-3 py-1.5 text-right text-slate-400">₩{c.avg_buy_price.toLocaleString()}</td>
+                          <td className="px-3 py-1.5 text-right text-slate-300">₩{c.current_price.toLocaleString()}</td>
+                          <td className="px-3 py-1.5 text-right text-slate-300">₩{c.eval_krw.toLocaleString()}</td>
+                          <td className={`px-3 py-1.5 text-right font-medium ${c.pnl_pct > 0 ? 'text-emerald-400' : c.pnl_pct < 0 ? 'text-red-400' : 'text-slate-400'}`}>
+                            {c.pnl_pct > 0 ? '+' : ''}{c.pnl_pct.toFixed(2)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500 text-center py-2">{t('crypto.noHoldings')}</div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

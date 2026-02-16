@@ -12,6 +12,8 @@
   Pop $0
   nsExec::ExecToStack 'taskkill /F /IM "main.exe"'
   Pop $0
+  nsExec::ExecToStack 'taskkill /F /IM "cloudflared.exe"'
+  Pop $0
   Sleep 2000
 !macroend
 
@@ -20,6 +22,8 @@
   nsExec::ExecToStack 'taskkill /F /IM "Sancho.exe"'
   Pop $0
   nsExec::ExecToStack 'taskkill /F /IM "main.exe"'
+  Pop $0
+  nsExec::ExecToStack 'taskkill /F /IM "cloudflared.exe"'
   Pop $0
   Sleep 1000
 

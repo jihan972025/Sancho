@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SonicAI - Urgent State Ambient Lighting</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#ef4444",
+                "accent-red": "#dc2626",
+                "urgent-orange": "#f97316",
+                "critical-red": "#ef4444",
+                "critical-orange": "#f97316",
+                "background-dark": "#0d0d0f",
+                "charcoal": "#121214",
+              },
+              fontFamily: {
+                "display": ["Space Grotesk"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: 'Space Grotesk', sans-serif;
+                @apply bg-background-dark text-slate-200 overflow-hidden;
+            }
+        }
+        @layer components {
+            .ambient-lighting-system {
+                @apply absolute inset-0 pointer-events-none z-0;
+                background: radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.2) 0%, transparent 70%),
+                            radial-gradient(circle at 90% 50%, rgba(249, 115, 22, 0.15) 0%, transparent 60%);
+                filter: blur(80px);
+                animation: heartbeat-ambient 4s ease-in-out infinite;
+            }
+            .vibrant-orb-container {
+                @apply relative flex items-center justify-center;
+                width: clamp(280px, 60vw, 420px);
+                height: clamp(280px, 60vw, 420px);
+            }
+            .vibrant-orb-core {
+                @apply absolute rounded-full transition-all duration-[2000ms] ease-in-out;
+                width: 60%;
+                height: 60%;
+                background: radial-gradient(circle at 30% 30%, #ef4444, #dc2626, #991b1b);
+                filter: blur(4px);
+                box-shadow: 0 0 120px rgba(239, 68, 68, 0.7), 
+                            0 0 200px rgba(249, 115, 22, 0.5),
+                            inset 0 0 60px rgba(255, 255, 255, 0.2);
+                animation: morphing 6s ease-in-out infinite, heartbeat-orb 2s ease-in-out infinite;
+            }
+            .vibrant-wave-layer {
+                @apply absolute rounded-full border-2 transition-colors duration-[2000ms];
+                opacity: 0.4;
+            }
+            .wave-1 {
+                width: 75%; height: 75%;
+                border-color: #ef4444;
+                animation: pulse-vibrant 3s ease-in-out infinite;
+            }
+            .wave-2 {
+                width: 90%; height: 90%;
+                border-color: #f97316;
+                animation: pulse-vibrant 3s ease-in-out infinite -1s;
+            }
+            .wave-3 {
+                width: 110%; height: 110%;
+                border-color: #991b1b;
+                animation: pulse-vibrant 3s ease-in-out infinite -2s;
+            }
+            .stagger-entry {
+                animation: stagger-fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                opacity: 0;
+            }
+            .stagger-entry:nth-child(1) { animation-delay: 0.1s; }
+            .stagger-entry:nth-child(2) { animation-delay: 0.25s; }
+            .stagger-entry:nth-child(3) { animation-delay: 0.4s; }
+            .stagger-entry:nth-child(4) { animation-delay: 0.55s; }
+            .sync-dot {
+                @apply w-2 h-2 rounded-full transition-all duration-[1500ms] ease-in-out;
+                animation: bounce-sync-urgent 1.2s infinite ease-in-out;
+            }
+        }
+        @keyframes morphing {
+            0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: scale(1); }
+            50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: scale(1.05); }
+        }
+        @keyframes heartbeat-orb {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            10% { transform: scale(1.05); filter: brightness(1.3); }
+            20% { transform: scale(1); filter: brightness(1); }
+            30% { transform: scale(1.03); filter: brightness(1.2); }
+            40% { transform: scale(1); filter: brightness(1); }
+        }
+        @keyframes heartbeat-ambient {
+            0%, 100% { opacity: 0.6; }
+            15% { opacity: 1; }
+            30% { opacity: 0.7; }
+            45% { opacity: 0.9; }
+            60% { opacity: 0.6; }
+        }
+        @keyframes pulse-vibrant {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { opacity: 0.4; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+        @keyframes stagger-fade-up {
+            0% { transform: translateY(30px) scale(0.98); opacity: 0; filter: blur(10px); }
+            100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0); }
+        }
+        @keyframes bounce-sync-urgent {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.4; background-color: #dc2626; }
+            40% { transform: scale(1.2); opacity: 1; background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-card { @apply bg-white/[0.03] border border-white/10 backdrop-blur-md rounded-2xl overflow-hidden; }
+    </style>
+</head>
+<body class="font-display">
+<div class="flex h-screen w-full overflow-hidden relative bg-charcoal">
+<div class="ambient-lighting-system"></div>
+<aside class="hidden lg:flex w-20 xl:w-72 border-r border-white/5 bg-black/40 flex-col backdrop-blur-3xl z-40 shrink-0 transition-all duration-300">
+<div class="p-5 xl:p-8 flex items-center gap-3">
+<div class="w-10 h-10 bg-gradient-to-br from-critical-red via-critical-orange to-critical-red rounded-xl flex items-center justify-center text-white shadow-[0_0_20px_rgba(239,68,68,0.4)] shrink-0">
+<span class="material-icons">report_problem</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-white hidden xl:block">SonicAI</h1>
+</div>
+<div class="px-4 xl:px-6 py-2">
+<button class="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white p-3 xl:p-4 rounded-xl transition-all duration-300 border border-white/10 group">
+<span class="material-icons text-sm xl:text-base group-hover:rotate-90 transition-transform">add</span>
+<span class="font-medium hidden xl:block">New Session</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-4 xl:px-6 mt-8 space-y-3 scrollbar-hide">
+<div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-2 mb-4 hidden xl:block text-slate-400">Recent Transcripts</div>
+<div class="group flex items-center justify-center xl:justify-between p-3 xl:p-4 rounded-xl bg-critical-red/10 border border-critical-red/20 cursor-pointer transition-all">
+<div class="flex items-center gap-4 overflow-hidden">
+<span class="material-icons text-critical-red text-lg">priority_high</span>
+<div class="hidden xl:flex flex-col">
+<span class="truncate text-sm font-semibold text-white">Critical Alert</span>
+<span class="text-[10px] text-critical-red/70 font-medium">Urgent State Active</span>
+</div>
+</div>
+</div>
+<div class="group flex items-center justify-center xl:justify-between p-3 xl:p-4 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 cursor-pointer transition-all">
+<div class="flex items-center gap-4 overflow-hidden">
+<span class="material-icons text-slate-500 text-lg">mic_none</span>
+<div class="hidden xl:flex flex-col">
+<span class="truncate text-sm font-medium text-slate-300">Previous Log</span>
+<span class="text-[10px] text-slate-500">10 minutes ago</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 xl:p-6 border-t border-white/5">
+<div class="flex items-center gap-4 p-2 xl:p-3 rounded-xl hover:bg-white/5 transition-colors cursor-pointer justify-center xl:justify-start">
+<img alt="User" class="w-10 h-10 rounded-full object-cover border border-white/10 shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrMl1RBcGKQ7R96QiNdhrotOH22xtol2TzasC6PfOue6KYOF2Y3nMrjl1bZSo6C4bndHVSkW-PX82UmcD-v5aXHKBJ8xKGjZK_icM1GTKJHKgKsSyXDT9t4XVBnDRmEfAzbTeQUTmyD_maO3K-gUzd3nvig7-t286ffUDIvL4-6-p_NXWl3vvmtGay8t69OtLzE4rwS93P3wPflZjqezRjLQ1rc-A1-NsXUYi_ChH89SR2KJfib-biUJyNeQAJ6VQ6uqyCjRHm6MA"/>
+<div class="flex-1 min-w-0 hidden xl:block">
+<div class="text-xs font-bold truncate text-white uppercase tracking-wider">Alex Sterling</div>
+<div class="text-[10px] text-critical-red font-bold uppercase tracking-widest">Admin Access</div>
+</div>
+<span class="material-icons text-slate-500 text-lg hidden xl:block">settings</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col relative overflow-hidden transition-all duration-700">
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-critical-red/10 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
+<header class="h-16 lg:h-24 flex items-center justify-between px-6 lg:px-12 shrink-0 z-20">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-critical-red shadow-[0_0_15px_#ef4444] animate-ping"></div>
+<span class="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Environmental Sync: <span class="text-critical-red">Urgent Response</span></span>
+</div>
+<div class="flex items-center gap-2 lg:gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-critical-red/10 border border-critical-red/20 text-critical-red">
+<span class="material-icons text-xl">notification_important</span>
+</button>
+</div>
+</header>
+<div class="flex-1 flex flex-col items-center justify-center px-4 relative z-20">
+<div class="vibrant-orb-container">
+<div class="vibrant-wave-layer wave-3"></div>
+<div class="vibrant-wave-layer wave-2"></div>
+<div class="vibrant-wave-layer wave-1"></div>
+<div class="vibrant-orb-core"></div>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-full h-full relative">
+<div class="absolute top-1/4 left-1/3 w-3 h-3 bg-white/40 rounded-full blur-[4px]"></div>
+<div class="absolute bottom-1/3 right-1/4 w-4 h-4 bg-critical-orange/30 rounded-full blur-[6px]"></div>
+</div>
+</div>
+</div>
+<div class="mt-12 text-center space-y-6">
+<div class="inline-flex items-center justify-center gap-6 px-8 py-4 rounded-full bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl">
+<span class="flex gap-2 items-center">
+<span class="sync-dot"></span>
+<span class="sync-dot" style="animation-delay: 0.2s"></span>
+<span class="sync-dot" style="animation-delay: 0.4s"></span>
+</span>
+<span class="text-[10px] lg:text-sm font-bold text-critical-red tracking-[0.3em] uppercase">Emergency Protocol Active</span>
+</div>
+</div>
+</div>
+<div class="h-64 lg:h-80 flex flex-col items-center justify-center relative shrink-0 z-20 pb-12">
+<div class="mb-8 flex flex-col items-center gap-4 px-6 text-center">
+<div class="group flex items-center gap-2 text-critical-red bg-critical-red/10 px-6 py-2 rounded-full border border-critical-red/20 backdrop-blur-sm">
+<span class="material-symbols-outlined text-lg">warning</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Urgent Dialogue State</span>
+</div>
+<h2 class="text-xl lg:text-3xl font-light text-white tracking-tight max-w-2xl leading-relaxed">
+                    "Critical system alert detected. Immediate attention is required for the current operation."
+                </h2>
+</div>
+<div class="relative">
+<div class="absolute inset-[-50px] bg-critical-red/20 rounded-full blur-[60px]"></div>
+<button class="relative w-20 h-20 lg:w-28 h-28 bg-gradient-to-tr from-critical-red via-critical-orange to-critical-red text-white rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(239,68,68,0.6)] transform hover:scale-105 transition-all">
+<span class="material-symbols-outlined text-4xl lg:text-5xl font-light">mic</span>
+<div class="absolute -inset-4 border border-critical-red/30 rounded-full animate-ping pointer-events-none"></div>
+</button>
+</div>
+</div>
+</main>
+<aside class="hidden lg:flex w-[320px] xl:w-[440px] bg-black/60 border-l border-white/10 backdrop-blur-3xl flex-col z-50 shrink-0 relative transition-all duration-700 shadow-[-20px_0_60px_rgba(0,0,0,0.8)]">
+<div class="absolute inset-0 bg-gradient-to-b from-critical-red/[0.08] via-transparent to-transparent pointer-events-none"></div>
+<div class="absolute -left-10 top-0 bottom-0 w-20 bg-critical-red/[0.05] blur-[40px] pointer-events-none"></div>
+<div class="p-6 xl:p-8 border-b border-white/5 relative z-10">
+<div class="flex items-center justify-between mb-8">
+<h3 class="text-xs font-black uppercase tracking-[0.4em] text-white/80">System Alerts</h3>
+<div class="flex items-center gap-2 bg-critical-red/10 px-3 py-1 rounded-full border border-critical-red/20">
+<span class="w-1.5 h-1.5 rounded-full bg-critical-red shadow-[0_0_8px_#ef4444] animate-pulse"></span>
+<span class="text-[9px] font-black text-critical-red uppercase tracking-widest">High Urgency</span>
+</div>
+</div>
+<div class="relative">
+<span class="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg">search</span>
+<input class="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-critical-red/50 transition-all" placeholder="Search critical events..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide relative z-10">
+<div class="stagger-entry glass-card p-6 bg-critical-red/[0.08] border-critical-red/30">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-critical-red/20 flex items-center justify-center shrink-0 border border-critical-red/20">
+<span class="material-icons text-critical-red">error</span>
+</div>
+<div class="space-y-1">
+<span class="text-[10px] font-bold text-critical-red uppercase tracking-[0.2em]">Urgent Broadcast</span>
+<div class="flex gap-1.5 py-1">
+<span class="sync-dot"></span>
+<span class="sync-dot" style="animation-delay: 0.2s"></span>
+<span class="sync-dot" style="animation-delay: 0.4s"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="stagger-entry glass-card p-6 space-y-4 hover:bg-white/[0.05] transition-all border-critical-red/10">
+<div class="flex items-start gap-4">
+<div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
+<span class="material-icons text-white text-sm">person</span>
+</div>
+<div class="space-y-1 flex-1">
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">User</span>
+<span class="text-[9px] text-slate-500">Just Now</span>
+</div>
+<p class="text-sm text-slate-200 leading-relaxed">What's happening? Why is the lighting red?</p>
+</div>
+</div>
+<div class="flex items-start gap-4 border-t border-white/5 pt-4">
+<div class="w-8 h-8 rounded-lg bg-critical-red/20 flex items-center justify-center shrink-0 border border-critical-red/20">
+<span class="material-icons text-critical-red text-sm">warning</span>
+</div>
+<div class="space-y-2 flex-1">
+<span class="text-[10px] font-bold text-critical-red uppercase tracking-widest">SonicAI (Urgent)</span>
+<p class="text-sm text-slate-300 italic leading-relaxed">System parameters are exceeding safety thresholds. I have entered an urgent status to ensure your immediate attention.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 border-t border-white/5 bg-black/30 relative z-10">
+<button class="w-full py-4 rounded-xl border border-white/10 text-slate-400 hover:text-white hover:bg-critical-red/10 hover:border-critical-red/30 text-[10px] font-bold uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 group">
+<span class="material-symbols-outlined text-lg group-hover:text-critical-red transition-colors">cancel</span>
+                Dismiss Emergency
+            </button>
+</div>
+</aside>
+<div class="hidden lg:flex fixed bottom-10 left-10 z-50 pointer-events-none">
+<div class="flex items-center gap-5 bg-charcoal/80 backdrop-blur-2xl px-8 py-4 rounded-2xl border border-critical-red/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all">
+<div class="flex gap-2">
+<div class="w-3 h-3 rounded-full bg-critical-red animate-pulse"></div>
+<div class="w-3 h-3 rounded-full bg-critical-orange animate-pulse" style="animation-delay: 0.2s"></div>
+</div>
+<div class="flex flex-col">
+<span class="text-[10px] text-critical-red font-black tracking-[0.2em] uppercase">Heartbeat Sync Active</span>
+<span class="text-[8px] text-slate-500 uppercase tracking-widest">Urgent-Red Ambient Profile</span>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

@@ -7,6 +7,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('backend/skills/definitions', 'backend/skills/definitions'),
+        ('html', 'html'),
     ],
     hiddenimports=[
         'feedparser',

@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Dil",
     "matrixPasswordHelp": "Element X hesabınızın şifresi. SSO (Gmail vb.) ile kaydolduysanız, aşağıdaki Erişim Tokenını kullanın.",
-    "matrixTokenHelp": "Şifresiz SSO ile kaydolduysanız: Element Web → Settings → Help & About → Erişim Tokenını Kopyala"
+    "matrixTokenHelp": "Şifresiz SSO ile kaydolduysanız: Element Web → Settings → Help & About → Erişim Tokenını Kopyala",
+    "voiceApp": "Sesli Uygulama"
   },
   "profile": {
     "googleAccount": "Google Hesabı",
@@ -85,6 +86,7 @@
     "language": "Dil",
     "country": "Ülke",
     "city": "Şehir",
+    "timezone": "Saat dilimi",
     "sanchoIdentity": "Sancho Bilgileri",
     "nickname": "Takma Ad",
     "role": "Rol",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Varlıklarım",
+    "krwBalance": "KRW Bakiye",
+    "totalEval": "Toplam Değerleme",
+    "holdings": "Miktar",
+    "avgBuyPrice": "Ort. Alış Fiyatı",
+    "evalAmount": "Tahmini Değer",
+    "returnRate": "Getiri",
+    "noHoldings": "Coin yok",
+    "refreshAssets": "Yenile"
+  },
+  "voice": {
+    "title": "Sesli Uygulama",
+    "description": "Telefonunuzla QR kodu tarayarak Sancho ile sesli sohbet edin.",
+    "qrCode": "QR Kodu",
+    "scanGuide": "Aynı WiFi'ye bağlı telefonunuzla tarayın",
+    "copyUrl": "URL'yi Kopyala",
+    "copied": "Kopyalandı!",
+    "networkWarning": "Masaüstü ve telefon aynı WiFi ağına bağlı olmalıdır.",
+    "voiceUrl": "Sesli Uygulama URL'si",
+    "internetAccess": "İnternet Erişimi",
+    "internetDesc": "Mobil veri (4G/5G) veya herhangi bir ağdan erişimi etkinleştirin",
+    "tunnelStarting": "Güvenli tünel başlatılıyor...",
+    "tunnelActive": "İnternetten erişilebilir",
+    "tunnelError": "Tünel başlatılamadı",
+    "wifiOnly": "Yalnızca WiFi",
+    "internet": "İnternet",
+    "scanGuideInternet": "Telefonunuzla tarayın (herhangi bir ağda çalışır)",
+    "tunnelFirstTime": "İlk seferde indirme biraz zaman alabilir"
   }
 }

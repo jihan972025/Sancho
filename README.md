@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>AI Agent Desktop App for Windows</b><br>
-  Multi-LLM Chat &bull; File Management &bull; Browser Automation &bull; Messenger Integration
+  Multi-LLM Chat &bull; File Management &bull; Browser Automation &bull; Messenger Integration &bull; Voice Chat
 </p>
 
 <p align="center">
@@ -23,10 +23,12 @@ Sancho is a local AI agent desktop app for Windows 10/11. It connects to multipl
 
 ## Use Cases
 
+- **Voice chat from your phone** — Scan a QR code to open a voice chat page on your phone. Talk to Sancho with speech-to-text and hear responses — works on Wi-Fi or over the internet via Cloudflare Tunnel.
 - **Chat with LLMs from your phone** — Connect WhatsApp, Telegram, or Element X and interact with AI models directly from your mobile chat app, anytime and anywhere.
 - **Get weekly weather forecasts** — Ask Sancho to search for the latest weather information and receive a summary via chat or messenger.
 - **Stock & crypto technical analysis** — Get real-time technical analysis for stocks, Bitcoin, Ethereum, and other assets with up-to-date market data.
 - **Crypto auto-trading** — Automated crypto trading on Upbit with LLM-based or rule-based strategies, stop-loss, take-profit, and daily loss limits.
+- **Trade crypto with natural language** — Tell Sancho to buy, sell, or check your Upbit balance and prices in plain language.
 - **Organize files automatically** — Let the AI sort your downloads folder by file type with a single command.
 - **Automate browser tasks** — Have Sancho navigate websites, fill out forms, and extract information hands-free.
 - **Schedule recurring tasks** — Set up automated jobs that run on a schedule and send results to your messenger.
@@ -41,7 +43,9 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
   ├── Skill System (Search, File, Custom API)
   ├── File Agent
   ├── Browser Agent (Playwright)
-  └── Auto-Trading Engine (Upbit)
+  ├── Auto-Trading Engine (Upbit)
+  ├── Voice App (Cloudflare Tunnel)
+  └── Security Middleware (Rate Limit, Tunnel Guard)
 ```
 
 ## Features
@@ -57,13 +61,18 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 - Memory panel (Brain icon) to view, toggle, and delete individual memories
 - Injected into system prompt so the AI always knows your context
 
+### User Profile
+- Set name, occupation, timezone, and preferences during onboarding
+- Timezone-aware responses (17 timezone options from NZST to PST)
+- Saved to `~/.sancho/USER.md`, always injected into LLM context
+
 ### Sancho Persona
 - Set a custom nickname and role for the AI during onboarding
 - Saved to `~/.sancho/SANCHO.md`, always injected into LLM context
 
 ### Skill System
 
-28 built-in skills — 20 free (no API key), 8 with API key integration.
+30 built-in skills — 21 free (no API key), 9 with API key integration.
 
 #### Built-in Skills (Free)
 
@@ -119,6 +128,13 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 - Snapshot → LLM Text → ref-based Action loop (up to 20 steps)
 - 48 actions: click, fill, type, drag, select, check, hover, scroll, tabs, cookies, storage, and more
 
+### Voice App
+- Scan a QR code to open a voice chat page on your phone
+- Speech-to-text input and text-to-speech responses
+- **Wi-Fi mode**: Works on the same local network
+- **Internet mode**: Accessible from anywhere via Cloudflare Tunnel (auto-downloads `cloudflared`)
+- Secured with tunnel guard middleware, rate limiting, endpoint whitelist, and request size limits
+
 ### Messenger Integration
 - **WhatsApp**: Connect via QR code, auto-reply
 - **Telegram**: Connect with API key + QR code, auto-reply
@@ -161,18 +177,29 @@ Sancho provides real-time cryptocurrency prices, technical analysis, and automat
 ### Auto-Trading (Upbit)
 - Automated crypto trading on Upbit exchange (KRW markets)
 - **Supported coins**: BTC, ETH, XRP, SOL, TRX, ADA, XMR
-- **LLM Mode**: AI analyzes indicators and decides BUY/SELL/HOLD (confidence ≥ 70%), take-profit decided by AI
-- **Rule-based Mode**: Buy when 3+ of 6 indicator signals align, Sell when 2+ of 4 signals align, auto take-profit at +1.5%
+- **LLM Mode**: AI analyzes indicators and decides BUY/SELL/HOLD (confidence ≥ 70%), take-profit decided by AI with volume confirmation and EMA crossover filters
+- **Rule-based Mode**: Buy when 3+ of 6 indicator signals align, Sell when 2+ of 4 signals align
 - **Risk management**: Stop-loss -2%, daily loss limit -5% (both modes)
 - **Indicators**: RSI, MACD, Bollinger Bands, SMA(20/50), EMA(12/26), ATR, Volume
+- **Assets Dashboard**: View KRW balance, coin holdings, average buy price, current valuation, and return rate
 - Configurable coin, analysis interval (5m–4h), candle interval (1m–4h), trade amount
 - Real-time SSE event stream with live status, signals, and trade history
 
 ## Installation
 
 ### Installer
-Download [Sancho Setup 1.0.10.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.10/Sancho.Setup.1.0.10.exe) — all dependencies are bundled (no separate installation required).
+Download [Sancho Setup 1.0.11.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.11/Sancho.Setup.1.0.11.exe) — all dependencies are bundled (no separate installation required).
 
+
+## Security
+
+- **Tunnel Guard Middleware**: Endpoint whitelist, request size limit (1 MB), path traversal prevention for Cloudflare Tunnel traffic
+- **Rate Limiting**: Sliding-window rate limiter (30 req/60s per IP) for tunnel requests
+- **CORS Lockdown**: Explicit origin whitelist instead of wildcard
+- **Web Security**: Always enabled in Electron (no dev-mode bypass in production)
+- **Config File Permissions**: Owner-only file permissions for `config.json` (API keys)
+- **File Operations**: Symlink resolution to prevent traversal attacks, `.sancho` config directory protection
+- **Input Validation**: Message count, length, role, and model name validation for tunnel requests
 
 ## Tech Stack
 
@@ -184,6 +211,7 @@ Download [Sancho Setup 1.0.10.exe](https://github.com/jihan972025/Sancho/release
 | Backend | Python, FastAPI |
 | Browser | Playwright |
 | Messenger | Baileys (WhatsApp), GramJS (Telegram), matrix-js-sdk (Matrix) |
+| Voice | Cloudflare Tunnel (cloudflared), Web Speech API |
 | Build | PyInstaller, electron-builder (NSIS) |
 
 ## License

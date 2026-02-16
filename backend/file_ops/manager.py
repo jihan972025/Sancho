@@ -42,11 +42,26 @@ class DeleteToken(BaseModel):
 _pending_deletes: dict[str, DeleteToken] = {}
 
 
+def _sancho_config_dir() -> str:
+    """Get Sancho config dir path to protect it from file operations."""
+    return os.path.realpath(
+        os.environ.get("SANCHO_CONFIG_DIR", str(Path.home() / ".sancho"))
+    ).lower()
+
+
 def _is_protected(path: str) -> bool:
-    abs_path = os.path.abspath(path).lower()
+    # Resolve symlinks to prevent symlink traversal attacks
+    try:
+        resolved = os.path.realpath(path).lower()
+    except (OSError, ValueError):
+        return True  # If we can't resolve, treat as protected
     for protected in PROTECTED_DIRS_LOWER:
-        if abs_path == protected or abs_path.startswith(protected + "\\"):
+        if resolved == protected or resolved.startswith(protected + "\\"):
             return True
+    # Block access to Sancho config directory (contains API keys, tokens)
+    sancho_dir = _sancho_config_dir()
+    if resolved == sancho_dir or resolved.startswith(sancho_dir + "\\"):
+        return True
     return False
 
 

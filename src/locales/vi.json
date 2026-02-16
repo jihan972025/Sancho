@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Ngôn ngữ",
     "matrixPasswordHelp": "Mật khẩu tài khoản Element X của bạn. Nếu bạn đăng ký bằng SSO (Gmail, v.v.), hãy sử dụng Mã truy cập bên dưới.",
-    "matrixTokenHelp": "Nếu đăng ký qua SSO không có mật khẩu: Element Web → Settings → Help & About → Sao chép Mã truy cập"
+    "matrixTokenHelp": "Nếu đăng ký qua SSO không có mật khẩu: Element Web → Settings → Help & About → Sao chép Mã truy cập",
+    "voiceApp": "Ứng dụng giọng nói"
   },
   "profile": {
     "googleAccount": "Tài khoản Google",
@@ -85,6 +86,7 @@
     "language": "Ngôn ngữ",
     "country": "Quốc gia",
     "city": "Thành phố",
+    "timezone": "Múi giờ",
     "sanchoIdentity": "Thông tin Sancho",
     "nickname": "Biệt danh",
     "role": "Vai trò",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Tài sản",
+    "krwBalance": "Số dư KRW",
+    "totalEval": "Tổng đánh giá",
+    "holdings": "Số lượng",
+    "avgBuyPrice": "Giá mua TB",
+    "evalAmount": "Giá trị ước tính",
+    "returnRate": "Lợi nhuận",
+    "noHoldings": "Không có coin",
+    "refreshAssets": "Làm mới"
+  },
+  "voice": {
+    "title": "Ứng dụng giọng nói",
+    "description": "Quét mã QR bằng điện thoại để trò chuyện bằng giọng nói với Sancho.",
+    "qrCode": "Mã QR",
+    "scanGuide": "Quét bằng điện thoại kết nối cùng WiFi",
+    "copyUrl": "Sao chép URL",
+    "copied": "Đã sao chép!",
+    "networkWarning": "Máy tính và điện thoại phải kết nối cùng mạng WiFi.",
+    "voiceUrl": "URL ứng dụng giọng nói",
+    "internetAccess": "Truy cập Internet",
+    "internetDesc": "Bật để truy cập qua dữ liệu di động (4G/5G) hoặc bất kỳ mạng nào",
+    "tunnelStarting": "Đang khởi động đường hầm bảo mật...",
+    "tunnelActive": "Có thể truy cập qua Internet",
+    "tunnelError": "Không thể khởi động đường hầm",
+    "wifiOnly": "Chỉ WiFi",
+    "internet": "Internet",
+    "scanGuideInternet": "Quét bằng điện thoại (hoạt động trên mọi mạng)",
+    "tunnelFirstTime": "Lần đầu có thể mất thời gian để tải xuống"
   }
 }

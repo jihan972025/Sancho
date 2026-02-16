@@ -102,4 +102,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getStatus: () => ipcRenderer.invoke('google-auth:status'),
     logout: () => ipcRenderer.invoke('google-auth:logout'),
   },
+  tunnel: {
+    start: () => ipcRenderer.invoke('tunnel:start'),
+    stop: () => ipcRenderer.invoke('tunnel:stop'),
+    getStatus: () => ipcRenderer.invoke('tunnel:status'),
+  },
 })

@@ -27,6 +27,10 @@ extraResources:
     to: assets/icon.ico
   - from: img/android-chrome-192x192.webp
     to: assets/app-icon.webp
+  - from: vendor/cloudflared.exe
+    to: cloudflared/cloudflared.exe
+  - from: html/
+    to: html/
 
 win:
   target:

@@ -28,6 +28,7 @@ class UserProfileRequest(BaseModel):
     language: str
     country: str
     city: str
+    timezone: str = "Asia/Seoul"
 
 
 @router.get("/user-profile")
@@ -45,6 +46,7 @@ async def update_user_profile(profile: UserProfileRequest):
         f"- Language: {profile.language}\n"
         f"- Country: {profile.country}\n"
         f"- City: {profile.city}\n"
+        f"- Timezone: {profile.timezone}\n"
     )
     save_user_md(md)
     # Also update language in config

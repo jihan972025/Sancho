@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "Idioma",
     "matrixPasswordHelp": "Senha da sua conta Element X. Se você se cadastrou com SSO (Gmail, etc.), use o Token de acesso abaixo.",
-    "matrixTokenHelp": "Se cadastrado via SSO sem senha: Element Web → Settings → Help & About → Copiar Token de acesso"
+    "matrixTokenHelp": "Se cadastrado via SSO sem senha: Element Web → Settings → Help & About → Copiar Token de acesso",
+    "voiceApp": "App de Voz"
   },
   "profile": {
     "googleAccount": "Conta Google",
@@ -85,6 +86,7 @@
     "language": "Idioma",
     "country": "País",
     "city": "Cidade",
+    "timezone": "Fuso horário",
     "sanchoIdentity": "Identidade do Sancho",
     "nickname": "Apelido",
     "role": "Função",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "Meus Ativos",
+    "krwBalance": "Saldo KRW",
+    "totalEval": "Avaliação Total",
+    "holdings": "Quantidade",
+    "avgBuyPrice": "Preço Médio",
+    "evalAmount": "Valor Estimado",
+    "returnRate": "Retorno",
+    "noHoldings": "Sem moedas",
+    "refreshAssets": "Atualizar"
+  },
+  "voice": {
+    "title": "App de Voz",
+    "description": "Escaneie o QR code com seu celular para conversar com Sancho por voz.",
+    "qrCode": "QR Code",
+    "scanGuide": "Escaneie com seu celular na mesma rede WiFi",
+    "copyUrl": "Copiar URL",
+    "copied": "Copiado!",
+    "networkWarning": "Seu computador e celular devem estar conectados à mesma rede WiFi.",
+    "voiceUrl": "URL do App de Voz",
+    "internetAccess": "Acesso à Internet",
+    "internetDesc": "Ativar para acessar por dados móveis (4G/5G) ou qualquer rede",
+    "tunnelStarting": "Iniciando túnel seguro...",
+    "tunnelActive": "Acessível pela internet",
+    "tunnelError": "Falha ao iniciar o túnel",
+    "wifiOnly": "Apenas WiFi",
+    "internet": "Internet",
+    "scanGuideInternet": "Escaneie com seu celular (funciona em qualquer rede)",
+    "tunnelFirstTime": "A primeira vez pode demorar para baixar"
   }
 }

@@ -71,8 +71,10 @@ Current Price: ₩{current_price:,.0f}
 1. Require confluence of 3+ indicators before BUY/SELL.
 2. HOLD if uncertain – no trade is better than a losing trade.
 3. Factor in 0.05 % fee per side.
-4. If in position: recommend SELL on stop-loss (-2 %) or take-profit (+1.5 %) or reversal signal.
+4. If in position: recommend SELL on stop-loss (-2 %) or reversal signal.
 5. Avoid overtrading.
+6. Volume confirmation: prefer BUY/SELL signals backed by above-average volume; be cautious when volume is below the 20-period average.
+7. EMA crossover: EMA(12) > EMA(26) = bullish trend, EMA(12) < EMA(26) = bearish trend. Use as trend filter before entering trades.
 
 IMPORTANT: Write the "reasoning" field in {language}. All other field names and values (action, confidence, etc.) must remain in English.
 
@@ -178,12 +180,7 @@ class TradingEngine:
                         await self._execute_sell("Stop-loss at -2%", loop)
                         await asyncio.sleep(interval)
                         continue
-                    # Take-profit: rule mode = auto sell, LLM mode = let LLM decide
-                    if self.strategy == "rule" and unrealized_pct >= 1.5:
-                        self._emit({"type": "progress", "content": f"Take-profit triggered ({unrealized_pct:+.2f}%)"})
-                        await self._execute_sell(f"Take-profit at +{unrealized_pct:.2f}%", loop)
-                        await asyncio.sleep(interval)
-                        continue
+                    # Take-profit removed — let signals (LLM or rule) decide when to sell
 
                 # 4. Daily loss limit
                 if self._daily_pnl_pct <= -5.0:
@@ -232,6 +229,9 @@ class TradingEngine:
             "enableRateLimit": True,
             "apiKey": cfg.api.upbit_access_key,
             "secret": cfg.api.upbit_secret_key,
+            "options": {
+                "createMarketBuyOrderRequiresPrice": False,
+            },
         })
 
     def _fetch_candles(self, tf: str) -> list:
@@ -252,16 +252,15 @@ class TradingEngine:
                 self._emit({"type": "error", "content": "Invalid price"})
                 return
 
-            # Calculate quantity
-            qty = self.amount_krw / price
-
-            # Execute market buy
+            # Execute market buy – pass KRW cost directly
+            # (createMarketBuyOrderRequiresPrice=False → amount = cost in KRW)
+            cost = self.amount_krw
             order = await loop.run_in_executor(
-                None, lambda: exchange.create_market_buy_order(symbol, qty)
+                None, lambda: exchange.create_market_buy_order(symbol, cost)
             )
 
             filled_price = order.get("average", price)
-            filled_qty = order.get("filled", qty)
+            filled_qty = order.get("filled", cost / price)
 
             self.in_position = True
             self.entry_price = filled_price

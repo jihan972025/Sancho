@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "भाषा",
     "matrixPasswordHelp": "आपके Element X खाते का पासवर्ड। यदि आपने SSO (Gmail, आदि) से साइन अप किया है, तो नीचे दिए गए एक्सेस टोकन का उपयोग करें।",
-    "matrixTokenHelp": "यदि SSO से बिना पासवर्ड के साइन अप किया है: Element Web → Settings → Help & About → एक्सेस टोकन कॉपी करें"
+    "matrixTokenHelp": "यदि SSO से बिना पासवर्ड के साइन अप किया है: Element Web → Settings → Help & About → एक्सेस टोकन कॉपी करें",
+    "voiceApp": "वॉइस ऐप"
   },
   "profile": {
     "googleAccount": "Google खाता",
@@ -85,6 +86,7 @@
     "language": "भाषा",
     "country": "देश",
     "city": "शहर",
+    "timezone": "समय क्षेत्र",
     "sanchoIdentity": "Sancho की जानकारी",
     "nickname": "उपनाम",
     "role": "भूमिका",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "मेरी संपत्ति",
+    "krwBalance": "KRW शेष",
+    "totalEval": "कुल मूल्यांकन",
+    "holdings": "मात्रा",
+    "avgBuyPrice": "औसत खरीद मूल्य",
+    "evalAmount": "मूल्यांकन राशि",
+    "returnRate": "रिटर्न",
+    "noHoldings": "कोई कॉइन नहीं",
+    "refreshAssets": "रीफ्रेश"
+  },
+  "voice": {
+    "title": "वॉइस ऐप",
+    "description": "अपने फोन से QR कोड स्कैन करें और Sancho से आवाज़ में बात करें।",
+    "qrCode": "QR कोड",
+    "scanGuide": "उसी WiFi पर कनेक्टेड फोन से स्कैन करें",
+    "copyUrl": "URL कॉपी करें",
+    "copied": "कॉपी हो गया!",
+    "networkWarning": "डेस्कटॉप और फोन एक ही WiFi नेटवर्क से जुड़े होने चाहिए।",
+    "voiceUrl": "वॉइस ऐप URL",
+    "internetAccess": "इंटरनेट एक्सेस",
+    "internetDesc": "मोबाइल डेटा (4G/5G) या किसी भी नेटवर्क से एक्सेस सक्षम करें",
+    "tunnelStarting": "सुरक्षित टनल शुरू हो रहा है...",
+    "tunnelActive": "इंटरनेट से एक्सेस योग्य",
+    "tunnelError": "टनल शुरू करने में विफल",
+    "wifiOnly": "केवल WiFi",
+    "internet": "इंटरनेट",
+    "scanGuideInternet": "फोन से स्कैन करें (किसी भी नेटवर्क पर काम करता है)",
+    "tunnelFirstTime": "पहली बार डाउनलोड में कुछ समय लग सकता है"
   }
 }

@@ -56,3 +56,23 @@ export const COUNTRIES = [
   { code: 'SE', name: 'Sweden', native: '🇸🇪 Sverige' },
   { code: 'PL', name: 'Poland', native: '🇵🇱 Polska' },
 ]
+
+export const TIMEZONES = [
+  { value: 'Asia/Seoul', label: 'KST (Seoul, UTC+9)' },
+  { value: 'Asia/Tokyo', label: 'JST (Tokyo, UTC+9)' },
+  { value: 'Asia/Shanghai', label: 'CST (Shanghai, UTC+8)' },
+  { value: 'Asia/Singapore', label: 'SGT (Singapore, UTC+8)' },
+  { value: 'Asia/Kolkata', label: 'IST (Kolkata, UTC+5:30)' },
+  { value: 'Asia/Dubai', label: 'GST (Dubai, UTC+4)' },
+  { value: 'Europe/London', label: 'GMT (London, UTC+0)' },
+  { value: 'Europe/Paris', label: 'CET (Paris, UTC+1)' },
+  { value: 'Europe/Berlin', label: 'CET (Berlin, UTC+1)' },
+  { value: 'America/New_York', label: 'EST (New York, UTC-5)' },
+  { value: 'America/Chicago', label: 'CST (Chicago, UTC-6)' },
+  { value: 'America/Denver', label: 'MST (Denver, UTC-7)' },
+  { value: 'America/Los_Angeles', label: 'PST (Los Angeles, UTC-8)' },
+  { value: 'America/Sao_Paulo', label: 'BRT (Sao Paulo, UTC-3)' },
+  { value: 'Pacific/Auckland', label: 'NZST (Auckland, UTC+12)' },
+  { value: 'Australia/Sydney', label: 'AEST (Sydney, UTC+10)' },
+  { value: 'UTC', label: 'UTC (UTC+0)' },
+]

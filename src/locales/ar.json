@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "اللغة",
     "matrixPasswordHelp": "كلمة مرور حساب Element X الخاص بك. إذا سجلت عبر SSO (Gmail، إلخ)، استخدم رمز الوصول أدناه.",
-    "matrixTokenHelp": "إذا سجلت عبر SSO بدون كلمة مرور: Element Web → Settings → Help & About → نسخ رمز الوصول"
+    "matrixTokenHelp": "إذا سجلت عبر SSO بدون كلمة مرور: Element Web → Settings → Help & About → نسخ رمز الوصول",
+    "voiceApp": "تطبيق الصوت"
   },
   "profile": {
     "googleAccount": "حساب Google",
@@ -85,6 +86,7 @@
     "language": "اللغة",
     "country": "البلد",
     "city": "المدينة",
+    "timezone": "المنطقة الزمنية",
     "sanchoIdentity": "معلومات Sancho",
     "nickname": "الاسم المستعار",
     "role": "الدور",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "أصولي",
+    "krwBalance": "رصيد KRW",
+    "totalEval": "إجمالي التقييم",
+    "holdings": "الكمية",
+    "avgBuyPrice": "متوسط سعر الشراء",
+    "evalAmount": "القيمة المقدرة",
+    "returnRate": "العائد",
+    "noHoldings": "لا توجد عملات",
+    "refreshAssets": "تحديث"
+  },
+  "voice": {
+    "title": "تطبيق الصوت",
+    "description": "امسح رمز QR بهاتفك للتحدث مع Sancho صوتياً.",
+    "qrCode": "رمز QR",
+    "scanGuide": "امسح بهاتفك المتصل بنفس شبكة WiFi",
+    "copyUrl": "نسخ الرابط",
+    "copied": "تم النسخ!",
+    "networkWarning": "يجب أن يكون الحاسوب والهاتف متصلين بنفس شبكة WiFi.",
+    "voiceUrl": "رابط تطبيق الصوت",
+    "internetAccess": "الوصول عبر الإنترنت",
+    "internetDesc": "تمكين الوصول عبر بيانات الجوال (4G/5G) أو أي شبكة",
+    "tunnelStarting": "جاري بدء النفق الآمن...",
+    "tunnelActive": "يمكن الوصول عبر الإنترنت",
+    "tunnelError": "فشل في بدء النفق",
+    "wifiOnly": "WiFi فقط",
+    "internet": "إنترنت",
+    "scanGuideInternet": "امسح بهاتفك (يعمل على أي شبكة)",
+    "tunnelFirstTime": "قد يستغرق التشغيل الأول وقتاً للتنزيل"
   }
 }

@@ -73,7 +73,8 @@
     "api": "API",
     "languageTab": "语言",
     "matrixPasswordHelp": "Element X账户的密码。如果使用SSO（Gmail等）注册，请使用下方的访问令牌。",
-    "matrixTokenHelp": "如果通过SSO注册且没有密码：Element Web → Settings → Help & About → 复制访问令牌"
+    "matrixTokenHelp": "如果通过SSO注册且没有密码：Element Web → Settings → Help & About → 复制访问令牌",
+    "voiceApp": "语音应用"
   },
   "profile": {
     "googleAccount": "Google账号",
@@ -85,6 +86,7 @@
     "language": "语言",
     "country": "国家",
     "city": "城市",
+    "timezone": "时区",
     "sanchoIdentity": "Sancho信息",
     "nickname": "昵称",
     "role": "角色",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "我的资产",
+    "krwBalance": "KRW余额",
+    "totalEval": "总评估金额",
+    "holdings": "持有量",
+    "avgBuyPrice": "平均买入价",
+    "evalAmount": "评估金额",
+    "returnRate": "收益率",
+    "noHoldings": "无持有币种",
+    "refreshAssets": "刷新"
+  },
+  "voice": {
+    "title": "语音应用",
+    "description": "用手机扫描二维码，即可通过语音与Sancho对话。",
+    "qrCode": "二维码",
+    "scanGuide": "请用连接同一WiFi的手机扫描",
+    "copyUrl": "复制链接",
+    "copied": "已复制！",
+    "networkWarning": "电脑和手机必须连接同一WiFi网络。",
+    "voiceUrl": "语音应用链接",
+    "internetAccess": "互联网访问",
+    "internetDesc": "启用后可通过移动数据(4G/5G)或任何网络访问",
+    "tunnelStarting": "正在启动安全隧道...",
+    "tunnelActive": "可从互联网访问",
+    "tunnelError": "隧道启动失败",
+    "wifiOnly": "仅WiFi",
+    "internet": "互联网",
+    "scanGuideInternet": "用手机扫描（在任何网络上均可使用）",
+    "tunnelFirstTime": "首次运行可能需要下载，请稍候"
   }
 }

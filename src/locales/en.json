@@ -73,7 +73,8 @@
     "languageTab": "Language",
     "languageDesc": "Select your preferred language for the Sancho interface.",
     "matrixPasswordHelp": "Password for your Element X account. If you signed up with SSO (Gmail, etc.), use Access Token below.",
-    "matrixTokenHelp": "If signed up via SSO without password: Element Web → Settings → Help & About → Copy Access Token"
+    "matrixTokenHelp": "If signed up via SSO without password: Element Web → Settings → Help & About → Copy Access Token",
+    "voiceApp": "Voice App"
   },
   "profile": {
     "googleAccount": "Google Account",
@@ -85,6 +86,7 @@
     "language": "Language",
     "country": "Country",
     "city": "City",
+    "timezone": "Timezone",
     "sanchoIdentity": "Sancho's Identity",
     "nickname": "Nickname",
     "role": "Role",
@@ -163,6 +165,34 @@
     "dateFrom": "From",
     "dateTo": "To",
     "search": "Search",
-    "allPeriod": "All"
+    "allPeriod": "All",
+    "assets": "My Assets",
+    "krwBalance": "KRW Balance",
+    "totalEval": "Total Evaluation",
+    "holdings": "Holdings",
+    "avgBuyPrice": "Avg Buy Price",
+    "evalAmount": "Eval Amount",
+    "returnRate": "Return",
+    "noHoldings": "No coin holdings",
+    "refreshAssets": "Refresh"
+  },
+  "voice": {
+    "title": "Voice App",
+    "description": "Scan the QR code with your phone to have a voice conversation with Sancho.",
+    "qrCode": "QR Code",
+    "scanGuide": "Scan with your phone on the same WiFi network",
+    "copyUrl": "Copy URL",
+    "copied": "Copied!",
+    "networkWarning": "Your desktop and phone must be connected to the same WiFi network.",
+    "voiceUrl": "Voice App URL",
+    "internetAccess": "Internet Access",
+    "internetDesc": "Enable to access from mobile data (4G/5G) or any network",
+    "tunnelStarting": "Starting secure tunnel...",
+    "tunnelActive": "Accessible from the internet",
+    "tunnelError": "Failed to start tunnel. Please check cloudflared installation.",
+    "wifiOnly": "WiFi Only",
+    "internet": "Internet",
+    "scanGuideInternet": "Scan with your phone (works on any network)",
+    "tunnelFirstTime": "First time may take a moment to download"
   }
 }

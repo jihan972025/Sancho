@@ -34,6 +34,7 @@ from .executors.pyshorteners_executor import PyShortenersExecutor
 from .executors.restcountries_executor import RestCountriesExecutor
 from .executors.zenquotes_executor import ZenQuotesExecutor
 from .executors.krnews_executor import KrNewsExecutor
+from .executors.upbit_executor import UpbitExecutor
 from .executors.custom_api_executor import CustomApiExecutor
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,7 @@ ALL_SKILL_EXECUTORS: list[type[SkillExecutor]] = [
     RestCountriesExecutor,
     ZenQuotesExecutor,
     KrNewsExecutor,
+    UpbitExecutor,
 ]
 
 _skill_instances: dict[str, SkillExecutor] = {}

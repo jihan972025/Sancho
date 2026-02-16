@@ -22,6 +22,12 @@ interface ElectronMatrixAPI extends ElectronChatAppAPI {
   connect: (homeserverUrl: string, userId: string, password: string, accessToken: string) => Promise<void>
 }
 
+interface ElectronTunnelAPI {
+  start: () => Promise<string | { url: string; error: string }>
+  stop: () => Promise<void>
+  getStatus: () => Promise<string>
+}
+
 interface ElectronGoogleAuthAPI {
   login: () => Promise<{ email: string; name: string; picture_url: string } | null>
   getStatus: () => Promise<{ logged_in: boolean; email?: string; name?: string; picture_url?: string }>
@@ -36,6 +42,7 @@ interface ElectronAPI {
   telegram: ElectronTelegramAPI
   matrix: ElectronMatrixAPI
   googleAuth: ElectronGoogleAuthAPI
+  tunnel: ElectronTunnelAPI
 }
 
 interface Window {

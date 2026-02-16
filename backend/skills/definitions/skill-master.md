@@ -31,6 +31,7 @@ Use these skills DIRECTLY instead of going through search:
 - **tradingview**: Technical analysis (RSI, MACD, Bollinger Bands, Moving Averages)
 - **frankfurter**: Foreign exchange rates (30+ currencies)
 - **ccxt**: Real-time cryptocurrency prices from Binance
+- **upbit**: Upbit exchange trading — buy/sell coins, check balance (KRW market)
 - **gnews**: Google News search (141 countries, 41 languages)
 - **geopy**: Address ↔ coordinates geocoding
 - **usgs**: Recent earthquake data
@@ -57,6 +58,17 @@ IMPORTANT: You have FULL ACCESS to the user's Google account through these skill
   - "스프레드시트 읽어줘", "시트에 데이터 입력", "read spreadsheet"
 
 NEVER say "I don't have access to your calendar/email" — ALWAYS call the skill.
+
+## When to use the upbit skill
+
+You MUST use the upbit skill for:
+- Buying cryptocurrency on Upbit (e.g., "ADA 1만원 매수", "buy 10000 KRW of BTC")
+- Selling cryptocurrency on Upbit (e.g., "비트코인 매도", "sell all ADA")
+- Checking Upbit account balance (e.g., "내 잔고", "보유 코인", "my balance")
+- Checking Upbit KRW market prices (e.g., "업비트 ADA 가격", "upbit BTC price")
+
+Do NOT confuse with ccxt (Binance USDT prices) — use upbit for KRW market trading and prices.
+ALWAYS execute the trade when the user asks to buy or sell — do NOT just describe what you would do.
 
 ## When to use search skills (duckduckgo, tavily)
 
