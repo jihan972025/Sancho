@@ -340,13 +340,23 @@ async def manual_sell(req: ManualSellRequest):
             if sell_qty <= 0:
                 raise HTTPException(400, f"No {req.coin} balance to sell.")
 
+        # Pre-check: estimate order value against Upbit minimum (5,000 KRW)
+        ticker = await loop.run_in_executor(None, exchange.fetch_ticker, symbol)
+        current_price = ticker.get("last", 0)
+        if current_price > 0:
+            est_value = sell_qty * current_price
+            if est_value < 5000:
+                raise HTTPException(
+                    400,
+                    f"Sell amount too small: ₩{est_value:,.0f} (min ₩5,000). "
+                    f"Quantity: {sell_qty:.8f} × ₩{current_price:,.0f}"
+                )
+
         # Market sell
         order = await loop.run_in_executor(
             None, lambda: exchange.create_market_sell_order(symbol, sell_qty)
         )
 
-        ticker = await loop.run_in_executor(None, exchange.fetch_ticker, symbol)
-        current_price = ticker.get("last", 0)
         filled_price = order.get("average") or order.get("price") or current_price
         filled_qty = order.get("filled") or sell_qty
         est_krw = filled_price * filled_qty if filled_price else 0
@@ -366,6 +376,10 @@ async def manual_sell(req: ManualSellRequest):
         raise
     except Exception as e:
         logger.error("Manual sell failed: %s", e, exc_info=True)
+        # Parse Upbit-specific error messages for user-friendly display
+        err_msg = str(e)
+        if "under_min_total_market_ask" in err_msg:
+            raise HTTPException(400, "Sell amount is below Upbit minimum (₩5,000). The holdings value is too small to sell.")
         raise HTTPException(500, f"Sell failed: {e}")
 
 

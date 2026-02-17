@@ -162,6 +162,7 @@ export default function AutoTradingPanel() {
   const [manualSellAll, setManualSellAll] = useState(true)
   const [manualLoading, setManualLoading] = useState(false)
   const [manualResult, setManualResult] = useState<string | null>(null)
+  const [manualError, setManualError] = useState<string | null>(null)
 
   const models = useChatStore((s) => s.models)
   const [selectedModel, setSelectedModel] = useState('')
@@ -331,6 +332,7 @@ export default function AutoTradingPanel() {
     setManualAmountDisplay(formatComma(amountKrw))
     setManualAmountKrw(amountKrw)
     setManualResult(null)
+    setManualError(null)
     setManualModal('buy')
   }
 
@@ -339,12 +341,13 @@ export default function AutoTradingPanel() {
     setManualSellAll(true)
     setManualSellQty('')
     setManualResult(null)
+    setManualError(null)
     setManualModal('sell')
   }
 
   const executeManualBuy = async () => {
     setManualLoading(true)
-    setError('')
+    setManualError(null)
     setManualResult(null)
     try {
       const res = await fetch(`${BASE_URL}/api/autotrading/manual-buy`, {
@@ -354,7 +357,7 @@ export default function AutoTradingPanel() {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: res.statusText }))
-        setError(err.detail || `HTTP ${res.status}`)
+        setManualError(err.detail || `HTTP ${res.status}`)
         return
       }
       const data = await res.json()
@@ -363,7 +366,7 @@ export default function AutoTradingPanel() {
       )
       fetchAssets()
     } catch (e: any) {
-      setError(e.message || 'Manual buy failed')
+      setManualError(e.message || 'Manual buy failed')
     } finally {
       setManualLoading(false)
     }
@@ -371,7 +374,7 @@ export default function AutoTradingPanel() {
 
   const executeManualSell = async () => {
     setManualLoading(true)
-    setError('')
+    setManualError(null)
     setManualResult(null)
     try {
       const body: any = { coin: manualCoin }
@@ -385,7 +388,7 @@ export default function AutoTradingPanel() {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: res.statusText }))
-        setError(err.detail || `HTTP ${res.status}`)
+        setManualError(err.detail || `HTTP ${res.status}`)
         return
       }
       const data = await res.json()
@@ -394,7 +397,7 @@ export default function AutoTradingPanel() {
       )
       fetchAssets()
     } catch (e: any) {
-      setError(e.message || 'Manual sell failed')
+      setManualError(e.message || 'Manual sell failed')
     } finally {
       setManualLoading(false)
     }
@@ -520,9 +523,9 @@ export default function AutoTradingPanel() {
   const winRate = trades.length > 0 ? ((winCount / trades.length) * 100).toFixed(1) : '0'
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
+    <div className="flex flex-col h-full bg-slate-900 overflow-y-auto">
       {/* Controls */}
-      <div className="flex-shrink-0 border-b border-slate-800 px-5 py-4 space-y-3">
+      <div className="border-b border-slate-800 px-5 py-4 space-y-3">
         {/* Coin selection */}
         <div>
           <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
@@ -743,7 +746,7 @@ export default function AutoTradingPanel() {
 
       {/* Error */}
       {error && (
-        <div className="flex-shrink-0 mx-5 mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2">
+        <div className="mx-5 mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm flex items-center gap-2">
           <AlertTriangle size={14} />
           {error}
           <button onClick={() => setError('')} className="ml-auto text-red-400/50 hover:text-red-400">
@@ -754,7 +757,7 @@ export default function AutoTradingPanel() {
 
       {/* Progress */}
       {isRunning && progress && (
-        <div className="flex-shrink-0 mx-5 mt-3 flex items-center gap-2 text-slate-400">
+        <div className="mx-5 mt-3 flex items-center gap-2 text-slate-400">
           <Loader2 size={14} className="animate-spin" />
           <span className="text-xs">{progress}</span>
         </div>
@@ -762,7 +765,7 @@ export default function AutoTradingPanel() {
 
       {/* Assets */}
       {assets && !assets.error && (
-        <div className="flex-shrink-0 border-b border-slate-800 px-5 py-3">
+        <div className="border-b border-slate-800 px-5 py-3">
           <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => setAssetsExpanded(!assetsExpanded)}
@@ -867,7 +870,7 @@ export default function AutoTradingPanel() {
 
       {/* Live Dashboard */}
       {isRunning && status && (
-        <div className="flex-shrink-0 border-b border-slate-800 px-5 py-4">
+        <div className="border-b border-slate-800 px-5 py-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             <DashCard
               label={t('crypto.currentPrice')}
@@ -991,7 +994,7 @@ export default function AutoTradingPanel() {
       )}
 
       {/* Trade History */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="px-5 py-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h3 className="text-sm font-medium text-slate-300">
             {t('crypto.tradeHistory')} ({t('crypto.tradeCount', { count: trades.length })})
@@ -1283,6 +1286,14 @@ export default function AutoTradingPanel() {
                 </div>
               )}
 
+              {/* Error message */}
+              {manualError && (
+                <div className="p-2.5 bg-red-600/10 border border-red-500/30 rounded-lg text-xs text-red-400 leading-relaxed flex items-start gap-2">
+                  <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+                  <span>{manualError}</span>
+                </div>
+              )}
+
               {/* Result message */}
               {manualResult && (
                 <div className="p-2.5 bg-emerald-600/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 leading-relaxed">
@@ -1297,7 +1308,7 @@ export default function AutoTradingPanel() {
                 onClick={() => setManualModal(null)}
                 className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
               >
-                {manualResult ? t('crypto.close') : t('crypto.cancel')}
+                {(manualResult || manualError) ? t('crypto.close') : t('crypto.cancel')}
               </button>
               {!manualResult && (
                 <button
