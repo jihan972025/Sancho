@@ -158,6 +158,7 @@
     "ci30m": "30m",
     "ci1h": "1h",
     "ci4h": "4h",
+    "prompt": "प्रॉम्प्ट",
     "analysisResult": "AI Analysis",
     "expectedMove": "Expected Move",
     "stopLoss": "Stop Loss",
@@ -187,7 +188,11 @@
     "cancel": "रद्द करें",
     "close": "बंद करें",
     "manualBuySuccess": "₩{{price}} पर {{quantity}} {{coin}} खरीदा",
-    "manualSellSuccess": "₩{{price}} पर {{quantity}} {{coin}} बेचा (≈₩{{krw}})"
+    "manualSellSuccess": "₩{{price}} पर {{quantity}} {{coin}} बेचा (≈₩{{krw}})",
+    "searchCoin": "सिक्का खोजें",
+    "searchPlaceholder": "नाम या टिकर से खोजें...",
+    "popular": "लोकप्रिय",
+    "noCoinResults": "कोई सिक्का नहीं मिला"
   },
   "voice": {
     "title": "वॉइस ऐप",

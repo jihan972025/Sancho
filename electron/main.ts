@@ -121,7 +121,9 @@ function createWindow(): void {
     backgroundColor: '#0f172a',
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: isDev
+        ? path.join(__dirname, 'preload.js')
+        : path.join(process.resourcesPath, 'app.asar.unpacked', 'dist-electron', 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: false,   // Required: file:// → http://127.0.0.1:8765 API calls
@@ -141,7 +143,7 @@ function createWindow(): void {
       mainWindow.loadURL('http://localhost:5173')
     }
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
+    mainWindow.loadFile(path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'index.html'))
   }
 
   mainWindow.on('close', (e) => {

@@ -158,6 +158,7 @@
     "ci30m": "30m",
     "ci1h": "1h",
     "ci4h": "4h",
+    "prompt": "Prompt",
     "analysisResult": "AI Analysis",
     "expectedMove": "Expected Move",
     "stopLoss": "Stop Loss",
@@ -187,7 +188,11 @@
     "cancel": "Cancelar",
     "close": "Fechar",
     "manualBuySuccess": "Comprado {{quantity}} {{coin}} a ₩{{price}}",
-    "manualSellSuccess": "Vendido {{quantity}} {{coin}} a ₩{{price}} (≈₩{{krw}})"
+    "manualSellSuccess": "Vendido {{quantity}} {{coin}} a ₩{{price}} (≈₩{{krw}})",
+    "searchCoin": "Buscar Moeda",
+    "searchPlaceholder": "Buscar por nome ou ticker...",
+    "popular": "Popular",
+    "noCoinResults": "Nenhuma moeda encontrada"
   },
   "voice": {
     "title": "App de Voz",

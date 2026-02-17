@@ -17,16 +17,6 @@ logger = logging.getLogger(__name__)
 
 UPBIT_FEE = 0.0005  # 0.05 %
 
-COIN_KRW_MAP = {
-    "BTC": "BTC/KRW",
-    "ETH": "ETH/KRW",
-    "XRP": "XRP/KRW",
-    "SOL": "SOL/KRW",
-    "TRX": "TRX/KRW",
-    "ADA": "ADA/KRW",
-    "XMR": "XMR/KRW",
-}
-
 TIMEFRAME_SECONDS = {
     "5m": 5 * 60,
     "10m": 10 * 60,
@@ -311,14 +301,14 @@ class TradingEngine:
 
     def _fetch_candles(self, tf: str) -> list:
         exchange = self._get_exchange()
-        symbol = COIN_KRW_MAP.get(self.coin, f"{self.coin}/KRW")
+        symbol = f"{self.coin}/KRW"
         return exchange.fetch_ohlcv(symbol, tf, limit=150)
 
     async def _execute_buy(self, reasoning: str, loop: asyncio.AbstractEventLoop) -> None:
         try:
             self._emit({"type": "progress", "content": f"Executing BUY {self.coin}..."})
             exchange = self._get_exchange()
-            symbol = COIN_KRW_MAP.get(self.coin, f"{self.coin}/KRW")
+            symbol = f"{self.coin}/KRW"
 
             # Fetch current price
             ticker = await loop.run_in_executor(None, exchange.fetch_ticker, symbol)
@@ -364,7 +354,7 @@ class TradingEngine:
         try:
             self._emit({"type": "progress", "content": f"Executing SELL {self.coin}..."})
             exchange = self._get_exchange()
-            symbol = COIN_KRW_MAP.get(self.coin, f"{self.coin}/KRW")
+            symbol = f"{self.coin}/KRW"
 
             order = await loop.run_in_executor(
                 None, lambda: exchange.create_market_sell_order(symbol, self.quantity)

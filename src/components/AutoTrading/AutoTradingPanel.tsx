@@ -17,9 +17,11 @@ import {
   ShoppingCart,
   BadgeDollarSign,
   X,
+  Search,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../../stores/chatStore'
+import CoinSearchPopup from './CoinSearchPopup'
 
 const BASE_URL = 'http://127.0.0.1:8765'
 
@@ -27,17 +29,11 @@ interface CoinDef {
   id: string
   name: string
   color: string
+  price?: number
+  volume_24h?: number
 }
 
-const COINS: CoinDef[] = [
-  { id: 'BTC', name: 'Bitcoin', color: '#f7931a' },
-  { id: 'ETH', name: 'Ethereum', color: '#627eea' },
-  { id: 'XRP', name: 'Ripple', color: '#00aae4' },
-  { id: 'SOL', name: 'Solana', color: '#9945ff' },
-  { id: 'TRX', name: 'TRON', color: '#ef0027' },
-  { id: 'ADA', name: 'Cardano', color: '#0033ad' },
-  { id: 'XMR', name: 'Monero', color: '#ff6600' },
-]
+// Coins will be loaded dynamically from Upbit API
 
 const TIMEFRAME_IDS = ['5m', '10m', '15m', '30m', '1h', '4h'] as const
 const CANDLE_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h'] as const
@@ -108,6 +104,8 @@ function yesterdayStr(): string {
 
 export default function AutoTradingPanel() {
   const { t, i18n } = useTranslation()
+  const [coins, setCoins] = useState<CoinDef[]>([])
+  const [coinsLoading, setCoinsLoading] = useState(true)
   const [coin, setCoin] = useState('BTC')
   const [timeframe, setTimeframe] = useState('5m')
   const [candleInterval, setCandleInterval] = useState('30m')
@@ -144,7 +142,12 @@ export default function AutoTradingPanel() {
   }
   const [assets, setAssets] = useState<AssetsData | null>(null)
   const [assetsLoading, setAssetsLoading] = useState(false)
-  const [assetsExpanded, setAssetsExpanded] = useState(true)
+  const [assetsExpanded, setAssetsExpanded] = useState(false)
+  const [promptExpanded, setPromptExpanded] = useState(false)
+
+  // Coin search popup state
+  const [showCoinSearch, setShowCoinSearch] = useState(false)
+  const [showManualCoinSearch, setShowManualCoinSearch] = useState(false)
 
   // Manual trade state
   const [manualModal, setManualModal] = useState<'buy' | 'sell' | null>(null)
@@ -195,6 +198,38 @@ export default function AutoTradingPanel() {
   const handleAmountBlur = () => {
     setAmountDisplay(formatComma(amountKrw))
   }
+
+  // Load available coins from Upbit
+  useEffect(() => {
+    const loadCoins = async () => {
+      try {
+        setCoinsLoading(true)
+        const res = await fetch(`${BASE_URL}/api/autotrading/available-coins`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.coins && data.coins.length > 0) {
+            const mapped = data.coins.map((c: any, i: number) => ({
+              id: c.id,
+              name: c.name || c.id,
+              color: `hsl(${(i * 360) / data.coins.length}, 70%, 60%)`,
+              price: c.price || 0,
+              volume_24h: c.volume_24h || 0,
+            }))
+            setCoins(mapped)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load coins:', err)
+        setCoins([
+          { id: 'BTC', name: 'Bitcoin', color: '#f7931a' },
+          { id: 'ETH', name: 'Ethereum', color: '#627eea' },
+        ])
+      } finally {
+        setCoinsLoading(false)
+      }
+    }
+    loadCoins()
+  }, [])
 
   // Load initial status + history
   useEffect(() => {
@@ -483,32 +518,31 @@ export default function AutoTradingPanel() {
         <div>
           <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
             {t('crypto.coin')}
+            {coinsLoading && <Loader2 size={10} className="inline ml-2 animate-spin" />}
           </label>
-          <div className="flex gap-1.5 flex-wrap">
-            {COINS.map((c) => {
-              const isSelected = coin === c.id
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setCoin(c.id)}
-                  disabled={isRunning}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    isSelected
-                      ? 'text-white shadow-lg'
-                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-slate-700'
-                  }`}
-                  style={
-                    isSelected
-                      ? { backgroundColor: c.color, boxShadow: `0 4px 12px ${c.color}40` }
-                      : undefined
-                  }
-                >
-                  {c.id}
-                </button>
-              )
-            })}
-          </div>
+          <button
+            onClick={() => setShowCoinSearch(true)}
+            disabled={isRunning || coinsLoading}
+            className="flex items-center gap-2.5 px-3.5 py-2 bg-slate-800 border border-slate-700 rounded-lg hover:bg-slate-750 hover:border-slate-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: coins.find((c) => c.id === coin)?.color || '#5c7cfa' }}
+            />
+            <span className="font-bold text-sm text-white">{coin}</span>
+            <span className="text-slate-500 text-xs">{coins.find((c) => c.id === coin)?.name || ''}</span>
+            <Search size={13} className="text-slate-500 ml-1" />
+          </button>
         </div>
+        {showCoinSearch && (
+          <CoinSearchPopup
+            coins={coins}
+            selectedCoin={coin}
+            onSelect={(id) => setCoin(id)}
+            onClose={() => setShowCoinSearch(false)}
+            disabled={isRunning}
+          />
+        )}
 
         {/* Timeframe (analysis interval) */}
         <div className="flex gap-6 flex-wrap">
@@ -852,49 +886,60 @@ export default function AutoTradingPanel() {
             />
           </div>
 
-          {/* Last Signal – AI Analysis */}
+          {/* Prompt Accordion */}
           {status.last_signal && status.last_signal.action && (
-            <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
-              <div className="flex items-center gap-2 mb-2">
+            <div className="mt-3">
+              <button
+                onClick={() => setPromptExpanded(!promptExpanded)}
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-slate-100 transition-colors mb-2"
+              >
                 <Brain size={14} className="text-violet-400" />
-                <span className="text-xs font-semibold text-violet-400 uppercase">{t('crypto.analysisResult')}</span>
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded ${
-                    status.last_signal.action === 'BUY'
-                      ? 'bg-emerald-600/20 text-emerald-400'
-                      : status.last_signal.action === 'SELL'
-                        ? 'bg-red-600/20 text-red-400'
-                        : 'bg-slate-700 text-slate-400'
-                  }`}
-                >
-                  {status.last_signal.action}
-                </span>
-                <span className="text-xs text-slate-500">
-                  {t('crypto.confidence')}: {((status.last_signal.confidence || 0) * 100).toFixed(0)}%
-                </span>
-              </div>
-              {/* Signal details row */}
-              <div className="flex gap-4 mb-2 text-xs">
-                {status.last_signal.expected_move_pct != null && (
-                  <span className="text-slate-400">
-                    {t('crypto.expectedMove')}: <span className="text-slate-200">{status.last_signal.expected_move_pct > 0 ? '+' : ''}{status.last_signal.expected_move_pct}%</span>
-                  </span>
-                )}
-                {status.last_signal.stop_loss_pct != null && (
-                  <span className="text-slate-400">
-                    {t('crypto.stopLoss')}: <span className="text-red-400">{status.last_signal.stop_loss_pct}%</span>
-                  </span>
-                )}
-                {status.last_signal.take_profit_pct != null && (
-                  <span className="text-slate-400">
-                    {t('crypto.takeProfit')}: <span className="text-emerald-400">+{status.last_signal.take_profit_pct}%</span>
-                  </span>
-                )}
-              </div>
-              {/* Reasoning */}
-              <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2 border border-slate-700/30">
-                {status.last_signal.reasoning}
-              </div>
+                {t('crypto.prompt')}
+                {promptExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              </button>
+              {promptExpanded && (
+                <div className="p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-violet-400 uppercase">{t('crypto.analysisResult')}</span>
+                    <span
+                      className={`text-xs font-bold px-2 py-0.5 rounded ${
+                        status.last_signal.action === 'BUY'
+                          ? 'bg-emerald-600/20 text-emerald-400'
+                          : status.last_signal.action === 'SELL'
+                            ? 'bg-red-600/20 text-red-400'
+                            : 'bg-slate-700 text-slate-400'
+                      }`}
+                    >
+                      {status.last_signal.action}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {t('crypto.confidence')}: {((status.last_signal.confidence || 0) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  {/* Signal details row */}
+                  <div className="flex gap-4 mb-2 text-xs">
+                    {status.last_signal.expected_move_pct != null && (
+                      <span className="text-slate-400">
+                        {t('crypto.expectedMove')}: <span className="text-slate-200">{status.last_signal.expected_move_pct > 0 ? '+' : ''}{status.last_signal.expected_move_pct}%</span>
+                      </span>
+                    )}
+                    {status.last_signal.stop_loss_pct != null && (
+                      <span className="text-slate-400">
+                        {t('crypto.stopLoss')}: <span className="text-red-400">{status.last_signal.stop_loss_pct}%</span>
+                      </span>
+                    )}
+                    {status.last_signal.take_profit_pct != null && (
+                      <span className="text-slate-400">
+                        {t('crypto.takeProfit')}: <span className="text-emerald-400">+{status.last_signal.take_profit_pct}%</span>
+                      </span>
+                    )}
+                  </div>
+                  {/* Reasoning */}
+                  <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2 border border-slate-700/30">
+                    {status.last_signal.reasoning}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1092,27 +1137,31 @@ export default function AutoTradingPanel() {
             <div className="px-5 py-4 space-y-4">
               {/* Coin selector */}
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">{t('crypto.coin')}</label>
-                <div className="flex gap-1.5 flex-wrap">
-                  {COINS.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => setManualCoin(c.id)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                        manualCoin === c.id
-                          ? 'text-white shadow-lg'
-                          : 'bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600 border border-slate-600'
-                      }`}
-                      style={
-                        manualCoin === c.id
-                          ? { backgroundColor: c.color, boxShadow: `0 2px 8px ${c.color}40` }
-                          : undefined
-                      }
-                    >
-                      {c.id}
-                    </button>
-                  ))}
-                </div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  {t('crypto.coin')}
+                  {coinsLoading && <Loader2 size={10} className="inline ml-2 animate-spin" />}
+                </label>
+                <button
+                  onClick={() => setShowManualCoinSearch(true)}
+                  disabled={coinsLoading}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-600 rounded-lg hover:bg-slate-800 hover:border-slate-500 transition-all w-full"
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: coins.find((c) => c.id === manualCoin)?.color || '#5c7cfa' }}
+                  />
+                  <span className="font-semibold text-sm text-white">{manualCoin}</span>
+                  <span className="text-slate-500 text-xs truncate">{coins.find((c) => c.id === manualCoin)?.name || ''}</span>
+                  <Search size={12} className="text-slate-500 ml-auto" />
+                </button>
+                {showManualCoinSearch && (
+                  <CoinSearchPopup
+                    coins={coins}
+                    selectedCoin={manualCoin}
+                    onSelect={(id) => setManualCoin(id)}
+                    onClose={() => setShowManualCoinSearch(false)}
+                  />
+                )}
               </div>
 
               {/* Buy: Amount input */}

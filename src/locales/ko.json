@@ -158,6 +158,7 @@
     "ci30m": "30분",
     "ci1h": "1시간",
     "ci4h": "4시간",
+    "prompt": "프롬프트",
     "analysisResult": "AI 분석 결과",
     "expectedMove": "예상 변동",
     "stopLoss": "손절",
@@ -187,7 +188,11 @@
     "cancel": "취소",
     "close": "닫기",
     "manualBuySuccess": "{{coin}} {{quantity}}개를 ₩{{price}}에 매수했습니다",
-    "manualSellSuccess": "{{coin}} {{quantity}}개를 ₩{{price}}에 매도했습니다 (≈₩{{krw}})"
+    "manualSellSuccess": "{{coin}} {{quantity}}개를 ₩{{price}}에 매도했습니다 (≈₩{{krw}})",
+    "searchCoin": "코인 검색",
+    "searchPlaceholder": "코인명 또는 심볼 검색...",
+    "popular": "인기",
+    "noCoinResults": "검색 결과 없음"
   },
   "voice": {
     "title": "보이스 앱",

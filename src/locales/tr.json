@@ -158,6 +158,7 @@
     "ci30m": "30m",
     "ci1h": "1h",
     "ci4h": "4h",
+    "prompt": "İstem",
     "analysisResult": "AI Analysis",
     "expectedMove": "Expected Move",
     "stopLoss": "Stop Loss",
@@ -187,7 +188,11 @@
     "cancel": "İptal",
     "close": "Kapat",
     "manualBuySuccess": "₩{{price}} fiyatla {{quantity}} {{coin}} alındı",
-    "manualSellSuccess": "₩{{price}} fiyatla {{quantity}} {{coin}} satıldı (≈₩{{krw}})"
+    "manualSellSuccess": "₩{{price}} fiyatla {{quantity}} {{coin}} satıldı (≈₩{{krw}})",
+    "searchCoin": "Coin Ara",
+    "searchPlaceholder": "İsim veya ticker ile ara...",
+    "popular": "Popüler",
+    "noCoinResults": "Coin bulunamadı"
   },
   "voice": {
     "title": "Sesli Uygulama",

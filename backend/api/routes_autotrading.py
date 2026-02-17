@@ -79,7 +79,7 @@ async def start_trading(req: StartRequest):
     if req.amount_krw < 5000:
         raise HTTPException(400, "Minimum trade amount is ₩5,000.")
 
-    if req.coin not in VALID_COINS:
+    if req.coin not in _get_valid_coins():
         raise HTTPException(400, f"Unsupported coin: {req.coin}")
 
     valid_tf = {"5m", "10m", "15m", "30m", "1h", "4h"}
@@ -220,17 +220,33 @@ async def get_assets():
         return {"krw_balance": 0, "coins": [], "total_eval_krw": 0, "error": str(e)}
 
 
-VALID_COINS = {"BTC", "ETH", "XRP", "SOL", "TRX", "ADA", "XMR"}
+# Dynamic coin validation – cached from Upbit markets
+import time as _time
 
-COIN_KRW_MAP = {
-    "BTC": "BTC/KRW",
-    "ETH": "ETH/KRW",
-    "XRP": "XRP/KRW",
-    "SOL": "SOL/KRW",
-    "TRX": "TRX/KRW",
-    "ADA": "ADA/KRW",
-    "XMR": "XMR/KRW",
-}
+_valid_coins_cache: set[str] | None = None
+_valid_coins_ts: float = 0
+_COIN_CACHE_TTL = 3600  # 1 hour
+
+
+def _get_valid_coins() -> set[str]:
+    """Return the set of active KRW-traded coin IDs, cached for 1 hour."""
+    global _valid_coins_cache, _valid_coins_ts
+    now = _time.time()
+    if _valid_coins_cache and (now - _valid_coins_ts) < _COIN_CACHE_TTL:
+        return _valid_coins_cache
+    try:
+        exchange = _get_exchange()
+        markets = exchange.load_markets()
+        _valid_coins_cache = {
+            market["base"]
+            for symbol, market in markets.items()
+            if "/KRW" in symbol and market.get("active", True)
+        }
+        _valid_coins_ts = now
+    except Exception:
+        if not _valid_coins_cache:
+            _valid_coins_cache = {"BTC", "ETH", "XRP", "SOL", "ADA"}
+    return _valid_coins_cache
 
 
 def _get_exchange():
@@ -255,7 +271,7 @@ async def manual_buy(req: ManualBuyRequest):
     if not cfg.api.upbit_access_key or not cfg.api.upbit_secret_key:
         raise HTTPException(400, "Upbit API keys are not configured.")
 
-    if req.coin not in VALID_COINS:
+    if req.coin not in _get_valid_coins():
         raise HTTPException(400, f"Unsupported coin: {req.coin}")
 
     if req.amount_krw < 5000:
@@ -263,7 +279,7 @@ async def manual_buy(req: ManualBuyRequest):
 
     try:
         exchange = _get_exchange()
-        symbol = COIN_KRW_MAP.get(req.coin, f"{req.coin}/KRW")
+        symbol = f"{req.coin}/KRW"
 
         loop = asyncio.get_event_loop()
 
@@ -306,12 +322,12 @@ async def manual_sell(req: ManualSellRequest):
     if not cfg.api.upbit_access_key or not cfg.api.upbit_secret_key:
         raise HTTPException(400, "Upbit API keys are not configured.")
 
-    if req.coin not in VALID_COINS:
+    if req.coin not in _get_valid_coins():
         raise HTTPException(400, f"Unsupported coin: {req.coin}")
 
     try:
         exchange = _get_exchange()
-        symbol = COIN_KRW_MAP.get(req.coin, f"{req.coin}/KRW")
+        symbol = f"{req.coin}/KRW"
 
         loop = asyncio.get_event_loop()
 
@@ -379,3 +395,68 @@ async def stream_events():
             await asyncio.sleep(3)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+_coins_cache: list[dict] | None = None
+_coins_cache_ts: float = 0
+_COINS_CACHE_TTL = 300  # 5 minutes
+
+
+@router.get("/available-coins")
+async def get_available_coins():
+    """Fetch available KRW trading pairs from Upbit with price and volume."""
+    global _coins_cache, _coins_cache_ts
+
+    now = _time.time()
+    if _coins_cache and (now - _coins_cache_ts) < _COINS_CACHE_TTL:
+        return {"coins": _coins_cache}
+
+    try:
+        exchange = _get_exchange()
+        loop = asyncio.get_event_loop()
+        markets = await loop.run_in_executor(None, exchange.load_markets)
+
+        # Gather KRW symbols
+        krw_symbols = [
+            s for s, m in markets.items()
+            if "/KRW" in s and m.get("active", True)
+        ]
+
+        # Fetch tickers for price / volume
+        tickers = {}
+        try:
+            tickers = await loop.run_in_executor(
+                None, lambda: exchange.fetch_tickers(krw_symbols)
+            )
+        except Exception:
+            pass  # price/volume is optional
+
+        krw_coins = []
+        for symbol in krw_symbols:
+            market = markets[symbol]
+            base = market["base"]
+            ticker = tickers.get(symbol, {})
+            krw_coins.append({
+                "id": base,
+                "name": market.get("id", base),
+                "symbol": symbol,
+                "price": ticker.get("last", 0) or 0,
+                "volume_24h": ticker.get("quoteVolume", 0) or 0,
+            })
+
+        # Sort by 24h KRW volume descending (most popular first)
+        krw_coins.sort(key=lambda x: x.get("volume_24h", 0), reverse=True)
+
+        _coins_cache = krw_coins
+        _coins_cache_ts = now
+
+        # Also refresh valid-coins cache
+        global _valid_coins_cache, _valid_coins_ts
+        _valid_coins_cache = {c["id"] for c in krw_coins}
+        _valid_coins_ts = now
+
+        return {"coins": krw_coins}
+
+    except Exception as e:
+        logger.error("Failed to fetch available coins: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
