@@ -43,6 +43,16 @@ class StartRequest(BaseModel):
     strategy: str = "llm"  # "llm" or "rule"
 
 
+class ManualBuyRequest(BaseModel):
+    coin: str = "BTC"
+    amount_krw: float = 10000
+
+
+class ManualSellRequest(BaseModel):
+    coin: str = "BTC"
+    quantity: float | None = None  # None = sell all
+
+
 # ── Endpoints ──
 
 @router.post("/start")
@@ -69,8 +79,7 @@ async def start_trading(req: StartRequest):
     if req.amount_krw < 5000:
         raise HTTPException(400, "Minimum trade amount is ₩5,000.")
 
-    valid_coins = {"BTC", "ETH", "XRP", "SOL", "TRX", "ADA", "XMR"}
-    if req.coin not in valid_coins:
+    if req.coin not in VALID_COINS:
         raise HTTPException(400, f"Unsupported coin: {req.coin}")
 
     valid_tf = {"5m", "10m", "15m", "30m", "1h", "4h"}
@@ -209,6 +218,139 @@ async def get_assets():
     except Exception as e:
         logger.error("Failed to fetch assets: %s", e)
         return {"krw_balance": 0, "coins": [], "total_eval_krw": 0, "error": str(e)}
+
+
+VALID_COINS = {"BTC", "ETH", "XRP", "SOL", "TRX", "ADA", "XMR"}
+
+COIN_KRW_MAP = {
+    "BTC": "BTC/KRW",
+    "ETH": "ETH/KRW",
+    "XRP": "XRP/KRW",
+    "SOL": "SOL/KRW",
+    "TRX": "TRX/KRW",
+    "ADA": "ADA/KRW",
+    "XMR": "XMR/KRW",
+}
+
+
+def _get_exchange():
+    """Create a ccxt Upbit exchange instance."""
+    import ccxt
+
+    cfg = get_config()
+    return ccxt.upbit({
+        "enableRateLimit": True,
+        "apiKey": cfg.api.upbit_access_key,
+        "secret": cfg.api.upbit_secret_key,
+        "options": {
+            "createMarketBuyOrderRequiresPrice": False,
+        },
+    })
+
+
+@router.post("/manual-buy")
+async def manual_buy(req: ManualBuyRequest):
+    """Execute a manual market buy order."""
+    cfg = get_config()
+    if not cfg.api.upbit_access_key or not cfg.api.upbit_secret_key:
+        raise HTTPException(400, "Upbit API keys are not configured.")
+
+    if req.coin not in VALID_COINS:
+        raise HTTPException(400, f"Unsupported coin: {req.coin}")
+
+    if req.amount_krw < 5000:
+        raise HTTPException(400, "Minimum trade amount is 5,000 KRW.")
+
+    try:
+        exchange = _get_exchange()
+        symbol = COIN_KRW_MAP.get(req.coin, f"{req.coin}/KRW")
+
+        loop = asyncio.get_event_loop()
+
+        # Fetch current price
+        ticker = await loop.run_in_executor(None, exchange.fetch_ticker, symbol)
+        price = ticker.get("last", 0)
+        if price <= 0:
+            raise HTTPException(400, "Could not fetch current price.")
+
+        # Market buy – amount = KRW cost
+        order = await loop.run_in_executor(
+            None, lambda: exchange.create_market_buy_order(symbol, req.amount_krw)
+        )
+
+        filled_price = order.get("average") or order.get("price") or price
+        filled_qty = order.get("filled") or req.amount_krw / (filled_price or price)
+
+        logger.info("Manual BUY: %s @ %s, qty=%s", req.coin, filled_price, filled_qty)
+
+        return {
+            "status": "ok",
+            "action": "BUY",
+            "coin": req.coin,
+            "price": filled_price,
+            "quantity": filled_qty,
+            "amount_krw": req.amount_krw,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Manual buy failed: %s", e, exc_info=True)
+        raise HTTPException(500, f"Buy failed: {e}")
+
+
+@router.post("/manual-sell")
+async def manual_sell(req: ManualSellRequest):
+    """Execute a manual market sell order."""
+    cfg = get_config()
+    if not cfg.api.upbit_access_key or not cfg.api.upbit_secret_key:
+        raise HTTPException(400, "Upbit API keys are not configured.")
+
+    if req.coin not in VALID_COINS:
+        raise HTTPException(400, f"Unsupported coin: {req.coin}")
+
+    try:
+        exchange = _get_exchange()
+        symbol = COIN_KRW_MAP.get(req.coin, f"{req.coin}/KRW")
+
+        loop = asyncio.get_event_loop()
+
+        # If quantity not given, sell all
+        sell_qty = req.quantity
+        if not sell_qty:
+            balance = await loop.run_in_executor(None, exchange.fetch_balance)
+            coin_info = balance.get(req.coin, {})
+            sell_qty = float(coin_info.get("free", 0)) if isinstance(coin_info, dict) else 0
+            if sell_qty <= 0:
+                raise HTTPException(400, f"No {req.coin} balance to sell.")
+
+        # Market sell
+        order = await loop.run_in_executor(
+            None, lambda: exchange.create_market_sell_order(symbol, sell_qty)
+        )
+
+        ticker = await loop.run_in_executor(None, exchange.fetch_ticker, symbol)
+        current_price = ticker.get("last", 0)
+        filled_price = order.get("average") or order.get("price") or current_price
+        filled_qty = order.get("filled") or sell_qty
+        est_krw = filled_price * filled_qty if filled_price else 0
+
+        logger.info("Manual SELL: %s @ %s, qty=%s", req.coin, filled_price, filled_qty)
+
+        return {
+            "status": "ok",
+            "action": "SELL",
+            "coin": req.coin,
+            "price": filled_price,
+            "quantity": filled_qty,
+            "est_krw": round(est_krw),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Manual sell failed: %s", e, exc_info=True)
+        raise HTTPException(500, f"Sell failed: {e}")
 
 
 @router.get("/stream")

@@ -174,7 +174,20 @@
     "evalAmount": "Bewertung",
     "returnRate": "Rendite",
     "noHoldings": "Keine Coins",
-    "refreshAssets": "Aktualisieren"
+    "refreshAssets": "Aktualisieren",
+    "manualBuy": "Kaufen",
+    "manualSell": "Verkaufen",
+    "buy": "Kaufen",
+    "sell": "Verkaufen",
+    "sellQuantity": "Verkaufsmenge",
+    "sellAll": "Alles verkaufen",
+    "sellPartial": "Menge angeben",
+    "confirmBuy": "Kauf bestätigen",
+    "confirmSell": "Verkauf bestätigen",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "manualBuySuccess": "{{quantity}} {{coin}} zu ₩{{price}} gekauft",
+    "manualSellSuccess": "{{quantity}} {{coin}} zu ₩{{price}} verkauft (≈₩{{krw}})"
   },
   "voice": {
     "title": "Sprach-App",

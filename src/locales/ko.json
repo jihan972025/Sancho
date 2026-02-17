@@ -174,7 +174,20 @@
     "evalAmount": "평가금액",
     "returnRate": "수익률",
     "noHoldings": "보유 코인 없음",
-    "refreshAssets": "새로고침"
+    "refreshAssets": "새로고침",
+    "manualBuy": "매수",
+    "manualSell": "매도",
+    "buy": "매수",
+    "sell": "매도",
+    "sellQuantity": "매도 수량",
+    "sellAll": "전량 매도",
+    "sellPartial": "수량 지정",
+    "confirmBuy": "매수 실행",
+    "confirmSell": "매도 실행",
+    "cancel": "취소",
+    "close": "닫기",
+    "manualBuySuccess": "{{coin}} {{quantity}}개를 ₩{{price}}에 매수했습니다",
+    "manualSellSuccess": "{{coin}} {{quantity}}개를 ₩{{price}}에 매도했습니다 (≈₩{{krw}})"
   },
   "voice": {
     "title": "보이스 앱",

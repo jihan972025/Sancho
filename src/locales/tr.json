@@ -174,7 +174,20 @@
     "evalAmount": "Tahmini Değer",
     "returnRate": "Getiri",
     "noHoldings": "Coin yok",
-    "refreshAssets": "Yenile"
+    "refreshAssets": "Yenile",
+    "manualBuy": "Al",
+    "manualSell": "Sat",
+    "buy": "Al",
+    "sell": "Sat",
+    "sellQuantity": "Satış miktarı",
+    "sellAll": "Tümünü sat",
+    "sellPartial": "Miktar belirle",
+    "confirmBuy": "Alışı onayla",
+    "confirmSell": "Satışı onayla",
+    "cancel": "İptal",
+    "close": "Kapat",
+    "manualBuySuccess": "₩{{price}} fiyatla {{quantity}} {{coin}} alındı",
+    "manualSellSuccess": "₩{{price}} fiyatla {{quantity}} {{coin}} satıldı (≈₩{{krw}})"
   },
   "voice": {
     "title": "Sesli Uygulama",

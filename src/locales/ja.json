@@ -174,7 +174,20 @@
     "evalAmount": "評価金額",
     "returnRate": "収益率",
     "noHoldings": "保有コインなし",
-    "refreshAssets": "更新"
+    "refreshAssets": "更新",
+    "manualBuy": "買い",
+    "manualSell": "売り",
+    "buy": "買い",
+    "sell": "売り",
+    "sellQuantity": "売却数量",
+    "sellAll": "全量売却",
+    "sellPartial": "数量指定",
+    "confirmBuy": "買い実行",
+    "confirmSell": "売り実行",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "manualBuySuccess": "{{coin}} {{quantity}}を₩{{price}}で購入しました",
+    "manualSellSuccess": "{{coin}} {{quantity}}を₩{{price}}で売却しました (≈₩{{krw}})"
   },
   "voice": {
     "title": "ボイスアプリ",

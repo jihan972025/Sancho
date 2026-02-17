@@ -174,7 +174,20 @@
     "evalAmount": "Valor Estimado",
     "returnRate": "Retorno",
     "noHoldings": "Sem moedas",
-    "refreshAssets": "Atualizar"
+    "refreshAssets": "Atualizar",
+    "manualBuy": "Comprar",
+    "manualSell": "Vender",
+    "buy": "Comprar",
+    "sell": "Vender",
+    "sellQuantity": "Quantidade para vender",
+    "sellAll": "Vender tudo",
+    "sellPartial": "Quantidade específica",
+    "confirmBuy": "Confirmar compra",
+    "confirmSell": "Confirmar venda",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "manualBuySuccess": "Comprado {{quantity}} {{coin}} a ₩{{price}}",
+    "manualSellSuccess": "Vendido {{quantity}} {{coin}} a ₩{{price}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "App de Voz",

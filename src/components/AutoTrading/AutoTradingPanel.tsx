@@ -14,6 +14,9 @@ import {
   HelpCircle,
   Wallet,
   RefreshCw,
+  ShoppingCart,
+  BadgeDollarSign,
+  X,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useChatStore } from '../../stores/chatStore'
@@ -143,6 +146,16 @@ export default function AutoTradingPanel() {
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [assetsExpanded, setAssetsExpanded] = useState(true)
 
+  // Manual trade state
+  const [manualModal, setManualModal] = useState<'buy' | 'sell' | null>(null)
+  const [manualCoin, setManualCoin] = useState('BTC')
+  const [manualAmountDisplay, setManualAmountDisplay] = useState('10,000')
+  const [manualAmountKrw, setManualAmountKrw] = useState(10000)
+  const [manualSellQty, setManualSellQty] = useState('')
+  const [manualSellAll, setManualSellAll] = useState(true)
+  const [manualLoading, setManualLoading] = useState(false)
+  const [manualResult, setManualResult] = useState<string | null>(null)
+
   const models = useChatStore((s) => s.models)
   const [selectedModel, setSelectedModel] = useState('')
   const abortRef = useRef<AbortController | null>(null)
@@ -258,6 +271,90 @@ export default function AutoTradingPanel() {
     const iv = setInterval(fetchAssets, 30000)
     return () => clearInterval(iv)
   }, [])
+
+  // Manual trade handlers
+  const handleManualAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/,/g, '')
+    if (raw === '' || /^\d+$/.test(raw)) {
+      const num = Number(raw) || 0
+      setManualAmountKrw(num)
+      setManualAmountDisplay(raw === '' ? '' : formatComma(num))
+    }
+  }
+
+  const openManualBuy = (coinId?: string) => {
+    setManualCoin(coinId || coin)
+    setManualAmountDisplay(formatComma(amountKrw))
+    setManualAmountKrw(amountKrw)
+    setManualResult(null)
+    setManualModal('buy')
+  }
+
+  const openManualSell = (coinId?: string) => {
+    setManualCoin(coinId || coin)
+    setManualSellAll(true)
+    setManualSellQty('')
+    setManualResult(null)
+    setManualModal('sell')
+  }
+
+  const executeManualBuy = async () => {
+    setManualLoading(true)
+    setError('')
+    setManualResult(null)
+    try {
+      const res = await fetch(`${BASE_URL}/api/autotrading/manual-buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coin: manualCoin, amount_krw: manualAmountKrw }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }))
+        setError(err.detail || `HTTP ${res.status}`)
+        return
+      }
+      const data = await res.json()
+      setManualResult(
+        `${t('crypto.manualBuySuccess', { coin: data.coin, price: data.price?.toLocaleString(), quantity: data.quantity?.toLocaleString(undefined, { maximumFractionDigits: 8 }) })}`
+      )
+      fetchAssets()
+    } catch (e: any) {
+      setError(e.message || 'Manual buy failed')
+    } finally {
+      setManualLoading(false)
+    }
+  }
+
+  const executeManualSell = async () => {
+    setManualLoading(true)
+    setError('')
+    setManualResult(null)
+    try {
+      const body: any = { coin: manualCoin }
+      if (!manualSellAll && manualSellQty) {
+        body.quantity = parseFloat(manualSellQty)
+      }
+      const res = await fetch(`${BASE_URL}/api/autotrading/manual-sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }))
+        setError(err.detail || `HTTP ${res.status}`)
+        return
+      }
+      const data = await res.json()
+      setManualResult(
+        `${t('crypto.manualSellSuccess', { coin: data.coin, price: data.price?.toLocaleString(), quantity: data.quantity?.toLocaleString(undefined, { maximumFractionDigits: 8 }), krw: data.est_krw?.toLocaleString() })}`
+      )
+      fetchAssets()
+    } catch (e: any) {
+      setError(e.message || 'Manual sell failed')
+    } finally {
+      setManualLoading(false)
+    }
+  }
 
   // SSE stream
   useEffect(() => {
@@ -632,14 +729,30 @@ export default function AutoTradingPanel() {
               {t('crypto.assets')}
               {assetsExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
             </button>
-            <button
-              onClick={fetchAssets}
-              disabled={assetsLoading}
-              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <RefreshCw size={11} className={assetsLoading ? 'animate-spin' : ''} />
-              {t('crypto.refreshAssets')}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => openManualBuy()}
+                className="flex items-center gap-1 px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-medium transition-colors"
+              >
+                <ShoppingCart size={11} />
+                {t('crypto.manualBuy')}
+              </button>
+              <button
+                onClick={() => openManualSell()}
+                className="flex items-center gap-1 px-2.5 py-1 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 rounded-lg text-xs font-medium transition-colors"
+              >
+                <BadgeDollarSign size={11} />
+                {t('crypto.manualSell')}
+              </button>
+              <button
+                onClick={fetchAssets}
+                disabled={assetsLoading}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <RefreshCw size={11} className={assetsLoading ? 'animate-spin' : ''} />
+                {t('crypto.refreshAssets')}
+              </button>
+            </div>
           </div>
           {assetsExpanded && (
             <div className="space-y-2">
@@ -666,6 +779,7 @@ export default function AutoTradingPanel() {
                         <th className="text-right px-3 py-1.5 font-medium">{t('crypto.currentPrice')}</th>
                         <th className="text-right px-3 py-1.5 font-medium">{t('crypto.evalAmount')}</th>
                         <th className="text-right px-3 py-1.5 font-medium">{t('crypto.returnRate')}</th>
+                        <th className="text-center px-3 py-1.5 font-medium"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -678,6 +792,22 @@ export default function AutoTradingPanel() {
                           <td className="px-3 py-1.5 text-right text-slate-300">₩{c.eval_krw.toLocaleString()}</td>
                           <td className={`px-3 py-1.5 text-right font-medium ${c.pnl_pct > 0 ? 'text-emerald-400' : c.pnl_pct < 0 ? 'text-red-400' : 'text-slate-400'}`}>
                             {c.pnl_pct > 0 ? '+' : ''}{c.pnl_pct.toFixed(2)}%
+                          </td>
+                          <td className="px-3 py-1.5 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openManualBuy(c.currency) }}
+                                className="px-2 py-0.5 text-[10px] font-medium bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 rounded transition-colors"
+                              >
+                                {t('crypto.buy')}
+                              </button>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openManualSell(c.currency) }}
+                                className="px-2 py-0.5 text-[10px] font-medium bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 rounded transition-colors"
+                              >
+                                {t('crypto.sell')}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -929,6 +1059,170 @@ export default function AutoTradingPanel() {
           </div>
         )}
       </div>
+
+      {/* Manual Trade Modal */}
+      {manualModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl w-[360px] max-w-[90vw]">
+            {/* Header */}
+            <div className={`flex items-center justify-between px-5 py-3 border-b border-slate-700 rounded-t-xl ${
+              manualModal === 'buy' ? 'bg-emerald-600/10' : 'bg-red-600/10'
+            }`}>
+              <div className="flex items-center gap-2">
+                {manualModal === 'buy' ? (
+                  <ShoppingCart size={16} className="text-emerald-400" />
+                ) : (
+                  <BadgeDollarSign size={16} className="text-red-400" />
+                )}
+                <span className={`font-semibold text-sm ${
+                  manualModal === 'buy' ? 'text-emerald-400' : 'text-red-400'
+                }`}>
+                  {manualModal === 'buy' ? t('crypto.manualBuy') : t('crypto.manualSell')}
+                </span>
+              </div>
+              <button
+                onClick={() => setManualModal(null)}
+                className="text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-5 py-4 space-y-4">
+              {/* Coin selector */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">{t('crypto.coin')}</label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {COINS.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setManualCoin(c.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                        manualCoin === c.id
+                          ? 'text-white shadow-lg'
+                          : 'bg-slate-700 text-slate-400 hover:text-white hover:bg-slate-600 border border-slate-600'
+                      }`}
+                      style={
+                        manualCoin === c.id
+                          ? { backgroundColor: c.color, boxShadow: `0 2px 8px ${c.color}40` }
+                          : undefined
+                      }
+                    >
+                      {c.id}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Buy: Amount input */}
+              {manualModal === 'buy' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    {t('crypto.tradeAmount')}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={manualAmountDisplay}
+                      onChange={handleManualAmountChange}
+                      onBlur={() => setManualAmountDisplay(formatComma(manualAmountKrw))}
+                      className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500 text-right"
+                    />
+                    <span className="text-xs text-slate-500">KRW</span>
+                  </div>
+                  {/* Quick amount buttons */}
+                  <div className="flex gap-1.5 mt-2">
+                    {[5000, 10000, 50000, 100000].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => { setManualAmountKrw(v); setManualAmountDisplay(formatComma(v)) }}
+                        className="px-2 py-1 text-[10px] font-medium bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                      >
+                        {formatComma(v)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sell: Quantity input */}
+              {manualModal === 'sell' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    {t('crypto.sellQuantity')}
+                  </label>
+                  <div className="flex items-center gap-3 mb-2">
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={manualSellAll}
+                        onChange={() => setManualSellAll(true)}
+                        className="accent-red-500"
+                      />
+                      <span className="text-xs text-slate-300">{t('crypto.sellAll')}</span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={!manualSellAll}
+                        onChange={() => setManualSellAll(false)}
+                        className="accent-red-500"
+                      />
+                      <span className="text-xs text-slate-300">{t('crypto.sellPartial')}</span>
+                    </label>
+                  </div>
+                  {!manualSellAll && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={manualSellQty}
+                        onChange={(e) => setManualSellQty(e.target.value)}
+                        placeholder="0.0"
+                        className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 outline-none focus:ring-1 focus:ring-red-500 text-right"
+                      />
+                      <span className="text-xs text-slate-500">{manualCoin}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Result message */}
+              {manualResult && (
+                <div className="p-2.5 bg-emerald-600/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 leading-relaxed">
+                  {manualResult}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 px-5 py-3 border-t border-slate-700">
+              <button
+                onClick={() => setManualModal(null)}
+                className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-slate-200 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+              >
+                {manualResult ? t('crypto.close') : t('crypto.cancel')}
+              </button>
+              {!manualResult && (
+                <button
+                  onClick={manualModal === 'buy' ? executeManualBuy : executeManualSell}
+                  disabled={manualLoading || (manualModal === 'buy' && manualAmountKrw < 5000) || (manualModal === 'sell' && !manualSellAll && !manualSellQty)}
+                  className={`flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                    manualModal === 'buy'
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {manualLoading && <Loader2 size={12} className="animate-spin" />}
+                  {manualModal === 'buy' ? t('crypto.confirmBuy') : t('crypto.confirmSell')}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

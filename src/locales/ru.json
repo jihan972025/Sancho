@@ -174,7 +174,20 @@
     "evalAmount": "Оценка",
     "returnRate": "Доходность",
     "noHoldings": "Нет монет",
-    "refreshAssets": "Обновить"
+    "refreshAssets": "Обновить",
+    "manualBuy": "Купить",
+    "manualSell": "Продать",
+    "buy": "Купить",
+    "sell": "Продать",
+    "sellQuantity": "Количество для продажи",
+    "sellAll": "Продать всё",
+    "sellPartial": "Указать количество",
+    "confirmBuy": "Подтвердить покупку",
+    "confirmSell": "Подтвердить продажу",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "manualBuySuccess": "Куплено {{quantity}} {{coin}} по ₩{{price}}",
+    "manualSellSuccess": "Продано {{quantity}} {{coin}} по ₩{{price}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "Голосовое приложение",

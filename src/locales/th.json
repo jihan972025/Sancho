@@ -174,7 +174,20 @@
     "evalAmount": "มูลค่าประเมิน",
     "returnRate": "ผลตอบแทน",
     "noHoldings": "ไม่มีเหรียญ",
-    "refreshAssets": "รีเฟรช"
+    "refreshAssets": "รีเฟรช",
+    "manualBuy": "ซื้อ",
+    "manualSell": "ขาย",
+    "buy": "ซื้อ",
+    "sell": "ขาย",
+    "sellQuantity": "จำนวนที่ขาย",
+    "sellAll": "ขายทั้งหมด",
+    "sellPartial": "ระบุจำนวน",
+    "confirmBuy": "ยืนยันซื้อ",
+    "confirmSell": "ยืนยันขาย",
+    "cancel": "ยกเลิก",
+    "close": "ปิด",
+    "manualBuySuccess": "ซื้อ {{quantity}} {{coin}} ที่ ₩{{price}}",
+    "manualSellSuccess": "ขาย {{quantity}} {{coin}} ที่ ₩{{price}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "แอปเสียง",

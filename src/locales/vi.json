@@ -174,7 +174,20 @@
     "evalAmount": "Giá trị ước tính",
     "returnRate": "Lợi nhuận",
     "noHoldings": "Không có coin",
-    "refreshAssets": "Làm mới"
+    "refreshAssets": "Làm mới",
+    "manualBuy": "Mua",
+    "manualSell": "Bán",
+    "buy": "Mua",
+    "sell": "Bán",
+    "sellQuantity": "Số lượng bán",
+    "sellAll": "Bán tất cả",
+    "sellPartial": "Chỉ định số lượng",
+    "confirmBuy": "Xác nhận mua",
+    "confirmSell": "Xác nhận bán",
+    "cancel": "Hủy",
+    "close": "Đóng",
+    "manualBuySuccess": "Đã mua {{quantity}} {{coin}} giá ₩{{price}}",
+    "manualSellSuccess": "Đã bán {{quantity}} {{coin}} giá ₩{{price}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "Ứng dụng giọng nói",

@@ -174,7 +174,20 @@
     "evalAmount": "評估金額",
     "returnRate": "收益率",
     "noHoldings": "無持有幣種",
-    "refreshAssets": "重新整理"
+    "refreshAssets": "重新整理",
+    "manualBuy": "買入",
+    "manualSell": "賣出",
+    "buy": "買入",
+    "sell": "賣出",
+    "sellQuantity": "賣出數量",
+    "sellAll": "全部賣出",
+    "sellPartial": "指定數量",
+    "confirmBuy": "確認買入",
+    "confirmSell": "確認賣出",
+    "cancel": "取消",
+    "close": "關閉",
+    "manualBuySuccess": "以₩{{price}}買入{{quantity}} {{coin}}",
+    "manualSellSuccess": "以₩{{price}}賣出{{quantity}} {{coin}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "語音應用",

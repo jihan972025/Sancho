@@ -174,7 +174,20 @@
     "evalAmount": "القيمة المقدرة",
     "returnRate": "العائد",
     "noHoldings": "لا توجد عملات",
-    "refreshAssets": "تحديث"
+    "refreshAssets": "تحديث",
+    "manualBuy": "شراء",
+    "manualSell": "بيع",
+    "buy": "شراء",
+    "sell": "بيع",
+    "sellQuantity": "كمية البيع",
+    "sellAll": "بيع الكل",
+    "sellPartial": "تحديد الكمية",
+    "confirmBuy": "تأكيد الشراء",
+    "confirmSell": "تأكيد البيع",
+    "cancel": "إلغاء",
+    "close": "إغلاق",
+    "manualBuySuccess": "تم شراء {{quantity}} {{coin}} بسعر ₩{{price}}",
+    "manualSellSuccess": "تم بيع {{quantity}} {{coin}} بسعر ₩{{price}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "تطبيق الصوت",

@@ -174,7 +174,20 @@
     "evalAmount": "评估金额",
     "returnRate": "收益率",
     "noHoldings": "无持有币种",
-    "refreshAssets": "刷新"
+    "refreshAssets": "刷新",
+    "manualBuy": "买入",
+    "manualSell": "卖出",
+    "buy": "买入",
+    "sell": "卖出",
+    "sellQuantity": "卖出数量",
+    "sellAll": "全部卖出",
+    "sellPartial": "指定数量",
+    "confirmBuy": "确认买入",
+    "confirmSell": "确认卖出",
+    "cancel": "取消",
+    "close": "关闭",
+    "manualBuySuccess": "以₩{{price}}买入{{quantity}} {{coin}}",
+    "manualSellSuccess": "以₩{{price}}卖出{{quantity}} {{coin}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "语音应用",

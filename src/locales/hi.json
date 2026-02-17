@@ -174,7 +174,20 @@
     "evalAmount": "मूल्यांकन राशि",
     "returnRate": "रिटर्न",
     "noHoldings": "कोई कॉइन नहीं",
-    "refreshAssets": "रीफ्रेश"
+    "refreshAssets": "रीफ्रेश",
+    "manualBuy": "खरीदें",
+    "manualSell": "बेचें",
+    "buy": "खरीदें",
+    "sell": "बेचें",
+    "sellQuantity": "बिक्री मात्रा",
+    "sellAll": "सब बेचें",
+    "sellPartial": "मात्रा निर्दिष्ट करें",
+    "confirmBuy": "खरीद की पुष्टि",
+    "confirmSell": "बिक्री की पुष्टि",
+    "cancel": "रद्द करें",
+    "close": "बंद करें",
+    "manualBuySuccess": "₩{{price}} पर {{quantity}} {{coin}} खरीदा",
+    "manualSellSuccess": "₩{{price}} पर {{quantity}} {{coin}} बेचा (≈₩{{krw}})"
   },
   "voice": {
     "title": "वॉइस ऐप",

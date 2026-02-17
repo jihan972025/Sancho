@@ -174,7 +174,20 @@
     "evalAmount": "Nilai Estimasi",
     "returnRate": "Imbal Hasil",
     "noHoldings": "Tidak ada koin",
-    "refreshAssets": "Segarkan"
+    "refreshAssets": "Segarkan",
+    "manualBuy": "Beli",
+    "manualSell": "Jual",
+    "buy": "Beli",
+    "sell": "Jual",
+    "sellQuantity": "Jumlah jual",
+    "sellAll": "Jual semua",
+    "sellPartial": "Tentukan jumlah",
+    "confirmBuy": "Konfirmasi beli",
+    "confirmSell": "Konfirmasi jual",
+    "cancel": "Batal",
+    "close": "Tutup",
+    "manualBuySuccess": "Membeli {{quantity}} {{coin}} seharga ₩{{price}}",
+    "manualSellSuccess": "Menjual {{quantity}} {{coin}} seharga ₩{{price}} (≈₩{{krw}})"
   },
   "voice": {
     "title": "Aplikasi Suara",
