@@ -3,23 +3,23 @@
     "channels":  {
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "d2bac1226298355e57abe636d099722dee0880c3b2e610780c9f588938c6c7ad",
-                                     "asset":  "patch-backend-1.0.19.zip",
-                                     "size":  25662188
+                                     "sha256":  "02f82dc2dfd61a08b0ad9b1a7d8259a78f8424bfe5de3a624b1518d2b4b92dd1",
+                                     "asset":  "patch-backend-1.0.20.zip",
+                                     "size":  419646
                                  },
                      "frontend":  {
                                       "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "b187e53b4c752a6c521339d6104ed6548f7d1716559036fbbe33dec2626d5413",
-                                      "asset":  "patch-frontend-1.0.19.zip",
-                                      "size":  188490
+                                      "sha256":  "27a1452ff5debfbf045647c0a984862361c309d257feb84d5991b54f822c6914",
+                                      "asset":  "patch-frontend-1.0.20.zip",
+                                      "size":  196133
                                   },
                      "electron":  {
                                       "target":  "app.asar.unpacked/dist-electron",
-                                      "sha256":  "c1c2fff702da66fb559a8e630fb20e4035436982b20ac335126fdb1fc3b156e9",
-                                      "asset":  "patch-electron-1.0.19.zip",
-                                      "size":  5154
+                                      "sha256":  "53c36091bba28abd0b4f743907c8e702faa9b3abea262c431232e5d9be7e5c80",
+                                      "asset":  "patch-electron-1.0.20.zip",
+                                      "size":  5377
                                   }
                  },
     "min_version":  "1.0.11",
-    "version":  "1.0.19"
+    "version":  "1.0.20"
 }

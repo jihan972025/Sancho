@@ -162,6 +162,8 @@
     "ci4h": "4h",
     "prompt": "プロンプト",
     "analysisResult": "AI Analysis",
+    "inputPrompt": "Input Prompt (sent to LLM)",
+    "outputPrompt": "Output Response (raw LLM reply)",
     "expectedMove": "Expected Move",
     "stopLoss": "Stop Loss",
     "takeProfit": "Take Profit",

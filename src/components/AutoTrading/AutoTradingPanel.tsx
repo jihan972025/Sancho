@@ -77,6 +77,8 @@ interface TradingStatus {
     expected_move_pct?: number
     stop_loss_pct?: number
     take_profit_pct?: number
+    input_prompt?: string
+    raw_response?: string
   }
 }
 
@@ -144,6 +146,8 @@ export default function AutoTradingPanel() {
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [assetsExpanded, setAssetsExpanded] = useState(false)
   const [promptExpanded, setPromptExpanded] = useState(false)
+  const [inputPromptExpanded, setInputPromptExpanded] = useState(false)
+  const [outputPromptExpanded, setOutputPromptExpanded] = useState(false)
 
   // Coin search popup state
   const [showCoinSearch, setShowCoinSearch] = useState(false)
@@ -940,6 +944,42 @@ export default function AutoTradingPanel() {
                   <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2 border border-slate-700/30">
                     {status.last_signal.reasoning}
                   </div>
+
+                  {/* Input Prompt Accordion */}
+                  {status.last_signal.input_prompt && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setInputPromptExpanded(!inputPromptExpanded)}
+                        className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        {inputPromptExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                        {t('crypto.inputPrompt')}
+                      </button>
+                      {inputPromptExpanded && (
+                        <div className="mt-1 text-xs text-slate-400 leading-relaxed whitespace-pre-wrap bg-slate-900/70 rounded p-2 border border-slate-700/30 max-h-60 overflow-y-auto font-mono">
+                          {status.last_signal.input_prompt}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Output Response Accordion */}
+                  {status.last_signal.raw_response && (
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setOutputPromptExpanded(!outputPromptExpanded)}
+                        className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        {outputPromptExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                        {t('crypto.outputPrompt')}
+                      </button>
+                      {outputPromptExpanded && (
+                        <div className="mt-1 text-xs text-slate-400 leading-relaxed whitespace-pre-wrap bg-slate-900/70 rounded p-2 border border-slate-700/30 max-h-60 overflow-y-auto font-mono">
+                          {status.last_signal.raw_response}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

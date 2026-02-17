@@ -18,6 +18,16 @@ let isQuitting = false
 
 const isDev = !app.isPackaged
 
+/** Return patched version from patch-version.json, falling back to app.getVersion(). */
+function getDisplayVersion(): string {
+  try {
+    const pvPath = path.join(process.resourcesPath, 'patch-version.json')
+    const pv = JSON.parse(fs.readFileSync(pvPath, 'utf-8'))
+    if (pv.version) return pv.version
+  } catch { /* ignore */ }
+  return app.getVersion()
+}
+
 function findPythonBackend(): { command: string; args: string[] } {
   if (isDev) {
     // Development: run python directly
@@ -115,7 +125,7 @@ function createWindow(): void {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: `Sancho v${app.getVersion()}`,
+    title: `Sancho v${getDisplayVersion()}`,
     icon: titlebarIcon,
     frame: true,
     backgroundColor: '#0f172a',
@@ -277,11 +287,11 @@ function createTray(): void {
 
   const trayImage = nativeImage.createFromPath(trayIconPath).resize({ width: 16, height: 16 })
   tray = new Tray(trayImage)
-  tray.setToolTip(`Sancho v${app.getVersion()}`)
+  tray.setToolTip(`Sancho v${getDisplayVersion()}`)
 
   const trayMenu = Menu.buildFromTemplate([
     {
-      label: `Sancho v${app.getVersion()}`,
+      label: `Sancho v${getDisplayVersion()}`,
       enabled: false,
     },
     { type: 'separator' },
@@ -368,7 +378,7 @@ app.whenReady().then(async () => {
       label: 'Help',
       submenu: [
         {
-          label: `Sancho v${app.getVersion()}`,
+          label: `Sancho v${getDisplayVersion()}`,
           enabled: false,
         },
         { type: 'separator' },
@@ -378,7 +388,7 @@ app.whenReady().then(async () => {
             dialog.showMessageBox({
               type: 'info',
               title: 'About Sancho',
-              message: `Sancho v${app.getVersion()}`,
+              message: `Sancho v${getDisplayVersion()}`,
               detail: 'Windows AI Agent Desktop App\n\nhttps://github.com/jihan972025/sancho',
             })
           },

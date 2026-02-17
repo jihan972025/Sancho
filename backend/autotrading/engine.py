@@ -610,6 +610,7 @@ class TradingEngine:
 
         try:
             response = await provider.complete(messages, self.model)
+            raw_response = response
             # Strip markdown fences if present
             text = response.strip()
             if text.startswith("```"):
@@ -617,10 +618,14 @@ class TradingEngine:
             if text.endswith("```"):
                 text = text.rsplit("```", 1)[0]
             text = text.strip()
-            return json.loads(text)
+            result = json.loads(text)
+            result["input_prompt"] = prompt
+            result["raw_response"] = raw_response
+            return result
         except (json.JSONDecodeError, Exception) as e:
             logger.warning("LLM response parse error: %s", e)
-            return {"action": "HOLD", "confidence": 0, "reasoning": f"Parse error: {e}"}
+            return {"action": "HOLD", "confidence": 0, "reasoning": f"Parse error: {e}",
+                    "input_prompt": prompt, "raw_response": response if 'response' in dir() else str(e)}
 
     # ── Trend & feedback helpers ──
 

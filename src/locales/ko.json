@@ -162,6 +162,8 @@
     "ci4h": "4시간",
     "prompt": "프롬프트",
     "analysisResult": "AI 분석 결과",
+    "inputPrompt": "입력 프롬프트 (LLM에 보낸 내용)",
+    "outputPrompt": "출력 프롬프트 (LLM 원본 응답)",
     "expectedMove": "예상 변동",
     "stopLoss": "손절",
     "takeProfit": "익절",
