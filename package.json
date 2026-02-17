@@ -1,6 +1,6 @@
 {
   "name": "sancho",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "Windows AI Agent Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {

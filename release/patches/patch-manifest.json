@@ -1,25 +1,19 @@
 {
     "requires_full_update":  false,
     "channels":  {
-                     "backend":  {
-                                     "target":  "backend",
-                                     "sha256":  "02f82dc2dfd61a08b0ad9b1a7d8259a78f8424bfe5de3a624b1518d2b4b92dd1",
-                                     "asset":  "patch-backend-1.0.20.zip",
-                                     "size":  419646
-                                 },
                      "frontend":  {
                                       "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "27a1452ff5debfbf045647c0a984862361c309d257feb84d5991b54f822c6914",
-                                      "asset":  "patch-frontend-1.0.20.zip",
-                                      "size":  196133
+                                      "sha256":  "29467f4f3f5ba8fc42c4e539a05d1c997411c35e0750aa1a9fd202a7be0519a3",
+                                      "asset":  "patch-frontend-1.0.21.zip",
+                                      "size":  189543
                                   },
-                     "electron":  {
-                                      "target":  "app.asar.unpacked/dist-electron",
-                                      "sha256":  "53c36091bba28abd0b4f743907c8e702faa9b3abea262c431232e5d9be7e5c80",
-                                      "asset":  "patch-electron-1.0.20.zip",
-                                      "size":  5377
-                                  }
+                     "backend":  {
+                                     "target":  "backend",
+                                     "sha256":  "cb4937c201e541c15033c33d52c21a654823765beb43eed6a43616dd0976bbb1",
+                                     "asset":  "patch-backend-1.0.21.zip",
+                                     "size":  418640
+                                 }
                  },
     "min_version":  "1.0.11",
-    "version":  "1.0.20"
+    "version":  "1.0.21"
 }

@@ -42,26 +42,13 @@ const TIMEFRAMES: TimeframeDef[] = [
   { id: '1M', label: 'Monthly' },
 ]
 
-const STRATEGIES: StrategyDef[] = [
-  { id: 'trend', name: '추세(Trend) 분석', short: '추세' },
-  { id: 'support_resistance', name: '지지선/저항선', short: '지지/저항' },
-  { id: 'candlestick', name: '캔들스틱 패턴', short: '캔들' },
-  { id: 'indicators', name: '보조 지표 (RSI/MACD/BB)', short: '보조지표' },
-  { id: 'chart_patterns', name: '차트 패턴', short: '차트패턴' },
-  { id: 'divergence', name: '다이버전스', short: '다이버전스' },
-  { id: 'multi_timeframe', name: '멀티 타임프레임', short: 'MTF' },
-]
+const STRATEGY_IDS = ['trend', 'support_resistance', 'candlestick', 'indicators', 'chart_patterns', 'divergence', 'multi_timeframe'] as const
 
-const BT_STRATEGIES: StrategyDef[] = [
-  { id: 'bt_sma_cross', name: 'SMA Cross 백테스트', short: 'SMA Cross' },
-  { id: 'bt_rsi', name: 'RSI 전략 백테스트', short: 'RSI' },
-  { id: 'bt_bollinger', name: 'Bollinger Bands 백테스트', short: 'Bollinger' },
-  { id: 'bt_macd', name: 'MACD 전략 백테스트', short: 'MACD' },
-  { id: 'bt_triple_filter', name: 'Triple Filter 백테스트', short: 'Triple Filter' },
-  { id: 'bt_sentiment', name: 'Sentiment 백테스트', short: 'Sentiment' },
-  { id: 'bt_drl', name: 'DRL Q-Learning 백테스트', short: 'DRL' },
-  { id: 'bt_ml_boost', name: 'ML Gradient Boosting 백테스트', short: 'ML Boost' },
-]
+const STRATEGIES: StrategyDef[] = STRATEGY_IDS.map((id) => ({ id, name: `crypto.strategy_${id}`, short: `crypto.strategy_${id}_short` }))
+
+const BT_STRATEGY_IDS = ['bt_sma_cross', 'bt_rsi', 'bt_bollinger', 'bt_macd', 'bt_triple_filter', 'bt_sentiment', 'bt_drl', 'bt_ml_boost'] as const
+
+const BT_STRATEGIES: StrategyDef[] = BT_STRATEGY_IDS.map((id) => ({ id, name: `crypto.strategy_${id}`, short: `crypto.strategy_${id}_short` }))
 
 const ALL_STRATEGIES = [...STRATEGIES, ...BT_STRATEGIES]
 
@@ -311,14 +298,14 @@ export default function CryptoPanel() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Technical Analysis
+                  {t('crypto.technicalAnalysis')}
                 </label>
                 <button
                   onClick={selectAllTa}
                   disabled={isAnalyzing}
                   className="text-xs text-angel-400 hover:text-angel-300 transition-colors"
                 >
-                  {taAllSelected ? 'Deselect All' : 'Select All'}
+                  {taAllSelected ? t('crypto.deselectAll') : t('crypto.selectAll')}
                 </button>
               </div>
               <div className="flex gap-1.5 flex-wrap">
@@ -329,7 +316,7 @@ export default function CryptoPanel() {
                       key={strategy.id}
                       onClick={() => toggleStrategy(strategy.id)}
                       disabled={isAnalyzing}
-                      title={strategy.name}
+                      title={t(strategy.name)}
                       className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                         isSelected
                           ? 'bg-angel-600/20 border-angel-500/50 text-angel-300'
@@ -337,7 +324,7 @@ export default function CryptoPanel() {
                       }`}
                     >
                       {isSelected && <Check size={10} className="inline mr-1 -mt-0.5" />}
-                      {strategy.short}
+                      {t(strategy.short)}
                     </button>
                   )
                 })}
@@ -348,14 +335,14 @@ export default function CryptoPanel() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                  Backtest Strategies
+                  {t('crypto.backtestStrategies')}
                 </label>
                 <button
                   onClick={selectAllBt}
                   disabled={isAnalyzing}
                   className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
                 >
-                  {btAllSelected ? 'Deselect All' : 'Select All'}
+                  {btAllSelected ? t('crypto.deselectAll') : t('crypto.selectAll')}
                 </button>
               </div>
               <div className="flex gap-1.5 flex-wrap">
@@ -366,7 +353,7 @@ export default function CryptoPanel() {
                       key={strategy.id}
                       onClick={() => toggleStrategy(strategy.id)}
                       disabled={isAnalyzing}
-                      title={strategy.name}
+                      title={t(strategy.name)}
                       className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all border ${
                         isSelected
                           ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-300'
@@ -374,7 +361,7 @@ export default function CryptoPanel() {
                       }`}
                     >
                       {isSelected && <Check size={10} className="inline mr-1 -mt-0.5" />}
-                      {strategy.short}
+                      {t(strategy.short)}
                     </button>
                   )
                 })}
