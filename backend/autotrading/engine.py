@@ -217,7 +217,8 @@ class TradingEngine:
                             None, self._fetch_candles, higher_tf
                         )
                         if htf_candles and len(htf_candles) >= 30:
-                            self._higher_tf_ind = indicators.calculate_all(htf_candles)
+                            htf_ind = indicators.calculate_all(htf_candles)
+                            self._higher_tf_ind = {k: (v if v is not None else 0) for k, v in htf_ind.items()}
                             self._higher_tf_label = higher_tf
                             self._higher_tf_trend = self._determine_trend(self._higher_tf_ind)
                     except Exception as e:
@@ -225,10 +226,11 @@ class TradingEngine:
 
                 # 3. ATR-based dynamic stop-loss / take-profit (improvement #2)
                 atr_val = ind.get("atr", 0)
-                if self.in_position and atr_val > 0:
-                    atr_stop = self.entry_price - 1.5 * atr_val
-                    atr_stop_pct = (atr_stop - self.entry_price) / self.entry_price * 100
-                    unrealized_pct = (self.current_price - self.entry_price) / self.entry_price * 100
+                entry = self.entry_price or self.current_price  # guard against None
+                if self.in_position and atr_val > 0 and entry > 0:
+                    atr_stop = entry - 1.5 * atr_val
+                    atr_stop_pct = (atr_stop - entry) / entry * 100
+                    unrealized_pct = (self.current_price - entry) / entry * 100
 
                     if self.current_price <= atr_stop:
                         self._emit({"type": "progress", "content": f"ATR stop-loss triggered: ₩{self.current_price:,.0f} <= ₩{atr_stop:,.0f} ({unrealized_pct:+.2f}%)"})
@@ -242,9 +244,9 @@ class TradingEngine:
                         await self._execute_sell("Hard stop-loss at -2%", loop)
                         await asyncio.sleep(interval)
                         continue
-                elif self.in_position:
+                elif self.in_position and entry > 0:
                     # Fallback: fixed stop if ATR unavailable
-                    unrealized_pct = (self.current_price - self.entry_price) / self.entry_price * 100
+                    unrealized_pct = (self.current_price - entry) / entry * 100
                     if unrealized_pct <= -2.0:
                         self._emit({"type": "progress", "content": f"Stop-loss triggered ({unrealized_pct:+.2f}%)"})
                         await self._execute_sell("Stop-loss at -2%", loop)
@@ -332,8 +334,8 @@ class TradingEngine:
                 None, lambda: exchange.create_market_buy_order(symbol, cost)
             )
 
-            filled_price = order.get("average", price)
-            filled_qty = order.get("filled", cost / price)
+            filled_price = order.get("average") or order.get("price") or price
+            filled_qty = order.get("filled") or cost / (filled_price or price)
 
             self.in_position = True
             self.entry_price = filled_price
@@ -368,11 +370,11 @@ class TradingEngine:
                 None, lambda: exchange.create_market_sell_order(symbol, self.quantity)
             )
 
-            filled_price = order.get("average", self.current_price)
+            filled_price = order.get("average") or order.get("price") or self.current_price
             exit_time = datetime.now(timezone.utc).isoformat()
 
             # P&L calculation
-            entry_total = self.entry_price * self.quantity
+            entry_total = (self.entry_price or self.current_price) * self.quantity
             exit_total = filled_price * self.quantity
             fee_buy = entry_total * UPBIT_FEE
             fee_sell = exit_total * UPBIT_FEE
@@ -387,7 +389,7 @@ class TradingEngine:
                 "coin": self.coin,
                 "timeframe": self.timeframe,
                 "candle_interval": self.candle_interval,
-                "entry_price": round(self.entry_price, 2),
+                "entry_price": round(self.entry_price or 0, 2),
                 "exit_price": round(filled_price, 2),
                 "amount_krw": round(entry_total, 0),
                 "quantity": round(self.quantity, 8),
@@ -544,9 +546,10 @@ class TradingEngine:
             return {"action": "HOLD", "confidence": 0, "reasoning": "Model unavailable"}
 
         if self.in_position:
-            unrealized = (ind["current_price"] - self.entry_price) / self.entry_price * 100
+            entry = self.entry_price or ind["current_price"]
+            unrealized = (ind["current_price"] - entry) / entry * 100 if entry else 0
             position_text = (
-                f"IN POSITION — Entry: ₩{self.entry_price:,.0f}  "
+                f"IN POSITION — Entry: ₩{entry:,.0f}  "
                 f"Unrealized P&L: {unrealized:+.2f}%  "
                 f"Quantity: {self.quantity:.8f}"
             )
@@ -745,7 +748,7 @@ class TradingEngine:
         unrealized_pct = 0.0
         unrealized_krw = 0.0
         if self.in_position and self.current_price > 0:
-            entry_total = self.entry_price * self.quantity
+            entry_total = (self.entry_price or self.current_price) * self.quantity
             current_total = self.current_price * self.quantity
             fee_est = entry_total * UPBIT_FEE + current_total * UPBIT_FEE
             unrealized_krw = current_total - entry_total - fee_est
@@ -765,7 +768,7 @@ class TradingEngine:
             "strategy": self.strategy,
             "current_price": round(self.current_price, 2),
             "in_position": self.in_position,
-            "entry_price": round(self.entry_price, 2) if self.in_position else None,
+            "entry_price": round(self.entry_price or 0, 2) if self.in_position else None,
             "unrealized_pct": round(unrealized_pct, 4),
             "unrealized_krw": round(unrealized_krw, 0),
             "today_trades": len(today_trades),
