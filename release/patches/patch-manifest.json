@@ -3,17 +3,17 @@
     "channels":  {
                      "frontend":  {
                                       "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "29467f4f3f5ba8fc42c4e539a05d1c997411c35e0750aa1a9fd202a7be0519a3",
-                                      "asset":  "patch-frontend-1.0.21.zip",
-                                      "size":  189543
+                                      "sha256":  "11c98174e9896bba9294e9a64736b8b70666491ab994842f6c8dcb5c66b2821b",
+                                      "asset":  "patch-frontend-1.0.22.zip",
+                                      "size":  189611
                                   },
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "cb4937c201e541c15033c33d52c21a654823765beb43eed6a43616dd0976bbb1",
-                                     "asset":  "patch-backend-1.0.21.zip",
-                                     "size":  418640
+                                     "sha256":  "5039c4c8403873e61d8b9244b87921869d50f5e970a3a7d89a253fe7d1f65d2d",
+                                     "asset":  "patch-backend-1.0.22.zip",
+                                     "size":  25662105
                                  }
                  },
     "min_version":  "1.0.11",
-    "version":  "1.0.21"
+    "version":  "1.0.22"
 }

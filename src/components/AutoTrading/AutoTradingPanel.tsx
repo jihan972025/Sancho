@@ -36,7 +36,7 @@ interface CoinDef {
 // Coins will be loaded dynamically from Upbit API
 
 const TIMEFRAME_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h'] as const
-const CANDLE_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h'] as const
+const CANDLE_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h', '1d', '1w', '1M'] as const
 
 interface TradeRecord {
   id: string
@@ -189,6 +189,9 @@ export default function AutoTradingPanel() {
     '30m': t('crypto.ci30m'),
     '1h': t('crypto.ci1h'),
     '4h': t('crypto.ci4h'),
+    '1d': t('crypto.ci1d'),
+    '1w': t('crypto.ci1w'),
+    '1M': t('crypto.ci1M'),
   }
 
   // Handle amount input with comma formatting

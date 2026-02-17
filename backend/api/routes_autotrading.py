@@ -86,7 +86,7 @@ async def start_trading(req: StartRequest):
     if req.timeframe not in valid_tf:
         raise HTTPException(400, f"Unsupported timeframe: {req.timeframe}")
 
-    valid_candle = {"1m", "3m", "5m", "10m", "15m", "30m", "1h", "4h"}
+    valid_candle = {"1m", "3m", "5m", "10m", "15m", "30m", "1h", "4h", "1d", "1w", "1M"}
     if req.candle_interval not in valid_candle:
         raise HTTPException(400, f"Unsupported candle interval: {req.candle_interval}")
 
