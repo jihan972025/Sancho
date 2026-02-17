@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 UPBIT_FEE = 0.0005  # 0.05 %
 
 TIMEFRAME_SECONDS = {
+    "1m": 1 * 60,
+    "3m": 3 * 60,
     "5m": 5 * 60,
     "10m": 10 * 60,
     "15m": 15 * 60,
@@ -28,6 +30,8 @@ TIMEFRAME_SECONDS = {
 
 # ── Higher timeframe mapping for trend filter (improvement #1) ──
 HIGHER_TF_MAP = {
+    "1m": "15m",
+    "3m": "30m",
     "5m": "1h",
     "10m": "1h",
     "15m": "4h",

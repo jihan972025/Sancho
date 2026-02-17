@@ -35,7 +35,7 @@ interface CoinDef {
 
 // Coins will be loaded dynamically from Upbit API
 
-const TIMEFRAME_IDS = ['5m', '10m', '15m', '30m', '1h', '4h'] as const
+const TIMEFRAME_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h'] as const
 const CANDLE_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h'] as const
 
 interface TradeRecord {
@@ -165,6 +165,8 @@ export default function AutoTradingPanel() {
 
   // Timeframe label mapping (analysis interval)
   const tfLabelMap: Record<string, string> = {
+    '1m': t('crypto.tf1m'),
+    '3m': t('crypto.tf3m'),
     '5m': t('crypto.tf5m'),
     '10m': t('crypto.tf10m'),
     '15m': t('crypto.tf15m'),

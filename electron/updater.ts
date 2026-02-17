@@ -179,16 +179,28 @@ async function fetchManifest(release: ReleaseInfo): Promise<PatchManifest | null
   }
 }
 
+// ── Effective version (patch-version.json > app.getVersion()) ──
+
+function getEffectiveVersion(): string {
+  const pv = getLocalPatchVersion()
+  // If patch-version.json has a newer version than the built-in app version, use it
+  if (compareVersions(app.getVersion(), pv.version)) return pv.version
+  return pv.version || app.getVersion()
+}
+
 // ── Check for update ───────────────────────────────────────────
 
 export async function checkForUpdate(): Promise<UpdateCheckResult> {
   try {
     const data = await httpsGet(GITHUB_API_URL)
     const release: ReleaseInfo = JSON.parse(data)
-    const currentVersion = app.getVersion()
+    const currentVersion = getEffectiveVersion()
     const remoteVersion = release.tag_name.replace(/^v/, '')
 
+    console.log(`[Updater] Current: ${currentVersion}, Remote: ${remoteVersion}`)
+
     if (!compareVersions(currentVersion, remoteVersion)) {
+      console.log(`[Updater] No update: current ${currentVersion} >= remote ${remoteVersion}`)
       return { available: false }
     }
 
@@ -527,7 +539,7 @@ export async function applyPatch(
     }
 
     // Current version too old → full installer
-    const currentVersion = app.getVersion()
+    const currentVersion = getEffectiveVersion()
     if (compareVersions(currentVersion, manifest.min_version)) {
       console.log(`[Updater] ${currentVersion} < min ${manifest.min_version}, full installer`)
       return applyFullUpdate((percent) => onProgress?.(percent))

@@ -82,7 +82,7 @@ async def start_trading(req: StartRequest):
     if req.coin not in _get_valid_coins():
         raise HTTPException(400, f"Unsupported coin: {req.coin}")
 
-    valid_tf = {"5m", "10m", "15m", "30m", "1h", "4h"}
+    valid_tf = {"1m", "3m", "5m", "10m", "15m", "30m", "1h", "4h"}
     if req.timeframe not in valid_tf:
         raise HTTPException(400, f"Unsupported timeframe: {req.timeframe}")
 
