@@ -440,6 +440,22 @@ class TradingEngine:
         vol_avg = ind.get("volume_avg_20", 0)
         atr_val = ind.get("atr", 0)
 
+        # Build input summary (indicator snapshot)
+        input_summary = (
+            f"[Rule-Based Input]\n"
+            f"Coin: {self.coin}/KRW | Candle: {self.candle_interval} | Analysis: {self.timeframe}\n"
+            f"Price: ₩{price:,.0f}\n"
+            f"RSI(14): {rsi:.1f}\n"
+            f"MACD Histogram: {macd_hist:.4f}\n"
+            f"BB Position: {bb_pos:.2f}\n"
+            f"SMA(20): ₩{sma20:,.0f} | SMA(50): ₩{ind.get('sma_50', 0):,.0f}\n"
+            f"EMA(12): ₩{ema12:,.0f} | EMA(26): ₩{ema26:,.0f}\n"
+            f"Volume: {vol:,.2f} (20-avg: {vol_avg:,.2f})\n"
+            f"ATR(14): ₩{atr_val:,.0f}\n"
+            f"Higher TF: {self._higher_tf_label or 'N/A'} → {self._higher_tf_trend}\n"
+            f"Position: {'IN' if self.in_position else 'OUT'}"
+        )
+
         # ATR-based dynamic stop/take-profit (improvement #2)
         if atr_val > 0 and price > 0:
             sl_pct = round(-1.5 * atr_val / price * 100, 2)
@@ -462,24 +478,40 @@ class TradingEngine:
 
             if len(sell_signals) >= 2:
                 conf = len(sell_signals) / 4
+                reasoning = "Rule: " + ", ".join(sell_signals)
+                output_detail = (
+                    f"[Sell Signals] {len(sell_signals)}/4 triggered (threshold: 2)\n"
+                    + "\n".join(f"  ✓ {s}" for s in sell_signals)
+                    + f"\nConfidence: {conf:.2f}"
+                )
                 return {
                     "action": "SELL",
                     "confidence": round(conf, 2),
-                    "reasoning": "Rule: " + ", ".join(sell_signals),
+                    "reasoning": reasoning,
                     "expected_move_pct": -0.5,
                     "stop_loss_pct": sl_pct,
                     "take_profit_pct": tp_pct,
+                    "input_prompt": input_summary,
+                    "raw_response": output_detail,
                 }
         else:
             # Improvement #5: Block BUY against higher TF trend
             if self._higher_tf_trend == "BEARISH":
+                reasoning = f"Rule: higher TF ({self._higher_tf_label}) trend is BEARISH — no BUY"
+                output_detail = (
+                    f"[Higher TF Filter]\n"
+                    f"  Higher TF ({self._higher_tf_label}): BEARISH\n"
+                    f"  → BUY blocked by higher timeframe trend filter"
+                )
                 return {
                     "action": "HOLD",
                     "confidence": 0,
-                    "reasoning": f"Rule: higher TF ({self._higher_tf_label}) trend is BEARISH — no BUY",
+                    "reasoning": reasoning,
                     "expected_move_pct": 0,
                     "stop_loss_pct": sl_pct,
                     "take_profit_pct": tp_pct,
+                    "input_prompt": input_summary,
+                    "raw_response": output_detail,
                 }
 
             # Buy signals
@@ -497,13 +529,21 @@ class TradingEngine:
                 buy_signals.append("EMA12>EMA26(trend✓)")
             else:
                 # Trend not aligned — cannot buy
+                reasoning = "Rule: EMA12<EMA26 — trend not aligned for BUY"
+                output_detail = (
+                    f"[EMA Trend Filter]\n"
+                    f"  EMA(12): ₩{ema12:,.0f} < EMA(26): ₩{ema26:,.0f}\n"
+                    f"  → BUY blocked: short-term trend not aligned"
+                )
                 return {
                     "action": "HOLD",
                     "confidence": 0,
-                    "reasoning": "Rule: EMA12<EMA26 — trend not aligned for BUY",
+                    "reasoning": reasoning,
                     "expected_move_pct": 0,
                     "stop_loss_pct": sl_pct,
                     "take_profit_pct": tp_pct,
+                    "input_prompt": input_summary,
+                    "raw_response": output_detail,
                 }
             if vol_avg > 0 and vol > vol_avg:
                 buy_signals.append("Vol>Avg")
@@ -514,15 +554,25 @@ class TradingEngine:
 
             if len(buy_signals) >= 3:
                 conf = len(buy_signals) / 7  # max 7 signals now
+                reasoning = "Rule: " + ", ".join(buy_signals)
+                output_detail = (
+                    f"[Buy Signals] {len(buy_signals)}/7 triggered (threshold: 3)\n"
+                    + "\n".join(f"  ✓ {s}" for s in buy_signals)
+                    + f"\nConfidence: {conf:.2f}"
+                    + f"\nSL: {sl_pct:.2f}% | TP: {tp_pct:.2f}%"
+                )
                 return {
                     "action": "BUY",
                     "confidence": round(conf, 2),
-                    "reasoning": "Rule: " + ", ".join(buy_signals),
+                    "reasoning": reasoning,
                     "expected_move_pct": round(tp_pct * 0.6, 2),
                     "stop_loss_pct": sl_pct,
                     "take_profit_pct": tp_pct,
+                    "input_prompt": input_summary,
+                    "raw_response": output_detail,
                 }
 
+        output_detail = "[No Action] Insufficient buy/sell signals"
         return {
             "action": "HOLD",
             "confidence": 0,
@@ -530,6 +580,8 @@ class TradingEngine:
             "expected_move_pct": 0,
             "stop_loss_pct": sl_pct,
             "take_profit_pct": tp_pct,
+            "input_prompt": input_summary,
+            "raw_response": output_detail,
         }
 
     # ── LLM strategy ──
