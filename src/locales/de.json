@@ -182,6 +182,7 @@
     "evalAmount": "Bewertung",
     "returnRate": "Rendite",
     "noHoldings": "Keine Coins",
+    "hideZeroBalance": "Nullsalden ausblenden",
     "refreshAssets": "Aktualisieren",
     "manualBuy": "Kaufen",
     "manualSell": "Verkaufen",

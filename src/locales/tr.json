@@ -182,6 +182,7 @@
     "evalAmount": "Tahmini Değer",
     "returnRate": "Getiri",
     "noHoldings": "Coin yok",
+    "hideZeroBalance": "Sıfır bakiyeyi gizle",
     "refreshAssets": "Yenile",
     "manualBuy": "Al",
     "manualSell": "Sat",

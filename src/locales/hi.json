@@ -182,6 +182,7 @@
     "evalAmount": "मूल्यांकन राशि",
     "returnRate": "रिटर्न",
     "noHoldings": "कोई कॉइन नहीं",
+    "hideZeroBalance": "शून्य शेष छुपाएं",
     "refreshAssets": "रीफ्रेश",
     "manualBuy": "खरीदें",
     "manualSell": "बेचें",

@@ -145,6 +145,7 @@ export default function AutoTradingPanel() {
   const [assets, setAssets] = useState<AssetsData | null>(null)
   const [assetsLoading, setAssetsLoading] = useState(false)
   const [assetsExpanded, setAssetsExpanded] = useState(false)
+  const [hideZeroBalance, setHideZeroBalance] = useState(true)
   const [promptExpanded, setPromptExpanded] = useState(false)
   const [inputPromptExpanded, setInputPromptExpanded] = useState(false)
   const [outputPromptExpanded, setOutputPromptExpanded] = useState(false)
@@ -813,6 +814,16 @@ export default function AutoTradingPanel() {
                   <div className="text-sm font-bold text-amber-400">₩{(assets.total_eval_krw || 0).toLocaleString()}</div>
                 </div>
               </div>
+              {/* Hide zero balance checkbox */}
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hideZeroBalance}
+                  onChange={(e) => setHideZeroBalance(e.target.checked)}
+                  className="accent-amber-500 w-3.5 h-3.5"
+                />
+                <span className="text-xs text-slate-400">{t('crypto.hideZeroBalance')}</span>
+              </label>
               {/* Coin Holdings */}
               {assets.coins.length > 0 ? (
                 <div className="overflow-x-auto rounded-lg border border-slate-800">
@@ -829,7 +840,7 @@ export default function AutoTradingPanel() {
                       </tr>
                     </thead>
                     <tbody>
-                      {assets.coins.map((c) => (
+                      {assets.coins.filter((c) => !hideZeroBalance || c.eval_krw > 0).map((c) => (
                         <tr key={c.currency} className="border-t border-slate-800/50">
                           <td className="px-3 py-1.5 text-slate-200 font-medium">{c.currency}</td>
                           <td className="px-3 py-1.5 text-right text-slate-300">{c.balance.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>

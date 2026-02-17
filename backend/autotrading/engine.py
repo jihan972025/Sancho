@@ -93,6 +93,11 @@ Current Price: ₩{current_price:,.0f}
 8. CRITICAL: Do NOT enter BUY against the higher timeframe trend. If the higher TF trend is BEARISH, only HOLD or SELL.
 9. If recent trades show consecutive losses (3+), be extra conservative — raise confidence threshold mentally and prefer HOLD.
 10. If in position: recommend SELL on ATR stop-loss breach or reversal signal.
+11. ADX filter: if ADX(14) < 20, market is ranging — prefer HOLD unless Bollinger Band bounce setup is confirmed.
+12. RSI divergence: if price makes new high but RSI does not, treat as bearish divergence — avoid new BUY, consider SELL.
+13. Specify indicator parameters explicitly: RSI(14) overbought=70 oversold=30, MACD(12,26,9), Bollinger Bands(20,2), ATR(14), Volume MA(20).
+14. ATR multipliers: stop_loss = 1.5 × ATR(14), take_profit = 2.0 × ATR(14). Risk:Reward ratio minimum 1:1.3.
+15. Cooldown: after a SELL (stop-loss hit), wait at least 3 candles before next BUY signal is valid.
 
 IMPORTANT: Write the "reasoning" field in {language}. All other field names and values (action, confidence, etc.) must remain in English.
 

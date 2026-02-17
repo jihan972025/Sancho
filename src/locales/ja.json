@@ -182,6 +182,7 @@
     "evalAmount": "評価金額",
     "returnRate": "収益率",
     "noHoldings": "保有コインなし",
+    "hideZeroBalance": "少額資産を非表示",
     "refreshAssets": "更新",
     "manualBuy": "買い",
     "manualSell": "売り",

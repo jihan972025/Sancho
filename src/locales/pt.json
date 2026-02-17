@@ -182,6 +182,7 @@
     "evalAmount": "Valor Estimado",
     "returnRate": "Retorno",
     "noHoldings": "Sem moedas",
+    "hideZeroBalance": "Ocultar saldo zero",
     "refreshAssets": "Atualizar",
     "manualBuy": "Comprar",
     "manualSell": "Vender",

@@ -182,6 +182,7 @@
     "evalAmount": "평가금액",
     "returnRate": "수익률",
     "noHoldings": "보유 코인 없음",
+    "hideZeroBalance": "소액자산 숨기기",
     "refreshAssets": "새로고침",
     "manualBuy": "매수",
     "manualSell": "매도",

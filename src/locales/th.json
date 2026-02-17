@@ -182,6 +182,7 @@
     "evalAmount": "มูลค่าประเมิน",
     "returnRate": "ผลตอบแทน",
     "noHoldings": "ไม่มีเหรียญ",
+    "hideZeroBalance": "ซ่อนยอดศูนย์",
     "refreshAssets": "รีเฟรช",
     "manualBuy": "ซื้อ",
     "manualSell": "ขาย",

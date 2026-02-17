@@ -182,6 +182,7 @@
     "evalAmount": "評估金額",
     "returnRate": "收益率",
     "noHoldings": "無持有幣種",
+    "hideZeroBalance": "隱藏零餘額",
     "refreshAssets": "重新整理",
     "manualBuy": "買入",
     "manualSell": "賣出",

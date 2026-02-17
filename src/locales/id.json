@@ -182,6 +182,7 @@
     "evalAmount": "Nilai Estimasi",
     "returnRate": "Imbal Hasil",
     "noHoldings": "Tidak ada koin",
+    "hideZeroBalance": "Sembunyikan saldo nol",
     "refreshAssets": "Segarkan",
     "manualBuy": "Beli",
     "manualSell": "Jual",

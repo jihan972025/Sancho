@@ -182,6 +182,7 @@
     "evalAmount": "Giá trị ước tính",
     "returnRate": "Lợi nhuận",
     "noHoldings": "Không có coin",
+    "hideZeroBalance": "Ẩn số dư bằng 0",
     "refreshAssets": "Làm mới",
     "manualBuy": "Mua",
     "manualSell": "Bán",

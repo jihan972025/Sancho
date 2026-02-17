@@ -182,6 +182,7 @@
     "evalAmount": "Оценка",
     "returnRate": "Доходность",
     "noHoldings": "Нет монет",
+    "hideZeroBalance": "Скрыть нулевой баланс",
     "refreshAssets": "Обновить",
     "manualBuy": "Купить",
     "manualSell": "Продать",

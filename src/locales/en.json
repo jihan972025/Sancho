@@ -182,6 +182,7 @@
     "evalAmount": "Eval Amount",
     "returnRate": "Return",
     "noHoldings": "No coin holdings",
+    "hideZeroBalance": "Hide zero balance",
     "refreshAssets": "Refresh",
     "manualBuy": "Buy",
     "manualSell": "Sell",

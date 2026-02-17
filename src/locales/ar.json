@@ -182,6 +182,7 @@
     "evalAmount": "القيمة المقدرة",
     "returnRate": "العائد",
     "noHoldings": "لا توجد عملات",
+    "hideZeroBalance": "إخفاء الرصيد الصفري",
     "refreshAssets": "تحديث",
     "manualBuy": "شراء",
     "manualSell": "بيع",

@@ -48,7 +48,13 @@ class GoogleCalendarExecutor(SkillExecutor):
                     "[SKILL_ERROR] Insufficient permissions. "
                     "Please log out and log back in from Settings > Profile to grant Calendar access."
                 )
-            return f"[SKILL_ERROR] Calendar API error: {e.response.status_code} {e.response.text[:200]}"
+            body = e.response.text[:300]
+            if e.response.status_code == 400:
+                return (
+                    f"[SKILL_ERROR] Bad request (400). Check datetime format (ISO 8601 with timezone). "
+                    f"Details: {body}"
+                )
+            return f"[SKILL_ERROR] Calendar API error: {e.response.status_code} {body}"
         except Exception as e:
             logger.error("Calendar executor error: %s", e, exc_info=True)
             return f"[SKILL_ERROR] Calendar error: {e}"
@@ -110,6 +116,7 @@ class GoogleCalendarExecutor(SkillExecutor):
         summary = params.get("summary", "")
         start = params.get("start", "")
         end = params.get("end", "")
+        tz = params.get("timeZone", "") or params.get("timezone", "")
 
         if not summary:
             return "[SKILL_ERROR] 'summary' (event title) is required"
@@ -118,10 +125,17 @@ class GoogleCalendarExecutor(SkillExecutor):
         if not end:
             return "[SKILL_ERROR] 'end' datetime is required (ISO 8601)"
 
+        # Resolve timezone: from params, USER.md, or fallback
+        if not tz:
+            tz = _resolve_user_timezone()
+
+        start_obj: dict[str, str] = {"dateTime": start, "timeZone": tz}
+        end_obj: dict[str, str] = {"dateTime": end, "timeZone": tz}
+
         event_body: dict[str, Any] = {
             "summary": summary,
-            "start": {"dateTime": start},
-            "end": {"dateTime": end},
+            "start": start_obj,
+            "end": end_obj,
         }
         if params.get("location"):
             event_body["location"] = params["location"]
@@ -143,6 +157,53 @@ class GoogleCalendarExecutor(SkillExecutor):
             f"Start: {start}\nEnd: {end}\n"
             f"Link: {link}"
         )
+
+
+_TZ_LABEL_TO_IANA = {
+    "NZST": "Pacific/Auckland", "AEST": "Australia/Sydney", "ACST": "Australia/Adelaide",
+    "AWST": "Australia/Perth", "JST": "Asia/Tokyo", "KST": "Asia/Seoul",
+    "CST (CN)": "Asia/Shanghai", "HKT": "Asia/Hong_Kong", "SGT": "Asia/Singapore",
+    "ICT": "Asia/Bangkok", "IST": "Asia/Kolkata", "GST": "Asia/Dubai",
+    "MSK": "Europe/Moscow", "EET": "Europe/Athens", "CET": "Europe/Berlin",
+    "WET": "Europe/London", "GMT": "Europe/London", "BRT": "America/Sao_Paulo",
+    "AST": "America/Halifax", "EST": "America/New_York", "CST": "America/Chicago",
+    "MST": "America/Denver", "PST": "America/Los_Angeles",
+    "UTC+9": "Asia/Seoul", "UTC+8": "Asia/Shanghai", "UTC+7": "Asia/Bangkok",
+    "UTC+5:30": "Asia/Kolkata", "UTC+0": "Europe/London",
+}
+
+
+def _resolve_user_timezone() -> str:
+    """Read timezone from USER.md and return IANA timezone string."""
+    try:
+        from ...config import load_user_md
+        user_md = load_user_md()
+        if user_md:
+            import re
+            # Match patterns like "Timezone: KST" or "timezone: Asia/Seoul"
+            m = re.search(r'(?i)timezone?\s*[:：]\s*(.+)', user_md)
+            if m:
+                raw = m.group(1).strip().split('\n')[0].strip()
+                # Already IANA format (contains '/')
+                if '/' in raw:
+                    return raw
+                # Try label lookup
+                for label, iana in _TZ_LABEL_TO_IANA.items():
+                    if label.lower() in raw.lower():
+                        return iana
+                # Try offset pattern like "GMT+9", "UTC+9"
+                offset_m = re.search(r'[+-]\d+', raw)
+                if offset_m:
+                    offset = int(offset_m.group())
+                    if offset == 9:
+                        return "Asia/Seoul"
+                    elif offset == 8:
+                        return "Asia/Shanghai"
+                    elif offset == 0:
+                        return "Europe/London"
+    except Exception:
+        pass
+    return "Asia/Seoul"
 
 
 def _format_event(event: dict) -> str:
