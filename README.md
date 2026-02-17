@@ -188,7 +188,7 @@ Sancho provides real-time cryptocurrency prices, technical analysis, and automat
 ## Installation
 
 ### Installer
-Download [Sancho Setup 1.0.25.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.25/Sancho.Setup.1.0.25.exe) — all dependencies are bundled (no separate installation required).
+Download [Sancho Setup 1.0.26.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.26/Sancho.Setup.1.0.26.exe) — all dependencies are bundled (no separate installation required).
 
 
 ## Security

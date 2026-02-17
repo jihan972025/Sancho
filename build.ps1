@@ -38,8 +38,9 @@ python -m PyInstaller main.spec --noconfirm --distpath "dist-backend"
 # PyInstaller COLLECT creates dist-backend/main/ subdirectory (from spec name='main').
 # Move contents to dist-backend/ root for electron-builder extraResources.
 if (Test-Path "dist-backend/main") {
-    Get-ChildItem "dist-backend/main" | Move-Item -Destination "dist-backend/" -Force
-    Remove-Item "dist-backend/main" -Force
+    # Use robocopy to move contents (handles directory merges correctly)
+    robocopy "dist-backend/main" "dist-backend" /E /MOVE /NFL /NDL /NJH /NJS /NC /NS /NP | Out-Null
+    if (Test-Path "dist-backend/main") { Remove-Item "dist-backend/main" -Recurse -Force -ErrorAction SilentlyContinue }
 }
 
 Write-Host "  Backend built to dist-backend/" -ForegroundColor Green

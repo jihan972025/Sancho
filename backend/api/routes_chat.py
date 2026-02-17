@@ -12,8 +12,8 @@ from ..memory import build_memory_prompt
 from ..memory_extractor import trigger_memory_extraction
 from ..i18n import t, lang_instruction
 from ..llm.registry import get_provider_for_model, get_available_models
-from ..skills.loader import build_skill_system_prompt
-from ..skills.executor import parse_skill_call, execute_skill_call
+from ..skills.loader import build_skill_system_prompt, build_skill_reminder
+from ..skills.executor import parse_skill_call, execute_skill_call, strip_hallucinated_results
 from ..agents.browser_agent import get_browser_agent, AgentStatus
 from ..agents.file_agent import organize_directory
 
@@ -195,6 +195,19 @@ async def send_message(req: ChatRequest, request: Request):
     messages = _apply_context_window(messages)
 
     skill_prompt = build_skill_system_prompt()
+    skill_reminder = build_skill_reminder()
+
+    # Inject skill awareness into general messages so the LLM always
+    # knows which skills are available — even when answering without
+    # going through the Phase-1 skill router.
+    if skill_reminder:
+        if messages and messages[0]["role"] == "system":
+            messages[0] = {
+                **messages[0],
+                "content": messages[0]["content"] + "\n\n" + skill_reminder,
+            }
+        else:
+            messages.insert(0, {"role": "system", "content": skill_reminder})
 
     if req.stream:
         cancel_event = asyncio.Event()
@@ -322,16 +335,20 @@ async def send_message(req: ChatRequest, request: Request):
 
                             system_hint = (
                                 search_hint +
-                                "IMPORTANT: The [SKILL_RESULT] below contains REAL DATA retrieved from the user's account. "
+                                "IMPORTANT: The [SKILL_RESULT] below contains REAL DATA retrieved by the backend system. "
                                 "Present this data to the user in a helpful, readable format. "
                                 "NEVER say you don't have access — the data is RIGHT HERE in the skill result.\n"
                                 "If you need to call another skill to complete the task (e.g. save results to a file), "
-                                "output ONLY a [SKILL_CALL] block. Otherwise, answer the user directly."
+                                "output ONLY a [SKILL_CALL] block. Otherwise, answer the user directly.\n"
+                                "CRITICAL: NEVER generate [SKILL_RESULT] blocks yourself. "
+                                "Only the backend system creates [SKILL_RESULT] after real API execution. "
+                                "If you fabricate results, the user receives false information."
                             )
                             user_hint = (
                                 "Based on the skill results above, either:\n"
                                 "1. Call another skill if more steps are needed (output ONLY a [SKILL_CALL] block), or\n"
-                                "2. Answer the user's question directly using the data from [SKILL_RESULT]."
+                                "2. Answer the user's question directly using the data from [SKILL_RESULT].\n"
+                                "NEVER output [SKILL_RESULT] blocks — only the system can generate them."
                             )
 
                             # Build Phase 2: lightweight system (no full skill_prompt)
@@ -357,15 +374,18 @@ async def send_message(req: ChatRequest, request: Request):
                             ]
 
                             if step == max_chain - 1:
-                                # Last allowed step — stream response directly
+                                # Last allowed step — collect, strip hallucinations, then stream
                                 stream_parts: list[str] = []
                                 async for token in provider.stream(phase2_messages, req.model):
                                     if cancel_event.is_set():
                                         yield f"data: {json.dumps({'type': 'done', 'reason': 'cancelled'})}\n\n"
                                         return
                                     stream_parts.append(token)
-                                    yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
-                                skill_final_response = "".join(stream_parts)
+                                raw_response = "".join(stream_parts)
+                                cleaned = strip_hallucinated_results(raw_response)
+                                for char in _chunk_text(cleaned):
+                                    yield f"data: {json.dumps({'type': 'token', 'content': char})}\n\n"
+                                skill_final_response = cleaned
                                 yield f"data: {json.dumps({'type': 'done', 'reason': 'complete'})}\n\n"
                                 break
                             else:
@@ -377,6 +397,8 @@ async def send_message(req: ChatRequest, request: Request):
                                     continue
                                 else:
                                     # No more skill calls — stream the final response
+                                    # Strip any hallucinated [SKILL_RESULT] blocks
+                                    phase2_response = strip_hallucinated_results(phase2_response)
                                     skill_final_response = phase2_response
                                     for char in _chunk_text(phase2_response):
                                         if cancel_event.is_set():

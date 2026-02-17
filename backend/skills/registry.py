@@ -119,3 +119,6 @@ def get_definitions_dir() -> Path:
 
 def reset_skills() -> None:
     _skill_instances.clear()
+    # Also clear cached prompts so they rebuild with new config
+    from .loader import reset_skill_cache
+    reset_skill_cache()

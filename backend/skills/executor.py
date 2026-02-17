@@ -10,6 +10,9 @@ logger = logging.getLogger(__name__)
 _SKILL_CALL_PATTERN = re.compile(
     r"\[SKILL_CALL\](.*?)\[/SKILL_CALL\]", re.DOTALL
 )
+_SKILL_RESULT_PATTERN = re.compile(
+    r"\[SKILL_RESULT[^\]]*\].*?\[/SKILL_RESULT\]", re.DOTALL
+)
 
 
 def parse_skill_call(response: str) -> Optional[dict[str, Any]]:
@@ -32,6 +35,24 @@ def parse_skill_call(response: str) -> Optional[dict[str, Any]]:
     except json.JSONDecodeError as e:
         logger.warning(f"Failed to parse skill call JSON: {e}")
         return None
+
+
+def strip_hallucinated_results(response: str) -> str:
+    """Remove any [SKILL_RESULT] blocks hallucinated by the LLM.
+
+    Only the backend should inject these blocks.  If the LLM fabricates
+    them, the user would see fake data.  This function strips them and
+    logs a warning.
+    """
+    cleaned, count = _SKILL_RESULT_PATTERN.subn("", response)
+    if count:
+        logger.warning(
+            "Stripped %d hallucinated [SKILL_RESULT] block(s) from LLM response",
+            count,
+        )
+        # Collapse leftover blank lines
+        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    return cleaned
 
 
 async def execute_skill_call(skill_call: dict[str, Any]) -> str:

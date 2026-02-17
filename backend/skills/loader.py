@@ -7,6 +7,10 @@ from ..config import get_config
 
 logger = logging.getLogger(__name__)
 
+# Module-level cache — rebuilt when skills are reset
+_cached_skill_prompt: Optional[str] = None
+_cached_skill_reminder: Optional[str] = None
+
 
 def _load_md(filename: str) -> str:
     filepath = get_definitions_dir() / filename
@@ -16,18 +20,21 @@ def _load_md(filename: str) -> str:
     return filepath.read_text(encoding="utf-8")
 
 
-def build_skill_system_prompt() -> Optional[str]:
-    """Build the skill system prompt with only configured skills.
+def _build_and_cache() -> tuple[Optional[str], Optional[str]]:
+    """Build the full skill prompt and a compact reminder, cache both."""
+    global _cached_skill_prompt, _cached_skill_reminder
 
-    Returns None if no skills are configured (zero overhead path).
-    """
     configured = get_configured_skills()
     if not configured:
-        return None
+        _cached_skill_prompt = None
+        _cached_skill_reminder = None
+        return None, None
 
     master = _load_md("skill-master.md")
     if not master:
-        return None
+        _cached_skill_prompt = None
+        _cached_skill_reminder = None
+        return None, None
 
     skill_list_parts = []
     for skill_name in configured:
@@ -52,8 +59,51 @@ def build_skill_system_prompt() -> Optional[str]:
             skill_list_parts.append(md)
 
     if not skill_list_parts:
-        return None
+        _cached_skill_prompt = None
+        _cached_skill_reminder = None
+        return None, None
 
     skill_list = "\n\n---\n\n".join(skill_list_parts)
-    prompt = master.replace("{SKILL_LIST}", skill_list)
-    return prompt
+    _cached_skill_prompt = master.replace("{SKILL_LIST}", skill_list)
+
+    # Build compact reminder for Phase 2 / general messages
+    skill_names = sorted(configured.keys())
+    _cached_skill_reminder = (
+        "You have access to the following skills via [SKILL_CALL] blocks: "
+        + ", ".join(skill_names) + ".\n"
+        "To call a skill, output ONLY: [SKILL_CALL]{\"skill\": \"<name>\", \"params\": {…}}[/SKILL_CALL]\n"
+        "NEVER generate [SKILL_RESULT] blocks — only the backend system creates them after real API execution.\n"
+        "NEVER say you don't have access to a service — use the matching skill instead."
+    )
+
+    return _cached_skill_prompt, _cached_skill_reminder
+
+
+def build_skill_system_prompt() -> Optional[str]:
+    """Build the full skill system prompt with all configured skill definitions.
+
+    Returns None if no skills are configured (zero overhead path).
+    Used in Phase 1 as the sole system instruction for skill routing.
+    """
+    if _cached_skill_prompt is None and not _cached_skill_reminder:
+        _build_and_cache()
+    return _cached_skill_prompt
+
+
+def build_skill_reminder() -> Optional[str]:
+    """Return a compact skill-awareness block for Phase 2 and general messages.
+
+    Contains: active skill list, [SKILL_CALL] format, anti-hallucination rule.
+    Much shorter than the full prompt — safe to inject into any system message.
+    Returns None if no skills are configured.
+    """
+    if _cached_skill_reminder is None and not _cached_skill_prompt:
+        _build_and_cache()
+    return _cached_skill_reminder
+
+
+def reset_skill_cache() -> None:
+    """Clear the cached prompts. Called when skills are reset."""
+    global _cached_skill_prompt, _cached_skill_reminder
+    _cached_skill_prompt = None
+    _cached_skill_reminder = None

@@ -14,6 +14,7 @@ Rules:
 3. Use valid JSON inside the skill call block.
 4. For search queries, ALWAYS write queries in English for best results.
 5. You may chain multiple skill calls. After each skill result, you can call another skill if needed.
+6. NEVER generate [SKILL_RESULT] blocks. Only the backend system generates them after executing your skill call. If you fabricate a [SKILL_RESULT], the user will receive false data.
 
 ## When to use the yfinance skill
 

@@ -20,4 +20,5 @@ geopy>=2.4.0
 timezonefinder>=6.2.0
 pyshorteners>=1.0.0
 apscheduler>=3.10.0
+cryptography>=42.0.0
 pyinstaller>=6.10.0

@@ -1,19 +1,13 @@
 {
     "requires_full_update":  false,
     "channels":  {
-                     "frontend":  {
-                                      "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "bb02dca704c6fbf87b107445ef3c38ff9602156ba17624a013c07998a3606bff",
-                                      "asset":  "patch-frontend-1.0.25.zip",
-                                      "size":  197470
-                                  },
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "a3f68a442b5552bcf4806ff8081a4ad1b74fd7bde2f2a9364bf4aa1981d76f76",
-                                     "asset":  "patch-backend-1.0.25.zip",
-                                     "size":  25666852
+                                     "sha256":  "903c803749e53bc926054ea12ea3a8edfa30f82e0c3fbdd67837bfb6c76c355c",
+                                     "asset":  "patch-backend-1.0.26.zip",
+                                     "size":  25684530
                                  }
                  },
     "min_version":  "1.0.11",
-    "version":  "1.0.25"
+    "version":  "1.0.26"
 }

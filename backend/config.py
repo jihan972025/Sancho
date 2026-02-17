@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class LLMConfig(BaseModel):
@@ -191,6 +194,106 @@ class AppConfig(BaseModel):
 _config_dir = Path(os.environ.get("SANCHO_CONFIG_DIR", Path.home() / ".sancho"))
 _config_file = _config_dir / "config.json"
 
+# ---------------------------------------------------------------------------
+# Sensitive fields to encrypt at rest  (dot-path: "section.field")
+# ---------------------------------------------------------------------------
+
+SENSITIVE_FIELDS: list[str] = [
+    # LLMConfig
+    "llm.openai_api_key",
+    "llm.anthropic_api_key",
+    "llm.gemini_api_key",
+    "llm.zhipuai_api_key",
+    "llm.deepseek_api_key",
+    "llm.grok_api_key",
+    "llm.mistral_api_key",
+    "llm.perplexity_api_key",
+    "llm.qwen_api_key",
+    "llm.llama_api_key",
+    "llm.github_api_key",
+    "llm.kimi_api_key",
+    "llm.openrouter_api_key",
+    "llm.cloudflare_api_key",
+    "llm.google_ai_studio_api_key",
+    "llm.local_llm_api_key",
+    "llm.nvidia_code",
+    # ApiConfig
+    "api.tavily_api_key",
+    "api.outlook_client_secret",
+    "api.gmail_client_secret",
+    "api.google_calendar_client_secret",
+    "api.google_sheets_client_secret",
+    "api.jira_api_token",
+    "api.confluence_api_token",
+    "api.slack_bot_token",
+    "api.slack_app_token",
+    "api.upbit_access_key",
+    "api.upbit_secret_key",
+    # TelegramConfig
+    "telegram.api_hash",
+    # MatrixConfig
+    "matrix.password",
+    "matrix.access_token",
+    # GoogleAuthConfig
+    "google_auth.access_token",
+    "google_auth.refresh_token",
+]
+
+
+def _encrypt_sensitive(data: dict) -> dict:
+    """Encrypt sensitive fields in a config dict before writing to disk."""
+    from .crypto import encrypt_value, encrypt_dict_values
+
+    for dotpath in SENSITIVE_FIELDS:
+        section, field = dotpath.split(".", 1)
+        if section in data and field in data[section]:
+            data[section][field] = encrypt_value(data[section][field])
+
+    # Encrypt custom API headers (may contain Bearer tokens)
+    if "custom_apis" in data:
+        for api_def in data["custom_apis"]:
+            if "headers" in api_def and api_def["headers"]:
+                api_def["headers"] = encrypt_dict_values(api_def["headers"])
+
+    return data
+
+
+def _decrypt_sensitive(data: dict) -> dict:
+    """Decrypt sensitive fields in a config dict after reading from disk."""
+    from .crypto import decrypt_value, decrypt_dict_values
+
+    for dotpath in SENSITIVE_FIELDS:
+        section, field = dotpath.split(".", 1)
+        if section in data and field in data[section]:
+            data[section][field] = decrypt_value(data[section][field])
+
+    # Decrypt custom API headers
+    if "custom_apis" in data:
+        for api_def in data["custom_apis"]:
+            if "headers" in api_def and api_def["headers"]:
+                api_def["headers"] = decrypt_dict_values(api_def["headers"])
+
+    return data
+
+
+def _needs_migration(data: dict) -> bool:
+    """Return True if any sensitive field is non-empty plaintext (no ENC: prefix)."""
+    from .crypto import _ENC_PREFIX
+
+    for dotpath in SENSITIVE_FIELDS:
+        section, field = dotpath.split(".", 1)
+        val = data.get(section, {}).get(field, "")
+        if val and not val.startswith(_ENC_PREFIX):
+            return True
+
+    if "custom_apis" in data:
+        for api_def in data["custom_apis"]:
+            for v in (api_def.get("headers") or {}).values():
+                if v and not v.startswith(_ENC_PREFIX):
+                    return True
+
+    return False
+
 
 def _ensure_config_dir() -> None:
     _config_dir.mkdir(parents=True, exist_ok=True)
@@ -200,30 +303,34 @@ def load_config() -> AppConfig:
     _ensure_config_dir()
     if _config_file.exists():
         data = json.loads(_config_file.read_text(encoding="utf-8"))
-        return AppConfig(**data)
+
+        # Check if migration from plaintext → encrypted is needed
+        migrate = _needs_migration(data)
+
+        # Decrypt sensitive fields (no-op for plaintext values)
+        data = _decrypt_sensitive(data)
+        config = AppConfig(**data)
+
+        # Auto-migrate: re-save with encryption on first load after upgrade
+        if migrate:
+            logger.info("Migrating config to encrypted storage")
+            save_config(config)
+
+        return config
     return AppConfig()
 
 
 def save_config(config: AppConfig) -> None:
+    from .crypto import set_strict_permissions
+
     _ensure_config_dir()
+    data = json.loads(config.model_dump_json(indent=2))
+    data = _encrypt_sensitive(data)
     _config_file.write_text(
-        config.model_dump_json(indent=2),
+        json.dumps(data, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-    # Restrict file permissions to owner only (Windows: best-effort via icacls)
-    try:
-        import platform
-        if platform.system() == "Windows":
-            import subprocess
-            subprocess.run(
-                ["icacls", str(_config_file), "/inheritance:r",
-                 "/grant:r", f"{os.environ.get('USERNAME', '')}:F"],
-                capture_output=True, timeout=5,
-            )
-        else:
-            os.chmod(str(_config_file), 0o600)
-    except Exception:
-        pass  # Best-effort — don't break on permission errors
+    set_strict_permissions(_config_file)
 
 
 _user_md_file = _config_dir / "USER.md"
