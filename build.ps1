@@ -28,8 +28,19 @@ if (-not (Test-Path "venv")) {
 & "venv\Scripts\activate.ps1"
 pip install -r requirements.txt --quiet
 
+# Clean dist-backend to avoid stale files from previous builds
+if (Test-Path "dist-backend") { Remove-Item "dist-backend" -Recurse -Force }
+
 # Build with PyInstaller using main.spec (single source of truth)
-pyinstaller main.spec --noconfirm --distpath "dist-backend"
+# Use python -m PyInstaller to avoid venv shim issues
+python -m PyInstaller main.spec --noconfirm --distpath "dist-backend"
+
+# PyInstaller COLLECT creates dist-backend/main/ subdirectory (from spec name='main').
+# Move contents to dist-backend/ root for electron-builder extraResources.
+if (Test-Path "dist-backend/main") {
+    Get-ChildItem "dist-backend/main" | Move-Item -Destination "dist-backend/" -Force
+    Remove-Item "dist-backend/main" -Force
+}
 
 Write-Host "  Backend built to dist-backend/" -ForegroundColor Green
 Write-Host ""

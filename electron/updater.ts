@@ -276,6 +276,7 @@ async function applyFullUpdate(
 
   const batchContent = [
     '@echo off',
+    'chcp 65001 >nul',
     `echo [%date% %time%] Full update started >> "${logPath}"`,
     'taskkill /F /IM "Sancho.exe" 2>nul',
     'taskkill /F /IM "main.exe" 2>nul',
@@ -460,6 +461,7 @@ function applyWithRestart(
 
   const batchContent = [
     '@echo off',
+    'chcp 65001 >nul',
     `echo [%date% %time%] Differential patch started >> "${logPath}"`,
     'taskkill /F /IM "Sancho.exe" 2>nul',
     'taskkill /F /IM "main.exe" 2>nul',
