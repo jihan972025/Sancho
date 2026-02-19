@@ -668,13 +668,24 @@ class TradingEngine:
         try:
             response = await provider.complete(messages, self.model)
             raw_response = response
-            # Strip markdown fences if present
             text = response.strip()
+
+            # Strip markdown fences if present
             if text.startswith("```"):
                 text = text.split("\n", 1)[-1]
             if text.endswith("```"):
                 text = text.rsplit("```", 1)[0]
             text = text.strip()
+
+            # Extract JSON object from response text (LLM may add prose around it)
+            start = text.find("{")
+            end = text.rfind("}")
+            if start != -1 and end != -1 and end > start:
+                text = text[start : end + 1]
+            elif start != -1:
+                # Closing brace missing – likely truncated response; append it
+                text = text[start:] + "}"
+
             result = json.loads(text)
             result["input_prompt"] = prompt
             result["raw_response"] = raw_response

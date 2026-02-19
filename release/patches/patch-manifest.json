@@ -3,11 +3,11 @@
     "channels":  {
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "903c803749e53bc926054ea12ea3a8edfa30f82e0c3fbdd67837bfb6c76c355c",
-                                     "asset":  "patch-backend-1.0.26.zip",
-                                     "size":  25684530
+                                     "sha256":  "a7fed56a87f884206583f7750730149a6968ed0e45e6a989555abfd048ad4d07",
+                                     "asset":  "patch-backend-1.0.27.zip",
+                                     "size":  25678980
                                  }
                  },
     "min_version":  "1.0.11",
-    "version":  "1.0.26"
+    "version":  "1.0.27"
 }

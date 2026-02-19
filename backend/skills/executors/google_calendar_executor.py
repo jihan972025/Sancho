@@ -61,45 +61,56 @@ class GoogleCalendarExecutor(SkillExecutor):
 
     async def _list_events(self, headers: dict, params: dict) -> str:
         max_results = min(params.get("max_results", 10), 50)
-        now = datetime.now(timezone.utc).isoformat()
+        time_min = params.get("timeMin") or params.get("time_min") or datetime.now(timezone.utc).isoformat()
+        time_max = params.get("timeMax") or params.get("time_max") or ""
+
+        query_params: dict[str, Any] = {
+            "maxResults": max_results,
+            "timeMin": time_min,
+            "orderBy": "startTime",
+            "singleEvents": "true",
+        }
+        if time_max:
+            query_params["timeMax"] = time_max
 
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
                 CALENDAR_BASE,
                 headers=headers,
-                params={
-                    "maxResults": max_results,
-                    "timeMin": now,
-                    "orderBy": "startTime",
-                    "singleEvents": "true",
-                },
+                params=query_params,
             )
             resp.raise_for_status()
             data = resp.json()
 
         events = data.get("items", [])
         if not events:
-            return "No upcoming events found."
+            return "No events found in the specified range."
 
-        return f"Upcoming {len(events)} event(s):\n\n" + "\n".join(
+        return f"Found {len(events)} event(s):\n\n" + "\n".join(
             _format_event(e) for e in events
         )
 
     async def _search_events(self, headers: dict, params: dict) -> str:
         query = params.get("query", "")
         max_results = min(params.get("max_results", 10), 50)
+        time_min = params.get("timeMin") or params.get("time_min") or "2020-01-01T00:00:00Z"
+        time_max = params.get("timeMax") or params.get("time_max") or ""
+
+        query_params: dict[str, Any] = {
+            "q": query,
+            "maxResults": max_results,
+            "orderBy": "startTime",
+            "singleEvents": "true",
+            "timeMin": time_min,
+        }
+        if time_max:
+            query_params["timeMax"] = time_max
 
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
                 CALENDAR_BASE,
                 headers=headers,
-                params={
-                    "q": query,
-                    "maxResults": max_results,
-                    "orderBy": "startTime",
-                    "singleEvents": "true",
-                    "timeMin": "2020-01-01T00:00:00Z",
-                },
+                params=query_params,
             )
             resp.raise_for_status()
             data = resp.json()
