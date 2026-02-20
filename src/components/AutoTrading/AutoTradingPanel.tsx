@@ -51,6 +51,8 @@ interface TradeRecord {
   pnl_pct: number
   fee_krw: number
   reasoning: string
+  buy_reasoning?: string
+  sell_reasoning?: string
   entry_time: string
   exit_time: string
 }
@@ -1069,12 +1071,14 @@ export default function AutoTradingPanel() {
                   <th className="text-left px-3 py-2 font-medium">{t('crypto.thTime')}</th>
                   <th className="text-left px-3 py-2 font-medium">{t('crypto.thCoin')}</th>
                   <th className="text-left px-3 py-2 font-medium">{t('crypto.thTimeframe')}</th>
+                  <th className="text-left px-3 py-2 font-medium">{t('crypto.thCandleInterval')}</th>
                   <th className="text-right px-3 py-2 font-medium">{t('crypto.thEntryPrice')}</th>
                   <th className="text-right px-3 py-2 font-medium">{t('crypto.thExitPrice')}</th>
                   <th className="text-right px-3 py-2 font-medium">{t('crypto.thAmount')}</th>
                   <th className="text-right px-3 py-2 font-medium">{t('crypto.thPnlRate')}</th>
                   <th className="text-right px-3 py-2 font-medium">{t('crypto.thFee')}</th>
-                  <th className="text-left px-3 py-2 font-medium">{t('crypto.thStrategy')}</th>
+                  <th className="text-left px-3 py-2 font-medium">{t('crypto.thBuyStrategy')}</th>
+                  <th className="text-left px-3 py-2 font-medium">{t('crypto.thSellStrategy')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1097,6 +1101,7 @@ export default function AutoTradingPanel() {
                         </td>
                         <td className="px-3 py-1.5 text-slate-200 font-medium">{trade.coin}</td>
                         <td className="px-3 py-1.5 text-slate-400">{trade.timeframe}</td>
+                        <td className="px-3 py-1.5 text-slate-400">{trade.candle_interval || '-'}</td>
                         <td className="px-3 py-1.5 text-right text-slate-300">
                           ₩{trade.entry_price.toLocaleString()}
                         </td>
@@ -1133,23 +1138,36 @@ export default function AutoTradingPanel() {
                         <td className="px-3 py-1.5 text-right text-slate-500">
                           ₩{trade.fee_krw.toLocaleString()}
                         </td>
-                        <td className="px-3 py-1.5 text-slate-400 max-w-[200px] truncate" title={trade.reasoning}>
-                          {trade.reasoning}
+                        <td className="px-3 py-1.5 text-emerald-400/80 max-w-[200px] truncate" title={trade.buy_reasoning || trade.reasoning}>
+                          {trade.buy_reasoning || '-'}
+                        </td>
+                        <td className="px-3 py-1.5 text-red-400/80 max-w-[200px] truncate" title={trade.sell_reasoning || trade.reasoning}>
+                          {trade.sell_reasoning || trade.reasoning}
                         </td>
                       </tr>
                       {/* Expanded analysis row */}
                       {isExpanded && (
                         <tr className="bg-slate-800/40">
-                          <td colSpan={9} className="px-4 py-3">
+                          <td colSpan={11} className="px-4 py-3">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Brain size={12} className="text-violet-400" />
                               <span className="text-xs font-semibold text-violet-400">{t('crypto.analysisResult')}</span>
                             </div>
-                            <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2.5 border border-slate-700/30">
-                              {trade.reasoning || '-'}
+                            {trade.buy_reasoning && (
+                              <div className="mb-2">
+                                <span className="text-xs font-medium text-emerald-400">{t('crypto.thBuyStrategy')}</span>
+                                <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2.5 border border-slate-700/30 mt-1">
+                                  {trade.buy_reasoning}
+                                </div>
+                              </div>
+                            )}
+                            <div className="mb-2">
+                              <span className="text-xs font-medium text-red-400">{t('crypto.thSellStrategy')}</span>
+                              <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2.5 border border-slate-700/30 mt-1">
+                                {trade.sell_reasoning || trade.reasoning || '-'}
+                              </div>
                             </div>
                             <div className="flex gap-4 mt-2 text-xs text-slate-500">
-                              <span>{t('crypto.candleInterval')}: {trade.candle_interval || '-'}</span>
                               <span>{t('crypto.thTime')}: {trade.entry_time ? formatTime(trade.entry_time) : '-'} → {formatTime(trade.exit_time)}</span>
                             </div>
                           </td>

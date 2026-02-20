@@ -39,7 +39,7 @@ async def lifespan(app):
     stop_scheduler()
 
 
-app = FastAPI(title="Sancho Backend", version="1.0.27", lifespan=lifespan)
+app = FastAPI(title="Sancho Backend", version="1.0.28", lifespan=lifespan)
 
 app.add_middleware(TunnelGuardMiddleware)
 app.add_middleware(TunnelRateLimitMiddleware)
@@ -77,7 +77,7 @@ app.include_router(voice_router)
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "version": "1.0.27"}
+    return {"status": "ok", "version": "1.0.28"}
 
 
 if __name__ == "__main__":

@@ -137,6 +137,7 @@ class TradingEngine:
         self.entry_price: float = 0
         self.entry_time: str = ""
         self.quantity: float = 0
+        self.entry_reasoning: str = ""
 
         # Cooldown
         self._last_trade_candle = 0
@@ -340,6 +341,7 @@ class TradingEngine:
             self.entry_price = filled_price
             self.entry_time = datetime.now(timezone.utc).isoformat()
             self.quantity = filled_qty
+            self.entry_reasoning = reasoning
             self._last_trade_candle = self._candle_count
 
             self._emit({
@@ -396,6 +398,8 @@ class TradingEngine:
                 "pnl_pct": round(pnl_pct, 4),
                 "fee_krw": round(total_fee, 0),
                 "reasoning": reasoning,
+                "buy_reasoning": self.entry_reasoning,
+                "sell_reasoning": reasoning,
                 "entry_time": self.entry_time,
                 "exit_time": exit_time,
             }
@@ -424,6 +428,7 @@ class TradingEngine:
             self.entry_price = 0
             self.entry_time = ""
             self.quantity = 0
+            self.entry_reasoning = ""
             self._last_trade_candle = self._candle_count
 
         except Exception as e:
