@@ -5,9 +5,11 @@ import fs from 'fs'
 import { initWhatsApp, connectWhatsApp, disconnectWhatsApp, getWhatsAppStatus, sendWhatsAppMessage } from './whatsapp'
 import { initTelegram, connectTelegram, disconnectTelegram, getTelegramStatus, sendTelegramMessage } from './telegram'
 import { initMatrix, connectMatrix, disconnectMatrix, getMatrixStatus, sendMatrixMessage } from './matrix'
+import { initSlack, connectSlack, disconnectSlack, getSlackStatus, sendSlackMessage } from './slack'
 import { setSelectedModel } from './selectedModel'
 import { startPeriodicCheck, stopPeriodicCheck, checkForUpdate, applyPatch, dismissUpdate } from './updater'
 import { startGoogleOAuth } from './googleAuth'
+import { startOutlookOAuth } from './outlookAuth'
 import { startTunnel, stopTunnel, getTunnelUrl } from './tunnel'
 
 let mainWindow: BrowserWindow | null = null
@@ -203,6 +205,12 @@ async function autoConnectChatApps(): Promise<void> {
       console.log('[Matrix] Auto-connecting (enabled in settings)...')
       connectMatrix(config.matrix.homeserver_url, config.matrix.user_id, config.matrix.password, config.matrix.access_token).catch((err: Error) => console.log('[Matrix] Auto-connect failed:', err.message))
     }
+
+    // Slack auto-connect
+    if (config.slack?.enabled && config.api?.slack_bot_token && config.api?.slack_app_token) {
+      console.log('[Slack] Auto-connecting (enabled in settings)...')
+      connectSlack(config.api.slack_bot_token, config.api.slack_app_token).catch((err: Error) => console.log('[Slack] Auto-connect failed:', err.message))
+    }
   } catch (err) {
     console.log('[ChatApps] Auto-connect skipped:', (err as Error).message)
   }
@@ -239,6 +247,9 @@ async function pollSchedulerNotifications(): Promise<void> {
       }
       if (apps.matrix && getMatrixStatus() === 'connected') {
         if (await sendMatrixMessage(message)) sent = true
+      }
+      if (apps.slack && getSlackStatus() === 'connected') {
+        if (await sendSlackMessage(message)) sent = true
       }
 
       if (sent) {
@@ -404,6 +415,7 @@ app.whenReady().then(async () => {
     initWhatsApp(mainWindow)
     initTelegram(mainWindow)
     initMatrix(mainWindow)
+    initSlack(mainWindow)
 
     // Auto-connect chat apps after renderer is ready (so IPC listeners are registered)
     mainWindow.webContents.on('did-finish-load', () => {
@@ -455,6 +467,11 @@ ipcMain.handle('telegram:status', () => getTelegramStatus())
 ipcMain.handle('matrix:connect', (_event, homeserverUrl: string, userId: string, password: string, accessToken: string) => connectMatrix(homeserverUrl, userId, password, accessToken))
 ipcMain.handle('matrix:disconnect', () => disconnectMatrix())
 ipcMain.handle('matrix:status', () => getMatrixStatus())
+
+// Slack IPC handlers
+ipcMain.handle('slack:connect', (_event, botToken: string, appToken: string) => connectSlack(botToken, appToken))
+ipcMain.handle('slack:disconnect', () => disconnectSlack())
+ipcMain.handle('slack:status', () => getSlackStatus())
 
 // Patch updater IPC handlers
 ipcMain.handle('patch:check', async () => {
@@ -516,6 +533,40 @@ ipcMain.handle('google-auth:logout', async () => {
   const http = await import('http')
   await new Promise<void>((resolve, reject) => {
     const req = http.request('http://127.0.0.1:8765/api/auth/google/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }, (res) => {
+      res.on('data', () => {})
+      res.on('end', () => resolve())
+      res.on('error', reject)
+    })
+    req.on('error', reject)
+    req.end()
+  })
+})
+
+// Outlook OAuth IPC handlers
+ipcMain.handle('outlook-auth:login', async (_event, clientId: string, clientSecret: string) => {
+  return startOutlookOAuth(clientId, clientSecret)
+})
+
+ipcMain.handle('outlook-auth:status', async () => {
+  const http = await import('http')
+  const data: string = await new Promise((resolve, reject) => {
+    http.get('http://127.0.0.1:8765/api/auth/outlook/status', (res) => {
+      let body = ''
+      res.on('data', (chunk: Buffer) => { body += chunk.toString() })
+      res.on('end', () => resolve(body))
+      res.on('error', reject)
+    }).on('error', reject)
+  })
+  return JSON.parse(data)
+})
+
+ipcMain.handle('outlook-auth:logout', async () => {
+  const http = await import('http')
+  await new Promise<void>((resolve, reject) => {
+    const req = http.request('http://127.0.0.1:8765/api/auth/outlook/logout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     }, (res) => {

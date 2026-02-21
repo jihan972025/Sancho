@@ -41,6 +41,18 @@ def save_trade(trade: dict) -> None:
     _save_raw(data)
 
 
+def update_trade(trade_id: str, updated: dict) -> None:
+    """Update an existing trade record by id (e.g. open BUY → closed with SELL data)."""
+    data = _load_raw()
+    trades = data.get("trades", [])
+    for i, t in enumerate(trades):
+        if t.get("id") == trade_id:
+            trades[i] = updated
+            break
+    data["trades"] = trades
+    _save_raw(data)
+
+
 def get_trades(limit: int = 100, from_date: str = "", to_date: str = "") -> list[dict]:
     """Return most-recent-first trade records, optionally filtered by date range.
 
@@ -53,10 +65,12 @@ def get_trades(limit: int = 100, from_date: str = "", to_date: str = "") -> list
     if from_date or to_date:
         filtered = []
         for t in trades:
-            exit_day = t.get("exit_time", "")[:10]  # 'YYYY-MM-DD'
-            if from_date and exit_day < from_date:
+            # For open trades (no exit_time), use entry_time for filtering
+            date_field = t.get("exit_time") or t.get("entry_time", "")
+            day = date_field[:10]  # 'YYYY-MM-DD'
+            if from_date and day < from_date:
                 continue
-            if to_date and exit_day > to_date:
+            if to_date and day > to_date:
                 continue
             filtered.append(t)
         trades = filtered

@@ -133,6 +133,13 @@ class MatrixConfig(BaseModel):
     file_organize_keywords: list[str] = _FILE_ORGANIZE_KEYWORDS
 
 
+class SlackConfig(BaseModel):
+    enabled: bool = False
+    default_model: str = ""
+    browser_keywords: list[str] = _BROWSER_KEYWORDS
+    file_organize_keywords: list[str] = _FILE_ORGANIZE_KEYWORDS
+
+
 class CustomApiDef(BaseModel):
     name: str           # Skill name (lowercase + underscores)
     display_name: str   # UI display name
@@ -178,16 +185,27 @@ class GoogleAuthConfig(BaseModel):
     logged_in: bool = False
 
 
+class OutlookAuthConfig(BaseModel):
+    access_token: str = ""
+    refresh_token: str = ""
+    token_expiry: str = ""
+    email: str = ""
+    name: str = ""
+    logged_in: bool = False
+
+
 class AppConfig(BaseModel):
     llm: LLMConfig = LLMConfig()
     whatsapp: WhatsAppConfig = WhatsAppConfig()
     telegram: TelegramConfig = TelegramConfig()
     matrix: MatrixConfig = MatrixConfig()
+    slack: SlackConfig = SlackConfig()
     api: ApiConfig = ApiConfig()
     custom_apis: list[CustomApiDef] = []
     safe_directories: list[str] = []
     browser_headless: bool = False
     google_auth: GoogleAuthConfig = GoogleAuthConfig()
+    outlook_auth: OutlookAuthConfig = OutlookAuthConfig()
     language: str = "en"
 
 
@@ -237,6 +255,9 @@ SENSITIVE_FIELDS: list[str] = [
     # GoogleAuthConfig
     "google_auth.access_token",
     "google_auth.refresh_token",
+    # OutlookAuthConfig
+    "outlook_auth.access_token",
+    "outlook_auth.refresh_token",
 ]
 
 

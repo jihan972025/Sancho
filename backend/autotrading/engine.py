@@ -138,6 +138,7 @@ class TradingEngine:
         self.entry_time: str = ""
         self.quantity: float = 0
         self.entry_reasoning: str = ""
+        self._open_trade_id: str = ""
 
         # Cooldown
         self._last_trade_candle = 0
@@ -344,6 +345,29 @@ class TradingEngine:
             self.entry_reasoning = reasoning
             self._last_trade_candle = self._candle_count
 
+            # Save BUY record immediately (open trade)
+            self._open_trade_id = str(uuid.uuid4())
+            buy_record = {
+                "id": self._open_trade_id,
+                "coin": self.coin,
+                "timeframe": self.timeframe,
+                "candle_interval": self.candle_interval,
+                "entry_price": round(filled_price, 2),
+                "exit_price": 0,
+                "amount_krw": round(cost, 0),
+                "quantity": round(filled_qty, 8),
+                "pnl_krw": 0,
+                "pnl_pct": 0,
+                "fee_krw": 0,
+                "reasoning": reasoning,
+                "buy_reasoning": reasoning,
+                "sell_reasoning": "",
+                "entry_time": self.entry_time,
+                "exit_time": "",
+                "status": "open",
+            }
+            storage.save_trade(buy_record)
+
             self._emit({
                 "type": "trade",
                 "content": {
@@ -386,7 +410,7 @@ class TradingEngine:
             self._daily_pnl_pct += pnl_pct
 
             trade_record = {
-                "id": str(uuid.uuid4()),
+                "id": getattr(self, "_open_trade_id", "") or str(uuid.uuid4()),
                 "coin": self.coin,
                 "timeframe": self.timeframe,
                 "candle_interval": self.candle_interval,
@@ -402,9 +426,15 @@ class TradingEngine:
                 "sell_reasoning": reasoning,
                 "entry_time": self.entry_time,
                 "exit_time": exit_time,
+                "status": "closed",
             }
 
-            storage.save_trade(trade_record)
+            # Update the open BUY record → closed with sell data
+            if getattr(self, "_open_trade_id", ""):
+                storage.update_trade(self._open_trade_id, trade_record)
+                self._open_trade_id = ""
+            else:
+                storage.save_trade(trade_record)
 
             # Update recent trade history for feedback (improvement #4)
             self._recent_trades.insert(0, trade_record)

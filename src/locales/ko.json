@@ -74,6 +74,7 @@
     "languageDesc": "Sancho 인터페이스에 사용할 언어를 선택하세요.",
     "matrixPasswordHelp": "Element X 계정의 비밀번호. SSO(Gmail 등)로 가입한 경우 아래 Access Token을 사용하세요.",
     "matrixTokenHelp": "비밀번호 없이 SSO로 가입한 경우: Element Web → Settings → Help & About → Access Token 복사",
+    "slackTokenHelp": "api.slack.com/apps에서 Slack 앱을 만드세요. Socket Mode를 활성화하여 App Token(xapp-...)을 생성하고, OAuth & Permissions에서 Bot Token(xoxb-...)을 복사하세요.",
     "voiceApp": "보이스 앱"
   },
   "profile": {
@@ -121,6 +122,7 @@
     "stopTrading": "거래 중지",
     "currentPrice": "현재가",
     "position": "포지션",
+    "holding": "보유중",
     "positionIn": "IN (보유중)",
     "positionOut": "OUT (대기)",
     "unrealizedPnl": "미실현 손익",

@@ -1,19 +1,25 @@
 {
     "requires_full_update":  false,
     "channels":  {
-                     "frontend":  {
-                                      "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "bd887ee1b958667fcad125912eb669bd643041c510f8847a59ca99a158ea69d6",
-                                      "asset":  "patch-frontend-1.0.28.zip",
-                                      "size":  197641
-                                  },
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "dc2d1c93dfc275dc81af09ccf8a13db7df6b27f0770dca16352ec2928e617a15",
-                                     "asset":  "patch-backend-1.0.28.zip",
-                                     "size":  25680936
-                                 }
+                                     "sha256":  "a40196782286251d5ad6d7a7fe02d910729539016d87b7c56db9b4646729f0bb",
+                                     "asset":  "patch-backend-1.0.29.zip",
+                                     "size":  25698875
+                                 },
+                     "frontend":  {
+                                      "target":  "app.asar.unpacked/dist",
+                                      "sha256":  "08ea1424cf4bfbb1292b4103540d86e93aaf610c7123b35d9122a0cabf3f8f41",
+                                      "asset":  "patch-frontend-1.0.29.zip",
+                                      "size":  198875
+                                  },
+                     "electron":  {
+                                      "target":  "app.asar.unpacked/dist-electron",
+                                      "sha256":  "be27bd979c6ef366e0a672118ac32ae138bd24082775b302d0188e8aea5d2f32",
+                                      "asset":  "patch-electron-1.0.29.zip",
+                                      "size":  10881
+                                  }
                  },
     "min_version":  "1.0.11",
-    "version":  "1.0.28"
+    "version":  "1.0.29"
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import i18n from '../i18n'
-import type { AppConfig, LLMConfig, WhatsAppConfig, TelegramConfig, MatrixConfig, ApiConfig, CustomApiDef } from '../types'
+import type { AppConfig, LLMConfig, WhatsAppConfig, TelegramConfig, MatrixConfig, SlackConfig, ApiConfig, CustomApiDef } from '../types'
 
 interface SettingsState {
   config: AppConfig
@@ -10,6 +10,7 @@ interface SettingsState {
   updateWhatsAppConfig: (wa: Partial<WhatsAppConfig>) => void
   updateTelegramConfig: (tg: Partial<TelegramConfig>) => void
   updateMatrixConfig: (mx: Partial<MatrixConfig>) => void
+  updateSlackConfig: (sl: Partial<SlackConfig>) => void
   updateApiConfig: (api: Partial<ApiConfig>) => void
   updateCustomApis: (custom_apis: CustomApiDef[]) => void
 }
@@ -64,6 +65,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       user_id: '',
       password: '',
       access_token: '',
+      default_model: '',
+      browser_keywords: [
+        '검색', '찾아', '브라우저', '열어', '사이트', '웹',
+        'search', 'browse', 'find', 'open', 'look up',
+      ],
+    },
+    slack: {
+      enabled: false,
       default_model: '',
       browser_keywords: [
         '검색', '찾아', '브라우저', '열어', '사이트', '웹',
@@ -144,6 +153,14 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       config: {
         ...state.config,
         matrix: { ...state.config.matrix, ...mx },
+      },
+    })),
+
+  updateSlackConfig: (sl) =>
+    set((state) => ({
+      config: {
+        ...state.config,
+        slack: { ...state.config.slack, ...sl },
       },
     })),
 

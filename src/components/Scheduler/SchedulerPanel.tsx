@@ -71,7 +71,7 @@ const defaultForm: FormData = {
   cron_days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
   interval_minutes: 60,
   timezone: 'Asia/Seoul',
-  notify_apps: { whatsapp: false, telegram: false, matrix: false },
+  notify_apps: { whatsapp: false, telegram: false, matrix: false, slack: false },
 }
 
 export default function SchedulerPanel() {
@@ -88,7 +88,8 @@ export default function SchedulerPanel() {
     whatsapp: ChatAppStatus
     telegram: ChatAppStatus
     matrix: ChatAppStatus
-  }>({ whatsapp: 'disconnected', telegram: 'disconnected', matrix: 'disconnected' })
+    slack: ChatAppStatus
+  }>({ whatsapp: 'disconnected', telegram: 'disconnected', matrix: 'disconnected', slack: 'disconnected' })
 
   function formatSchedule(task: ScheduledTask): string {
     if (task.schedule_type === 'interval') {
@@ -118,12 +119,13 @@ export default function SchedulerPanel() {
     async function fetchChatAppStatuses() {
       if (!electronAPI) return
       try {
-        const [wa, tg, mx] = await Promise.all([
+        const [wa, tg, mx, sl] = await Promise.all([
           electronAPI.whatsapp.getStatus(),
           electronAPI.telegram.getStatus(),
           electronAPI.matrix.getStatus(),
+          electronAPI.slack.getStatus(),
         ])
-        setChatAppStatus({ whatsapp: wa, telegram: tg, matrix: mx })
+        setChatAppStatus({ whatsapp: wa, telegram: tg, matrix: mx, slack: sl })
       } catch { /* ignore */ }
     }
     fetchChatAppStatuses()
@@ -137,6 +139,9 @@ export default function SchedulerPanel() {
       )
       electronAPI.matrix.onStatusUpdate((s: ChatAppStatus) =>
         setChatAppStatus((prev) => ({ ...prev, matrix: s }))
+      )
+      electronAPI.slack.onStatusUpdate((s: ChatAppStatus) =>
+        setChatAppStatus((prev) => ({ ...prev, slack: s }))
       )
     }
   }, [])
@@ -161,7 +166,7 @@ export default function SchedulerPanel() {
       timezone: task.timezone || 'Asia/Seoul',
       notify_apps: task.notify_apps
         ? { ...task.notify_apps }
-        : { whatsapp: false, telegram: false, matrix: false },
+        : { whatsapp: false, telegram: false, matrix: false, slack: false },
     })
     setShowForm(true)
   }
@@ -346,6 +351,7 @@ export default function SchedulerPanel() {
                   { key: 'whatsapp' as const, label: 'WhatsApp', icon: '📱' },
                   { key: 'telegram' as const, label: 'Telegram', icon: '✈️' },
                   { key: 'matrix' as const, label: 'Matrix', icon: '🔗' },
+                  { key: 'slack' as const, label: 'Slack', icon: '#️⃣' },
                 ] as const).map((app) => {
                   const connected = chatAppStatus[app.key] === 'connected'
                   const enabled = form.notify_apps[app.key]
@@ -486,12 +492,13 @@ export default function SchedulerPanel() {
                     <Clock size={12} />
                     {formatSchedule(task)}
                   </span>
-                  {task.notify_apps && (task.notify_apps.whatsapp || task.notify_apps.telegram || task.notify_apps.matrix) && (
+                  {task.notify_apps && (task.notify_apps.whatsapp || task.notify_apps.telegram || task.notify_apps.matrix || task.notify_apps.slack) && (
                     <span className="flex items-center gap-0.5 text-angel-400" title={t('scheduler.sendResults')}>
                       <Send size={11} />
                       {task.notify_apps.whatsapp && <span>WA</span>}
                       {task.notify_apps.telegram && <span>TG</span>}
                       {task.notify_apps.matrix && <span>MX</span>}
+                      {task.notify_apps.slack && <span>SL</span>}
                     </span>
                   )}
                   {task.last_run && (

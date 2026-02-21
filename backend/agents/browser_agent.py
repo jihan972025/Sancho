@@ -329,6 +329,15 @@ class BrowserAgent:
         )
         self._cancel.clear()
 
+        # Conversation history for multi-step context
+        conversation: list[dict[str, str]] = [
+            {"role": "system", "content": BROWSER_SYSTEM_PROMPT},
+        ]
+        # Track consecutive duplicate actions
+        last_action_fingerprint = ""
+        duplicate_count = 0
+        MAX_DUPLICATES = 2  # Allow at most 2 identical consecutive actions
+
         try:
             for step in range(self.state.max_steps):
                 if self._cancel.is_set():
@@ -353,17 +362,19 @@ class BrowserAgent:
                     f"Page snapshot:\n{snapshot_text}"
                 )
 
-                messages = [
-                    {"role": "system", "content": BROWSER_SYSTEM_PROMPT},
-                    {"role": "user", "content": user_msg},
-                ]
+                # Add current observation to conversation
+                conversation.append({"role": "user", "content": user_msg})
+
+                # Trim conversation if it gets too long (keep system + last 6 turns)
+                if len(conversation) > 13:
+                    conversation = [conversation[0]] + conversation[-12:]
 
                 # Call LLM with text (no vision API needed)
                 logger.info(f"Text call: model={model}, provider={provider.name}")
                 response = None
                 for attempt in range(4):
                     try:
-                        response = await provider.complete(messages, model)
+                        response = await provider.complete(conversation, model)
                         break
                     except RateLimitError:
                         if attempt < 3:
@@ -389,6 +400,9 @@ class BrowserAgent:
                 params = action_data.get("params", {})
                 thought = action_data.get("thought", "")
 
+                # Add LLM response to conversation history
+                conversation.append({"role": "assistant", "content": response})
+
                 self.state.last_action = action
                 self.state.last_thought = thought
                 logger.info(f"Step {step + 1}: {thought} -> {action} {params}")
@@ -398,6 +412,22 @@ class BrowserAgent:
                     self.state.status = AgentStatus.COMPLETED
                     self.state.result = params.get("result", "Task completed")
                     break
+
+                # Detect repeated identical actions
+                action_fingerprint = json.dumps({"action": action, "params": params}, sort_keys=True)
+                if action_fingerprint == last_action_fingerprint:
+                    duplicate_count += 1
+                    if duplicate_count >= MAX_DUPLICATES:
+                        logger.warning(
+                            "Action '%s' repeated %d times — forcing done (step %d)",
+                            action, duplicate_count + 1, step + 1,
+                        )
+                        self.state.status = AgentStatus.COMPLETED
+                        self.state.result = thought or "Task completed (stopped due to repeated action)"
+                        break
+                else:
+                    duplicate_count = 0
+                    last_action_fingerprint = action_fingerprint
 
                 # Execute action
                 await self._execute_action(action, params)

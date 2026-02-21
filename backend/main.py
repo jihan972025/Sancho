@@ -14,12 +14,14 @@ from backend.api.routes_settings import router as settings_router
 from backend.api.routes_whatsapp import router as whatsapp_router
 from backend.api.routes_telegram import router as telegram_router
 from backend.api.routes_matrix import router as matrix_router
+from backend.api.routes_slack import router as slack_router
 from backend.api.routes_scheduler import router as scheduler_router
 from backend.api.routes_memory import router as memory_router
 from backend.api.routes_crypto import router as crypto_router
 from backend.api.routes_logs import router as logs_router, log_handler
 from backend.api.routes_conversation import router as conversation_router
 from backend.api.routes_google_auth import router as google_auth_router
+from backend.api.routes_outlook_auth import router as outlook_auth_router
 from backend.api.routes_autotrading import router as autotrading_router
 from backend.api.routes_voice import router as voice_router
 
@@ -39,7 +41,7 @@ async def lifespan(app):
     stop_scheduler()
 
 
-app = FastAPI(title="Sancho Backend", version="1.0.28", lifespan=lifespan)
+app = FastAPI(title="Sancho Backend", version="1.0.29", lifespan=lifespan)
 
 app.add_middleware(TunnelGuardMiddleware)
 app.add_middleware(TunnelRateLimitMiddleware)
@@ -65,19 +67,21 @@ app.include_router(settings_router)
 app.include_router(whatsapp_router)
 app.include_router(telegram_router)
 app.include_router(matrix_router)
+app.include_router(slack_router)
 app.include_router(scheduler_router)
 app.include_router(memory_router)
 app.include_router(crypto_router)
 app.include_router(logs_router)
 app.include_router(conversation_router)
 app.include_router(google_auth_router)
+app.include_router(outlook_auth_router)
 app.include_router(autotrading_router)
 app.include_router(voice_router)
 
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "version": "1.0.28"}
+    return {"status": "ok", "version": "1.0.29"}
 
 
 if __name__ == "__main__":

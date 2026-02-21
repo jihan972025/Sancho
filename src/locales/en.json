@@ -74,6 +74,7 @@
     "languageDesc": "Select your preferred language for the Sancho interface.",
     "matrixPasswordHelp": "Password for your Element X account. If you signed up with SSO (Gmail, etc.), use Access Token below.",
     "matrixTokenHelp": "If signed up via SSO without password: Element Web → Settings → Help & About → Copy Access Token",
+    "slackTokenHelp": "Create a Slack App at api.slack.com/apps. Enable Socket Mode for App Token (xapp-...), and copy Bot Token (xoxb-...) from OAuth & Permissions.",
     "voiceApp": "Voice App"
   },
   "profile": {
@@ -121,6 +122,7 @@
     "stopTrading": "Stop Trading",
     "currentPrice": "Current Price",
     "position": "Position",
+    "holding": "Holding",
     "positionIn": "IN (Holding)",
     "positionOut": "OUT (Waiting)",
     "unrealizedPnl": "Unrealized P&L",

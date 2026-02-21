@@ -1,4 +1,4 @@
-"""Google Calendar skill executor — list, search, create events via REST API."""
+"""Google Calendar skill executor — list, search, create, delete events via REST API."""
 
 import logging
 from datetime import datetime, timezone
@@ -40,8 +40,10 @@ class GoogleCalendarExecutor(SkillExecutor):
                 return await self._search_events(headers, params)
             elif action == "create":
                 return await self._create_event(headers, params)
+            elif action == "delete":
+                return await self._delete_events(headers, params)
             else:
-                return f"[SKILL_ERROR] Unknown action '{action}'. Use: list, search, create"
+                return f"[SKILL_ERROR] Unknown action '{action}'. Use: list, search, create, delete"
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:
                 return (
@@ -170,6 +172,83 @@ class GoogleCalendarExecutor(SkillExecutor):
         )
 
 
+    async def _delete_events(self, headers: dict, params: dict) -> str:
+        """Delete one or more events by event_id or by date range.
+
+        Supports:
+        - Single: {"event_id": "abc123"}
+        - Multiple: {"event_ids": ["abc123", "def456"]}
+        - By date range: {"timeMin": "...", "timeMax": "..."} — deletes ALL events in range
+        """
+        event_id = params.get("event_id", "")
+        event_ids = params.get("event_ids", [])
+
+        # Collect IDs to delete
+        ids_to_delete: list[tuple[str, str]] = []  # (id, summary)
+
+        if event_id:
+            ids_to_delete.append((event_id, event_id))
+        if event_ids:
+            for eid in event_ids:
+                ids_to_delete.append((eid, eid))
+
+        # If no explicit IDs, look for events in date range to delete
+        if not ids_to_delete:
+            time_min = params.get("timeMin") or params.get("time_min") or ""
+            time_max = params.get("timeMax") or params.get("time_max") or ""
+            if not time_min:
+                return "[SKILL_ERROR] 'event_id', 'event_ids', or 'timeMin'+'timeMax' date range is required for delete"
+
+            # Fetch events in the date range first
+            query_params: dict[str, Any] = {
+                "maxResults": 50,
+                "timeMin": time_min,
+                "orderBy": "startTime",
+                "singleEvents": "true",
+            }
+            if time_max:
+                query_params["timeMax"] = time_max
+
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.get(CALENDAR_BASE, headers=headers, params=query_params)
+                resp.raise_for_status()
+                data = resp.json()
+
+            events = data.get("items", [])
+            if not events:
+                return "No events found in the specified date range to delete."
+
+            for ev in events:
+                ids_to_delete.append((ev["id"], ev.get("summary", "(No title)")))
+
+        # Delete each event
+        deleted = []
+        errors = []
+        async with httpx.AsyncClient(timeout=30) as client:
+            for eid, label in ids_to_delete:
+                try:
+                    resp = await client.delete(
+                        f"{CALENDAR_BASE}/{eid}",
+                        headers=headers,
+                    )
+                    resp.raise_for_status()
+                    deleted.append(label)
+                except Exception as e:
+                    errors.append(f"{label}: {e}")
+
+        lines = []
+        if deleted:
+            lines.append(f"Deleted {len(deleted)} event(s):")
+            for d in deleted:
+                lines.append(f"  ✓ {d}")
+        if errors:
+            lines.append(f"\nFailed to delete {len(errors)} event(s):")
+            for err in errors:
+                lines.append(f"  ✗ {err}")
+
+        return "\n".join(lines) if lines else "No events were deleted."
+
+
 _TZ_LABEL_TO_IANA = {
     "NZST": "Pacific/Auckland", "AEST": "Australia/Sydney", "ACST": "Australia/Adelaide",
     "AWST": "Australia/Perth", "JST": "Asia/Tokyo", "KST": "Asia/Seoul",
@@ -219,6 +298,7 @@ def _resolve_user_timezone() -> str:
 
 def _format_event(event: dict) -> str:
     """Format a single calendar event for display."""
+    event_id = event.get("id", "")
     summary = event.get("summary", "(No title)")
     start_raw = event.get("start", {})
     end_raw = event.get("end", {})
@@ -226,7 +306,7 @@ def _format_event(event: dict) -> str:
     end = end_raw.get("dateTime", end_raw.get("date", ""))
     location = event.get("location", "")
 
-    line = f"- {summary} | {start} ~ {end}"
+    line = f"- [{event_id}] {summary} | {start} ~ {end}"
     if location:
         line += f" | Location: {location}"
     return line

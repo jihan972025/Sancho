@@ -97,10 +97,37 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners('matrix:chat-typing')
     },
   },
+  slack: {
+    connect: (botToken: string, appToken: string) => ipcRenderer.invoke('slack:connect', botToken, appToken),
+    disconnect: () => ipcRenderer.invoke('slack:disconnect'),
+    getStatus: () => ipcRenderer.invoke('slack:status'),
+    onQR: () => { /* Slack uses token auth, no QR */ },
+    onStatusUpdate: (cb: (status: string) => void) => {
+      ipcRenderer.on('slack:status-update', (_event, s) => cb(s))
+    },
+    onChatMessage: (cb: (msg: { role: string; content: string; source: string }) => void) => {
+      ipcRenderer.on('slack:chat-message', (_event, msg) => cb(msg))
+    },
+    onTyping: (cb: (typing: boolean) => void) => {
+      ipcRenderer.on('slack:chat-typing', (_event, typing) => cb(typing))
+    },
+    removeSettingsListeners: () => {
+      ipcRenderer.removeAllListeners('slack:status-update')
+    },
+    removeChatListeners: () => {
+      ipcRenderer.removeAllListeners('slack:chat-message')
+      ipcRenderer.removeAllListeners('slack:chat-typing')
+    },
+  },
   googleAuth: {
     login: () => ipcRenderer.invoke('google-auth:login'),
     getStatus: () => ipcRenderer.invoke('google-auth:status'),
     logout: () => ipcRenderer.invoke('google-auth:logout'),
+  },
+  outlookAuth: {
+    login: (clientId: string, clientSecret: string) => ipcRenderer.invoke('outlook-auth:login', clientId, clientSecret),
+    getStatus: () => ipcRenderer.invoke('outlook-auth:status'),
+    logout: () => ipcRenderer.invoke('outlook-auth:logout'),
   },
   tunnel: {
     start: () => ipcRenderer.invoke('tunnel:start'),

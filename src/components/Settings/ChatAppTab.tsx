@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { MessageCircle, Send, Globe, Wifi, WifiOff, Loader2, QrCode, Eye, EyeOff } from 'lucide-react'
+import { MessageCircle, Send, Globe, Hash, Wifi, WifiOff, Loader2, QrCode, Eye, EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '../../stores/settingsStore'
 
@@ -27,7 +27,7 @@ function StatusIcon({ status }: { status: AppStatus }) {
 
 export default function ChatAppTab() {
   const { t } = useTranslation()
-  const { config, updateWhatsAppConfig, updateTelegramConfig, updateMatrixConfig } = useSettingsStore()
+  const { config, updateWhatsAppConfig, updateTelegramConfig, updateMatrixConfig, updateSlackConfig, updateApiConfig } = useSettingsStore()
 
   // ── WhatsApp state ──
   const [waStatus, setWaStatus] = useState<AppStatus>('disconnected')
@@ -120,6 +120,33 @@ export default function ChatAppTab() {
     if (!mxApi) return
     await mxApi.disconnect()
   }, [mxApi])
+
+  // ── Slack state ──
+  const [slStatus, setSlStatus] = useState<AppStatus>('disconnected')
+  const [showBotToken, setShowBotToken] = useState(false)
+  const [showAppToken, setShowAppToken] = useState(false)
+  const slApi = window.electronAPI?.slack
+
+  useEffect(() => {
+    if (!slApi) return
+    slApi.getStatus().then((s) => setSlStatus(s as AppStatus))
+    slApi.onStatusUpdate((s) => setSlStatus(s as AppStatus))
+    return () => { slApi.removeSettingsListeners() }
+  }, [slApi])
+
+  const handleSlConnect = useCallback(async () => {
+    if (!slApi) return
+    if (!config.api.slack_bot_token || !config.api.slack_app_token) {
+      alert('Slack Bot Token (xoxb-...) and App Token (xapp-...) are required')
+      return
+    }
+    await slApi.connect(config.api.slack_bot_token, config.api.slack_app_token)
+  }, [slApi, config.api.slack_bot_token, config.api.slack_app_token])
+
+  const handleSlDisconnect = useCallback(async () => {
+    if (!slApi) return
+    await slApi.disconnect()
+  }, [slApi])
 
   return (
     <div className="space-y-6">
@@ -360,6 +387,83 @@ export default function ChatAppTab() {
               <label className="block text-sm font-medium text-slate-300 mb-1">Default Model (optional)</label>
               <input type="text" value={config.matrix.default_model}
                 onChange={(e) => updateMatrixConfig({ default_model: e.target.value })}
+                placeholder="Leave empty to use global default model"
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Slack Card ── */}
+      <div className="border border-slate-700 rounded-lg overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50">
+          <div className="flex items-center gap-2">
+            <Hash size={18} className="text-amber-400" />
+            <h3 className="font-medium text-slate-200">Slack</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="slack-enabled" checked={config.slack.enabled}
+              onChange={(e) => updateSlackConfig({ enabled: e.target.checked })}
+              className="rounded border-slate-600 bg-slate-800 text-angel-500 focus:ring-angel-500" />
+            <label htmlFor="slack-enabled" className="text-sm text-slate-300">Enabled</label>
+          </div>
+        </div>
+
+        {config.slack.enabled && (
+          <div className="px-4 py-4 space-y-4">
+            {/* Bot Token */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Bot Token</label>
+              <div className="flex gap-2">
+                <input type={showBotToken ? 'text' : 'password'}
+                  value={config.api.slack_bot_token}
+                  onChange={(e) => updateApiConfig({ slack_bot_token: e.target.value })}
+                  placeholder="xoxb-..."
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                <button onClick={() => setShowBotToken(!showBotToken)}
+                  className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white">
+                  {showBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {/* App Token */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">App-Level Token (Socket Mode)</label>
+              <div className="flex gap-2">
+                <input type={showAppToken ? 'text' : 'password'}
+                  value={config.api.slack_app_token}
+                  onChange={(e) => updateApiConfig({ slack_app_token: e.target.value })}
+                  placeholder="xapp-..."
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                <button onClick={() => setShowAppToken(!showAppToken)}
+                  className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white">
+                  {showAppToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                {t('settings.slackTokenHelp')}
+              </p>
+            </div>
+
+            {/* Connection status */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <StatusIcon status={slStatus} />
+                <span className={`text-sm font-medium ${statusColor[slStatus]}`}>{statusLabel[slStatus]}</span>
+              </div>
+              {slStatus === 'connected' ? (
+                <button onClick={handleSlDisconnect} className="px-3 py-1.5 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">Disconnect</button>
+              ) : slStatus === 'disconnected' ? (
+                <button onClick={handleSlConnect} className="px-3 py-1.5 text-sm bg-amber-600/20 text-amber-400 border border-amber-600/30 rounded-lg hover:bg-amber-600/30 transition-colors">Connect</button>
+              ) : null}
+            </div>
+
+            {/* Default model */}
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Default Model (optional)</label>
+              <input type="text" value={config.slack.default_model}
+                onChange={(e) => updateSlackConfig({ default_model: e.target.value })}
                 placeholder="Leave empty to use global default model"
                 className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
             </div>

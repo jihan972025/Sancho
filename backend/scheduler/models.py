@@ -5,6 +5,7 @@ class NotifyApps(BaseModel):
     whatsapp: bool = False
     telegram: bool = False
     matrix: bool = False
+    slack: bool = False
 
 
 class ScheduledTask(BaseModel):

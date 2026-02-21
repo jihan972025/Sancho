@@ -17,8 +17,10 @@ electron/           # Electron main process (TypeScript)
   whatsapp.ts       # WhatsApp integration
   telegram.ts       # Telegram integration
   matrix.ts         # Matrix integration
+  slack.ts          # Slack integration (Socket Mode)
   tunnel.ts         # Cloudflare tunnel
   googleAuth.ts     # Google OAuth
+  outlookAuth.ts    # Microsoft Outlook OAuth
 
 src/                # React frontend (TypeScript)
   components/
@@ -47,10 +49,12 @@ backend/            # Python FastAPI backend
     routes_whatsapp.py
     routes_telegram.py
     routes_matrix.py
+    routes_slack.py
     routes_google_auth.py
+    routes_outlook_auth.py
   llm/              # LLM provider integrations (10 providers)
   agents/           # AI agent orchestration
-  browser/          # Browser agent (playwright-cli)
+  browser/          # Browser agent (@playwright/cli)
   skills/           # Skill definitions (Markdown)
   middleware/       # Tunnel guard, rate limiter
   scheduler/        # APScheduler tasks
@@ -118,16 +122,20 @@ Key: `dist/` and `dist-electron/` are in `asarUnpack` so they exist as real file
 ## Backend Startup
 
 1. `electron/main.ts` → `findPythonBackend()` → `resources/backend/main.exe`
-2. Spawns as subprocess with `SANCHO_PLAYWRIGHT_CLI_JS` env var
+2. Spawns as subprocess with `SANCHO_PLAYWRIGHT_CLI_JS` env var (path to `@playwright/cli` entry point)
 3. Frontend polls `/api/health` until backend is ready
 4. Backend runs FastAPI on `127.0.0.1:8765`
 
-## Browser Agent
+## Browser Agent (@playwright/cli)
 
 - Uses `@playwright/cli` (Node.js CLI, not Python Playwright)
-- Text snapshots (accessibility tree with `[ref=eN]`) instead of screenshots
-- CLI wrapper: `backend/browser/playwright_cli.py`
+- Text snapshots (accessibility tree with `[ref=eN]`) instead of screenshots — no Vision API needed
+- CLI wrapper: `backend/browser/playwright_cli.py` (async subprocess)
 - Session name: `sancho` (`-s=sancho`)
+- Agent loop: `snapshot()` → LLM (text) → ref-based JSON action → execute → repeat (max 20 steps)
+- Duplicate action detection: identical action repeated 3x → auto-stop
+- Conversation history preserved across steps for multi-step context
+- Production bundling: `node_modules/@playwright/cli/` in `asarUnpack`
 
 ## Dev Commands
 

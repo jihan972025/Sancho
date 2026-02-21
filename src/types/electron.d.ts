@@ -22,6 +22,10 @@ interface ElectronMatrixAPI extends ElectronChatAppAPI {
   connect: (homeserverUrl: string, userId: string, password: string, accessToken: string) => Promise<void>
 }
 
+interface ElectronSlackAPI extends ElectronChatAppAPI {
+  connect: (botToken: string, appToken: string) => Promise<void>
+}
+
 interface ElectronTunnelAPI {
   start: () => Promise<string | { url: string; error: string }>
   stop: () => Promise<void>
@@ -34,6 +38,12 @@ interface ElectronGoogleAuthAPI {
   logout: () => Promise<void>
 }
 
+interface ElectronOutlookAuthAPI {
+  login: (clientId: string, clientSecret: string) => Promise<{ email: string; name: string } | null>
+  getStatus: () => Promise<{ logged_in: boolean; email?: string; name?: string }>
+  logout: () => Promise<void>
+}
+
 interface ElectronAPI {
   getAppPath: () => Promise<string>
   isDev: () => Promise<boolean>
@@ -41,7 +51,9 @@ interface ElectronAPI {
   whatsapp: ElectronWhatsAppAPI
   telegram: ElectronTelegramAPI
   matrix: ElectronMatrixAPI
+  slack: ElectronSlackAPI
   googleAuth: ElectronGoogleAuthAPI
+  outlookAuth: ElectronOutlookAuthAPI
   tunnel: ElectronTunnelAPI
 }
 

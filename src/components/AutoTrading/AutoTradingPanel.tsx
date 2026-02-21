@@ -55,6 +55,7 @@ interface TradeRecord {
   sell_reasoning?: string
   entry_time: string
   exit_time: string
+  status?: 'open' | 'closed'
 }
 
 interface TradingStatus {
@@ -1084,10 +1085,11 @@ export default function AutoTradingPanel() {
               <tbody>
                 {trades.map((trade) => {
                   const isExpanded = expandedTradeId === trade.id
+                  const isOpen = trade.status === 'open' || (!trade.exit_time && !trade.exit_price)
                   return (
                     <Fragment key={trade.id}>
                       <tr
-                        className="border-t border-slate-800/50 hover:bg-slate-800/30 transition-colors cursor-pointer"
+                        className={`border-t border-slate-800/50 hover:bg-slate-800/30 transition-colors cursor-pointer ${isOpen ? 'bg-emerald-900/10' : ''}`}
                         onClick={() => setExpandedTradeId(isExpanded ? null : trade.id)}
                       >
                         <td className="px-3 py-1.5 text-slate-400 whitespace-nowrap">
@@ -1096,53 +1098,70 @@ export default function AutoTradingPanel() {
                               size={10}
                               className={`text-slate-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                             />
-                            {formatTime(trade.exit_time)}
+                            {isOpen ? formatTime(trade.entry_time) : formatTime(trade.exit_time)}
                           </span>
                         </td>
-                        <td className="px-3 py-1.5 text-slate-200 font-medium">{trade.coin}</td>
+                        <td className="px-3 py-1.5 text-slate-200 font-medium">
+                          <span className="inline-flex items-center gap-1.5">
+                            {trade.coin}
+                            {isOpen && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/20 text-emerald-400 leading-none">
+                                {t('crypto.holding')}
+                              </span>
+                            )}
+                          </span>
+                        </td>
                         <td className="px-3 py-1.5 text-slate-400">{trade.timeframe}</td>
                         <td className="px-3 py-1.5 text-slate-400">{trade.candle_interval || '-'}</td>
                         <td className="px-3 py-1.5 text-right text-slate-300">
                           ₩{trade.entry_price.toLocaleString()}
                         </td>
                         <td className="px-3 py-1.5 text-right text-slate-300">
-                          ₩{trade.exit_price.toLocaleString()}
+                          {isOpen ? <span className="text-slate-500">-</span> : `₩${trade.exit_price.toLocaleString()}`}
                         </td>
                         <td className="px-3 py-1.5 text-right text-slate-300">
                           ₩{trade.amount_krw.toLocaleString()}
                         </td>
                         <td
                           className={`px-3 py-1.5 text-right font-medium ${
-                            trade.pnl_pct > 0
-                              ? 'text-emerald-400'
-                              : trade.pnl_pct < 0
-                                ? 'text-red-400'
-                                : 'text-slate-400'
+                            isOpen
+                              ? 'text-slate-500'
+                              : trade.pnl_pct > 0
+                                ? 'text-emerald-400'
+                                : trade.pnl_pct < 0
+                                  ? 'text-red-400'
+                                  : 'text-slate-400'
                           }`}
                         >
-                          <span className="inline-flex items-center gap-0.5">
-                            {trade.pnl_pct > 0 ? (
-                              <ArrowUpRight size={10} />
-                            ) : trade.pnl_pct < 0 ? (
-                              <ArrowDownRight size={10} />
-                            ) : (
-                              <Minus size={10} />
-                            )}
-                            {trade.pnl_pct > 0 ? '+' : ''}
-                            {trade.pnl_pct.toFixed(2)}%
-                          </span>
-                          <div className="text-slate-500 font-normal">
-                            ₩{trade.pnl_krw.toLocaleString()}
-                          </div>
+                          {isOpen ? (
+                            <span className="text-slate-500">-</span>
+                          ) : (
+                            <>
+                              <span className="inline-flex items-center gap-0.5">
+                                {trade.pnl_pct > 0 ? (
+                                  <ArrowUpRight size={10} />
+                                ) : trade.pnl_pct < 0 ? (
+                                  <ArrowDownRight size={10} />
+                                ) : (
+                                  <Minus size={10} />
+                                )}
+                                {trade.pnl_pct > 0 ? '+' : ''}
+                                {trade.pnl_pct.toFixed(2)}%
+                              </span>
+                              <div className="text-slate-500 font-normal">
+                                ₩{trade.pnl_krw.toLocaleString()}
+                              </div>
+                            </>
+                          )}
                         </td>
                         <td className="px-3 py-1.5 text-right text-slate-500">
-                          ₩{trade.fee_krw.toLocaleString()}
+                          {isOpen ? '-' : `₩${trade.fee_krw.toLocaleString()}`}
                         </td>
                         <td className="px-3 py-1.5 text-emerald-400/80 max-w-[200px] truncate" title={trade.buy_reasoning || trade.reasoning}>
                           {trade.buy_reasoning || '-'}
                         </td>
                         <td className="px-3 py-1.5 text-red-400/80 max-w-[200px] truncate" title={trade.sell_reasoning || trade.reasoning}>
-                          {trade.sell_reasoning || trade.reasoning}
+                          {isOpen ? '-' : (trade.sell_reasoning || trade.reasoning)}
                         </td>
                       </tr>
                       {/* Expanded analysis row */}
@@ -1153,22 +1172,24 @@ export default function AutoTradingPanel() {
                               <Brain size={12} className="text-violet-400" />
                               <span className="text-xs font-semibold text-violet-400">{t('crypto.analysisResult')}</span>
                             </div>
-                            {trade.buy_reasoning && (
+                            {(trade.buy_reasoning || isOpen) && (
                               <div className="mb-2">
                                 <span className="text-xs font-medium text-emerald-400">{t('crypto.thBuyStrategy')}</span>
                                 <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2.5 border border-slate-700/30 mt-1">
-                                  {trade.buy_reasoning}
+                                  {trade.buy_reasoning || trade.reasoning || '-'}
                                 </div>
                               </div>
                             )}
-                            <div className="mb-2">
-                              <span className="text-xs font-medium text-red-400">{t('crypto.thSellStrategy')}</span>
-                              <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2.5 border border-slate-700/30 mt-1">
-                                {trade.sell_reasoning || trade.reasoning || '-'}
+                            {!isOpen && (
+                              <div className="mb-2">
+                                <span className="text-xs font-medium text-red-400">{t('crypto.thSellStrategy')}</span>
+                                <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 rounded p-2.5 border border-slate-700/30 mt-1">
+                                  {trade.sell_reasoning || trade.reasoning || '-'}
+                                </div>
                               </div>
-                            </div>
+                            )}
                             <div className="flex gap-4 mt-2 text-xs text-slate-500">
-                              <span>{t('crypto.thTime')}: {trade.entry_time ? formatTime(trade.entry_time) : '-'} → {formatTime(trade.exit_time)}</span>
+                              <span>{t('crypto.thTime')}: {trade.entry_time ? formatTime(trade.entry_time) : '-'} {isOpen ? `(${t('crypto.holding')})` : `→ ${formatTime(trade.exit_time)}`}</span>
                             </div>
                           </td>
                         </tr>

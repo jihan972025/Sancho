@@ -1,6 +1,6 @@
 {
   "name": "sancho",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "description": "Windows AI Agent Desktop App",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@playwright/cli": "^0.1.0",
+    "@slack/bolt": "^4.2.0",
     "@whiskeysockets/baileys": "^6.7.21",
     "i18next": "^25.8.4",
     "lucide-react": "^0.441.0",

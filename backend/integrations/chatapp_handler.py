@@ -172,8 +172,28 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
             # Execute skill → Phase 2 (with chaining support)
             max_chain = 5
             chain_results: list[tuple[str, str]] = []  # (skill_name, result)
+            executed_calls: list[str] = []  # fingerprints of already-executed calls
 
             for step in range(max_chain):
+                # Deduplication: build a fingerprint for this skill call
+                call_fingerprint = json.dumps(
+                    {"skill": skill_call["skill"], "params": skill_call.get("params", {})},
+                    sort_keys=True, ensure_ascii=False,
+                )
+                if call_fingerprint in executed_calls:
+                    logger.warning(
+                        "Duplicate skill call detected: '%s' (step %d) — breaking chain",
+                        skill_call["skill"], step + 1,
+                    )
+                    # Generate a final answer from accumulated results
+                    if chain_results:
+                        last_skill, last_result = chain_results[-1]
+                        response = f"✅ {last_skill} completed successfully."
+                    else:
+                        response = "✅ Task completed."
+                    break
+
+                executed_calls.append(call_fingerprint)
                 result = await execute_skill_call(skill_call)
                 skill_name = skill_call["skill"]
                 logger.info("Skill '%s' executed for %s (step %d), result length=%d", skill_name, sender, step + 1, len(result))
@@ -194,16 +214,28 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
                 else:
                     search_hint = ""
 
+                # Build list of already-executed skills for dedup hint
+                executed_names = [sn for sn, _ in chain_results]
+                dedup_hint = ""
+                if len(executed_names) >= 1:
+                    dedup_hint = (
+                        f"\nIMPORTANT: The following skills have ALREADY been executed successfully: {', '.join(executed_names)}. "
+                        "Do NOT call the same skill with the same parameters again. "
+                        "If the task is already done, answer the user directly.\n"
+                    )
+
                 system_hint = (
                     search_hint +
+                    dedup_hint +
                     "You have access to all skills listed above. "
-                    "If you need to call another skill to complete the task (e.g. save results to a file), "
+                    "If you need to call a DIFFERENT skill to complete the task (e.g. save results to a file), "
                     "output ONLY a [SKILL_CALL] block. Otherwise, answer the user directly."
                 )
                 user_hint = (
                     "Based on the skill results above, either:\n"
-                    "1. Call another skill if more steps are needed (output ONLY a [SKILL_CALL] block), or\n"
-                    "2. Answer the user's question directly."
+                    "1. Call a DIFFERENT skill if more steps are needed (output ONLY a [SKILL_CALL] block), or\n"
+                    "2. Answer the user's question directly.\n"
+                    "Do NOT repeat a skill call that was already executed above."
                 )
 
                 phase2_messages = [
@@ -224,6 +256,21 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
                 # Check if Phase 2 wants to chain another skill call
                 next_call = parse_skill_call(phase2_response)
                 if next_call:
+                    # Check for duplicate BEFORE continuing
+                    next_fingerprint = json.dumps(
+                        {"skill": next_call["skill"], "params": next_call.get("params", {})},
+                        sort_keys=True, ensure_ascii=False,
+                    )
+                    if next_fingerprint in executed_calls:
+                        logger.warning(
+                            "LLM requested duplicate skill call '%s' — using text response instead",
+                            next_call["skill"],
+                        )
+                        # Strip the skill call block and use remaining text as response
+                        from ..skills.executor import _SKILL_CALL_PATTERN
+                        cleaned = _SKILL_CALL_PATTERN.sub("", phase2_response).strip()
+                        response = cleaned if cleaned else f"✅ {skill_name} completed successfully."
+                        break
                     skill_call = next_call
                     continue
                 else:

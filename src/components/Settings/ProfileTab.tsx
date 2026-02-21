@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { User, Bot, LogOut, Save, CheckCircle, Loader2 } from 'lucide-react'
+import { User, Bot, LogOut, Save, CheckCircle, Loader2, Mail } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getUserProfile, saveUserProfile, getSanchoProfile, saveSanchoProfile } from '../../api/client'
 import { LANGUAGES, GENDERS, COUNTRIES, TIMEZONES } from '../../constants/profileOptions'
+import { useSettingsStore } from '../../stores/settingsStore'
 
 interface GoogleAuthStatus {
   logged_in: boolean
@@ -11,11 +12,21 @@ interface GoogleAuthStatus {
   picture_url?: string
 }
 
+interface OutlookAuthStatus {
+  logged_in: boolean
+  email?: string
+  name?: string
+}
+
 export default function ProfileTab() {
   const { t } = useTranslation()
+  const { config } = useSettingsStore()
   // Google auth state
   const [googleAuth, setGoogleAuth] = useState<GoogleAuthStatus>({ logged_in: false })
   const [googleLoading, setGoogleLoading] = useState(false)
+  // Outlook auth state
+  const [outlookAuth, setOutlookAuth] = useState<OutlookAuthStatus>({ logged_in: false })
+  const [outlookLoading, setOutlookLoading] = useState(false)
 
   // Profile fields
   const [name, setName] = useState('')
@@ -48,6 +59,10 @@ export default function ProfileTab() {
         // Load Google auth status
         const authStatus = await window.electronAPI?.googleAuth?.getStatus()
         if (authStatus) setGoogleAuth(authStatus)
+
+        // Load Outlook auth status
+        const outlookStatus = await window.electronAPI?.outlookAuth?.getStatus()
+        if (outlookStatus) setOutlookAuth(outlookStatus)
 
         // Load user profile
         const userProfile = await getUserProfile()
@@ -106,6 +121,35 @@ export default function ProfileTab() {
       setGoogleAuth({ logged_in: false })
     } catch (err) {
       console.error('Google logout failed:', err)
+    }
+  }
+
+  const handleOutlookLogin = async () => {
+    setOutlookLoading(true)
+    try {
+      const clientId = config.api.outlook_client_id
+      const clientSecret = config.api.outlook_client_secret
+      const result = await window.electronAPI?.outlookAuth?.login(clientId, clientSecret)
+      if (result) {
+        setOutlookAuth({
+          logged_in: true,
+          email: result.email,
+          name: result.name,
+        })
+      }
+    } catch (err) {
+      console.error('Outlook login failed:', err)
+    } finally {
+      setOutlookLoading(false)
+    }
+  }
+
+  const handleOutlookLogout = async () => {
+    try {
+      await window.electronAPI?.outlookAuth?.logout()
+      setOutlookAuth({ logged_in: false })
+    } catch (err) {
+      console.error('Outlook logout failed:', err)
     }
   }
 
@@ -197,6 +241,53 @@ export default function ProfileTab() {
           </div>
         )}
       </div>
+
+      {/* Microsoft Outlook Section */}
+      {config.api.outlook_client_id && config.api.outlook_client_secret && (
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-5">
+          <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
+            Microsoft Outlook
+          </h3>
+          {outlookAuth.logged_in ? (
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center">
+                <Mail size={20} className="text-blue-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-200 truncate">{outlookAuth.name}</p>
+                <p className="text-xs text-slate-400 truncate">{outlookAuth.email}</p>
+              </div>
+              <button
+                onClick={handleOutlookLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors shrink-0"
+              >
+                <LogOut size={14} />
+                {t('profile.logout')}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <button
+                onClick={handleOutlookLogin}
+                disabled={outlookLoading}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#0078d4] text-white rounded-lg hover:bg-[#106ebe] transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {outlookLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 23 23">
+                    <path fill="#f35325" d="M1 1h10v10H1z"/>
+                    <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                    <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                    <path fill="#ffba08" d="M12 12h10v10H12z"/>
+                  </svg>
+                )}
+                Sign in with Microsoft
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* User Profile Section */}
       <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-5">
