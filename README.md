@@ -5,144 +5,193 @@
 <h1 align="center">Sancho</h1>
 
 <p align="center">
-  <b>AI Agent Desktop App for Windows</b><br>
-  Multi-LLM Chat &bull; File Management &bull; Browser Automation &bull; Messenger Integration &bull; Voice Chat
+  <b>Your Personal AI Agent for Windows</b><br>
+  Chat with 14 LLMs &bull; Automate Browser Tasks &bull; Manage Files &bull; Trade Crypto<br>
+  Connect WhatsApp, Telegram, Slack &bull; Send Emails &bull; Voice Chat from Your Phone
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-blue?logo=windows" alt="Windows Only">
+  <a href="https://github.com/jihan972025/Sancho/releases/latest"><img src="https://img.shields.io/github/v/release/jihan972025/Sancho?style=for-the-badge&color=blue&logo=github" alt="Latest Release"></a>
+  <a href="https://github.com/jihan972025/Sancho/releases/latest"><img src="https://img.shields.io/github/downloads/jihan972025/Sancho/total?style=for-the-badge&color=green&logo=windows" alt="Downloads"></a>
+  <a href="https://github.com/jihan972025/Sancho/blob/main/LICENSE"><img src="https://img.shields.io/github/license/jihan972025/Sancho?style=for-the-badge&color=orange" alt="License"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?style=for-the-badge&logo=windows" alt="Platform">
 </p>
 
-> **Windows Only** — Sancho is designed and built exclusively for **Windows 10/11**. It is not supported on macOS or Linux.
+<p align="center">
+  <a href="#-quick-start">Quick Start</a> &bull;
+  <a href="#-features">Features</a> &bull;
+  <a href="#-skills">Skills</a> &bull;
+  <a href="#-setup-guides">Setup Guides</a> &bull;
+  <a href="#-architecture">Architecture</a>
+</p>
 
 ---
 
-## Overview
+## What is Sancho?
 
-Sancho is a local AI agent desktop app for Windows 10/11. It connects to multiple LLM providers and offers chat, file management, browser automation, and messenger integration — all in one place.
+Sancho is a **local AI agent desktop app** that runs entirely on your Windows PC. It connects to 14+ LLM providers and gives you a unified interface to chat, automate tasks, manage files, trade crypto, and control your browser — all through natural language.
 
-## Use Cases
+**Talk to it from anywhere** — connect your WhatsApp, Telegram, Slack, or phone (voice) and interact with your AI agent on the go.
 
-- **Voice chat from your phone** — Scan a QR code to open a voice chat page on your phone. Talk to Sancho with speech-to-text and hear responses — works on Wi-Fi or over the internet via Cloudflare Tunnel.
-- **Chat with LLMs from your phone** — Connect WhatsApp, Telegram, or Element X and interact with AI models directly from your mobile chat app, anytime and anywhere.
-- **Get weekly weather forecasts** — Ask Sancho to search for the latest weather information and receive a summary via chat or messenger.
-- **Stock & crypto technical analysis** — Get real-time technical analysis for stocks, Bitcoin, Ethereum, and other assets with up-to-date market data.
-- **Crypto auto-trading** — Automated crypto trading on Upbit with LLM-based or rule-based strategies, stop-loss, take-profit, and daily loss limits.
-- **Trade crypto with natural language** — Tell Sancho to buy, sell, or check your Upbit balance and prices in plain language.
-- **Organize files automatically** — Let the AI sort your downloads folder by file type with a single command.
-- **Automate browser tasks** — Have Sancho navigate websites, fill out forms, and extract information hands-free.
-- **Schedule recurring tasks** — Set up automated jobs that run on a schedule and send results to your messenger.
+> **Windows Only** — Sancho is designed and built exclusively for Windows 10/11.
 
-## Architecture
+---
 
-```
-Electron + React (Vite + Tailwind)  ← Desktop UI
-        │ REST API + SSE
-Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
-  ├── 10+ LLM Providers
-  ├── Skill System (Search, File, Custom API)
-  ├── File Agent
-  ├── Browser Agent (Playwright)
-  ├── Auto-Trading Engine (Upbit)
-  ├── Voice App (Cloudflare Tunnel)
-  └── Security Middleware (Rate Limit, Tunnel Guard)
-```
+## Quick Start
+
+### 1. Download & Install
+Download the latest installer — all dependencies are bundled. No separate setup required.
+
+<p align="center">
+  <a href="https://github.com/jihan972025/Sancho/releases/latest">
+    <img src="https://img.shields.io/badge/Download-Sancho%20Setup-blue?style=for-the-badge&logo=windows&logoColor=white" alt="Download">
+  </a>
+</p>
+
+### 2. Add an API Key
+Go to **Settings > API** and enter at least one LLM API key (e.g., OpenAI, Anthropic, Google Gemini).
+
+### 3. Start Chatting
+Type a message or connect a messenger to interact with Sancho from your phone.
+
+---
 
 ## Features
 
 ### Multi-LLM Chat
-- **14 LLM providers**: OpenAI, Anthropic, Google Gemini, DeepSeek, Grok, Mistral, Perplexity, Qwen, ZhipuAI, Llama (Together AI), GitHub Models, KIMI (Moonshot), NVIDIA NIM, Local LLM (Ollama/LM Studio)
+Switch between **14 LLM providers** freely in a single conversation:
+
+| Provider | Provider | Provider |
+|----------|----------|----------|
+| OpenAI | Anthropic | Google Gemini |
+| DeepSeek | Grok (xAI) | Mistral |
+| Perplexity | Qwen (Alibaba) | ZhipuAI |
+| Llama (Together AI) | GitHub Models | KIMI (Moonshot) |
+| NVIDIA NIM | Local LLM (Ollama / LM Studio) | |
+
 - Real-time SSE streaming responses
-- Switch between models freely
+- Conversation memory that persists across sessions
+- User profile & AI persona customization
 
-### Chat Memory
-- Automatically extracts and remembers facts from conversations (name, preferences, instructions)
-- Memories persist across sessions in `~/.sancho/memories.json`
-- Memory panel (Brain icon) to view, toggle, and delete individual memories
-- Injected into system prompt so the AI always knows your context
+### Messenger Integration
+Connect your favorite chat apps and talk to Sancho from your phone:
 
-### User Profile
-- Set name, occupation, timezone, and preferences during onboarding
-- Timezone-aware responses (17 timezone options from NZST to PST)
-- Saved to `~/.sancho/USER.md`, always injected into LLM context
+| Messenger | Connection |
+|-----------|------------|
+| **WhatsApp** | QR code scan |
+| **Telegram** | API key + QR code |
+| **Slack** | Bot Token + App Token (Socket Mode) |
+| **Matrix / Element X** | Password or Access Token |
 
-### Sancho Persona
-- Set a custom nickname and role for the AI during onboarding
-- Saved to `~/.sancho/SANCHO.md`, always injected into LLM context
+### Email & Calendar
+| Service | Capabilities |
+|---------|-------------|
+| **Gmail** | Search, read, send emails |
+| **Outlook** | Search, read, send emails (Microsoft Graph API) |
+| **Google Calendar** | Create, search, list, delete events |
+| **Google Sheets** | Read and write spreadsheet data |
 
-### Skill System
+### Browser Automation
+- **@playwright/cli** based — text snapshots with ref-based actions (no screenshots needed)
+- Snapshot → LLM → Action loop (up to 20 steps)
+- 48 actions: click, fill, type, drag, select, hover, scroll, tabs, cookies, and more
 
-30 built-in skills — 21 free (no API key), 9 with API key integration.
+### File Manager
+- Browse, create, move, and delete files with natural language
+- AI-powered automatic file organization
+- Protected directory safeguards
 
-#### Built-in Skills (Free)
+### Voice Chat
+- Scan a QR code to open voice chat on your phone
+- Speech-to-text input + text-to-speech responses
+- **Wi-Fi mode** (local network) or **Internet mode** (Cloudflare Tunnel)
+
+### Crypto Trading
+- **Real-time prices** from Binance (BTC, ETH, XRP, SOL, and more)
+- **Technical analysis** — RSI, MACD, Bollinger Bands, Moving Averages (1h to Monthly)
+- **Auto-trading on Upbit** — LLM-based or rule-based strategies with stop-loss and daily loss limits
+- **Natural language trading** — "Buy 100,000 KRW of Bitcoin" or "Check my balance"
+
+### Task Scheduler
+- Schedule recurring tasks with cron-like intervals
+- Results delivered via connected messengers
+
+---
+
+## Skills
+
+**30 built-in skills** — 21 free, 9 with API key integration, plus custom API support.
+
+<details>
+<summary><b>Free Skills (No API Key Required)</b></summary>
 
 | # | Skill | Description |
 |---|-------|-------------|
-| 1 | **duckduckgo** | Web search and news via DuckDuckGo |
-| 2 | **wttr** | Real-time weather forecasts (wttr.in) |
+| 1 | **duckduckgo** | Web search and news |
+| 2 | **wttr** | Real-time weather forecasts |
 | 3 | **yfinance** | Stock prices and market data (Yahoo Finance) |
-| 4 | **tradingview** | Technical analysis — RSI, MACD, Bollinger Bands, Moving Averages |
-| 5 | **frankfurter** | Foreign exchange rates for 30+ currencies (ECB) |
-| 6 | **ccxt** | Real-time cryptocurrency prices from Binance |
+| 4 | **tradingview** | Technical analysis — RSI, MACD, Bollinger Bands, MAs |
+| 5 | **frankfurter** | Foreign exchange rates (30+ currencies) |
+| 6 | **ccxt** | Real-time crypto prices from Binance |
 | 7 | **wikipedia** | Wikipedia article search and summaries |
 | 8 | **gnews** | Google News search (141 countries, 41 languages) |
 | 9 | **geopy** | Geocoding — address to coordinates and reverse |
-| 10 | **usgs** | Real-time earthquake data (U.S. Geological Survey) |
+| 10 | **usgs** | Real-time earthquake data (USGS) |
 | 11 | **nagerdate** | Public holidays for 100+ countries |
-| 12 | **ipapi** | IP address geolocation (country, city, ISP, timezone) |
-| 13 | **timezone** | Timezone and local time lookup for any location |
-| 14 | **trivia** | Trivia quiz questions across 24 categories |
-| 15 | **pyshorteners** | URL shortening via TinyURL |
-| 16 | **restcountries** | Country details — capital, population, languages, borders |
-| 17 | **zenquotes** | Random inspirational quotes with author |
-| 18 | **filesystem** | File read, write, organize, move, and delete |
-| 19 | **info** | Combined country, holiday, timezone, geocode, and IP lookup |
-| 20 | **fun** | Combined trivia, quotes, and URL shortener |
-| 21 | **krnews** | Korean news headlines via RSS (Yonhap, SBS, Donga, Hankyoreh, etc.) |
+| 12 | **ipapi** | IP address geolocation |
+| 13 | **timezone** | Timezone and local time lookup |
+| 14 | **trivia** | Trivia quiz (24 categories) |
+| 15 | **pyshorteners** | URL shortening (TinyURL) |
+| 16 | **restcountries** | Country details — capital, population, languages |
+| 17 | **zenquotes** | Random inspirational quotes |
+| 18 | **filesystem** | File read, write, organize, move, delete |
+| 19 | **info** | Combined country, holiday, timezone, geocode, IP |
+| 20 | **fun** | Combined trivia, quotes, URL shortener |
+| 21 | **krnews** | Korean news headlines (Yonhap, SBS, Donga, etc.) |
 
-#### API Key Required
+</details>
+
+<details>
+<summary><b>API Key Required</b></summary>
 
 | # | Skill | Description |
 |---|-------|-------------|
-| 1 | **tavily** | AI-optimized web search (Tavily API key) |
+| 1 | **tavily** | AI-optimized web search |
 | 2 | **outlook** | Microsoft Outlook email (Azure AD OAuth) |
 | 3 | **gmail** | Gmail email (Google OAuth 2.0) |
-| 4 | **google_calendar** | Google Calendar event management (Google OAuth 2.0) |
-| 5 | **google_sheets** | Google Sheets read/write (Google OAuth 2.0) |
+| 4 | **google_calendar** | Google Calendar management |
+| 5 | **google_sheets** | Google Sheets read/write |
 | 6 | **jira** | Atlassian Jira project management |
 | 7 | **confluence** | Atlassian Confluence documentation |
 | 8 | **slack** | Slack workspace messaging |
-| 9 | **upbit** | Crypto auto-trading on Upbit exchange (Upbit API key) |
+| 9 | **upbit** | Crypto auto-trading on Upbit |
 
-#### Custom API
-- Register any REST API as an LLM skill from Settings > API
+</details>
+
+<details>
+<summary><b>Custom API</b></summary>
+
+- Register any REST API as an LLM skill from **Settings > API**
 - **Skill Chaining**: Automatically execute multiple skills in sequence (e.g., search → save to file)
 
-### File Manager
-- Browse, create, move, and delete files
-- AI-powered automatic file organization
-- Protected directory safeguards and two-step delete confirmation
+</details>
 
-### Browser Automation
-- playwright-cli based browser automation (text snapshot + ref-based actions)
-- Snapshot → LLM Text → ref-based Action loop (up to 20 steps)
-- 48 actions: click, fill, type, drag, select, check, hover, scroll, tabs, cookies, storage, and more
+---
 
-### Voice App
-- Scan a QR code to open a voice chat page on your phone
-- Speech-to-text input and text-to-speech responses
-- **Wi-Fi mode**: Works on the same local network
-- **Internet mode**: Accessible from anywhere via Cloudflare Tunnel (auto-downloads `cloudflared`)
-- Secured with tunnel guard middleware, rate limiting, endpoint whitelist, and request size limits
+## Use Cases
 
-### Messenger Integration
-- **WhatsApp**: Connect via QR code, auto-reply
-- **Telegram**: Connect with API key + QR code, auto-reply
-- **Matrix / Element X**: Connect with password or Access Token
+| What you say | What Sancho does |
+|:-------------|:-----------------|
+| "Check my unread Gmail" | Searches and summarizes unread emails |
+| "Send an email to boss@company.com about the meeting" | Composes and sends via Gmail or Outlook |
+| "What's the weather this week?" | Fetches 7-day forecast via wttr.in |
+| "Buy 50,000 KRW of Ethereum" | Executes trade on Upbit |
+| "Organize my Downloads folder" | Sorts files by type into subfolders |
+| "Search for flights to Tokyo on Google" | Opens browser, navigates, and extracts results |
+| "Add a meeting tomorrow at 3pm" | Creates Google Calendar event |
+| "Analyze Bitcoin on the daily chart" | Returns RSI, MACD, Bollinger, MA signals |
 
-### Scheduler
-- Schedule tasks for automatic execution
-- Notifications via connected messengers
+---
 
 ## Setup Guides
 
@@ -151,55 +200,32 @@ Python FastAPI Backend (port 8765)  ← Subprocess managed by Electron
 | [WhatsApp Setup](docs/whatsapp-setup.md) | Connect WhatsApp via QR code |
 | [Telegram Setup](docs/telegram-setup.md) | Get API keys and connect Telegram |
 | [Element X Setup](docs/elementx-setup.md) | Connect Matrix / Element X |
-| [GitHub LLM Models](docs/github-llm-setup.md) | Use free LLM models via GitHub |
 | [Gmail Setup](docs/gmail-setup.md) | Connect Gmail via Google OAuth 2.0 |
 | [Outlook Setup](docs/outlook-setup.md) | Connect Outlook via Azure AD OAuth 2.0 |
 | [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |
 | [Google Sheets Setup](docs/google-sheets-setup.md) | Connect Google Sheets via OAuth 2.0 |
+| [GitHub LLM Models](docs/github-llm-setup.md) | Use free LLM models via GitHub |
 
-## Coin Price, Technical Analysis & Auto-Trading
+---
 
-Sancho provides real-time cryptocurrency prices, technical analysis, and automated trading:
+## Architecture
 
-### Real-time Crypto Prices (ccxt + Binance)
-- Live prices for BTC, ETH, XRP, SOL, DOGE, ADA, DOT, AVAX, LINK, MATIC and more
-- 24h price change (%), 24h trading volume
-- Korean and English name input (e.g., "비트코인", "ethereum", "솔라나")
-
-### Technical Analysis (TradingView)
-- **Oscillators**: RSI(14), MACD, Stochastic %K/%D, ADX, CCI(20), ATR(14)
-- **Bollinger Bands**: Upper / Lower bands
-- **Moving Averages**: EMA(10, 20, 50, 200), SMA(10, 20, 50, 200)
-- **Timeframes**: 1h, 4h, Daily, Weekly, Monthly
-- **Overall signal**: Buy / Sell / Neutral recommendation
-- Works with crypto (Binance), Korean stocks (KRX), and US stocks (NASDAQ/NYSE)
-
-### Auto-Trading (Upbit)
-- Automated crypto trading on Upbit exchange (KRW markets)
-- **Supported coins**: BTC, ETH, XRP, SOL, TRX, ADA, XMR
-- **LLM Mode**: AI analyzes indicators and decides BUY/SELL/HOLD (confidence ≥ 70%), take-profit decided by AI with volume confirmation and EMA crossover filters
-- **Rule-based Mode**: Buy when 3+ of 6 indicator signals align, Sell when 2+ of 4 signals align
-- **Risk management**: Stop-loss -2%, daily loss limit -5% (both modes)
-- **Indicators**: RSI, MACD, Bollinger Bands, SMA(20/50), EMA(12/26), ATR, Volume
-- **Assets Dashboard**: View KRW balance, coin holdings, average buy price, current valuation, and return rate
-- Configurable coin, analysis interval (5m–4h), candle interval (1m–4h), trade amount
-- Real-time SSE event stream with live status, signals, and trade history
-
-## Installation
-
-### Installer
-Download [Sancho Setup 1.0.26.exe](https://github.com/jihan972025/Sancho/releases/download/v1.0.26/Sancho.Setup.1.0.26.exe) — all dependencies are bundled (no separate installation required).
-
-
-## Security
-
-- **Tunnel Guard Middleware**: Endpoint whitelist, request size limit (1 MB), path traversal prevention for Cloudflare Tunnel traffic
-- **Rate Limiting**: Sliding-window rate limiter (30 req/60s per IP) for tunnel requests
-- **CORS Lockdown**: Explicit origin whitelist instead of wildcard
-- **Web Security**: Always enabled in Electron (no dev-mode bypass in production)
-- **Config File Permissions**: Owner-only file permissions for `config.json` (API keys)
-- **File Operations**: Symlink resolution to prevent traversal attacks, `.sancho` config directory protection
-- **Input Validation**: Message count, length, role, and model name validation for tunnel requests
+```
+Electron + React (Vite + Tailwind CSS)     <- Desktop UI
+        | REST API + SSE
+Python FastAPI Backend (port 8765)         <- Subprocess managed by Electron
+  |-- 14 LLM Providers
+  |-- Skill System (30 built-in + custom API)
+  |-- File Agent
+  |-- Browser Agent (@playwright/cli)
+  |-- Email (Gmail + Outlook via Graph API)
+  |-- Calendar & Sheets (Google APIs)
+  |-- Messenger Bots (WhatsApp, Telegram, Slack, Matrix)
+  |-- Auto-Trading Engine (Upbit)
+  |-- Voice App (Cloudflare Tunnel)
+  |-- Task Scheduler (APScheduler)
+  +-- Security Middleware (Rate Limit, Tunnel Guard, CORS)
+```
 
 ## Tech Stack
 
@@ -209,10 +235,23 @@ Download [Sancho Setup 1.0.26.exe](https://github.com/jihan972025/Sancho/release
 | Frontend | React, TypeScript, Vite, Tailwind CSS |
 | State | Zustand |
 | Backend | Python, FastAPI |
-| Browser | Playwright |
-| Messenger | Baileys (WhatsApp), GramJS (Telegram), matrix-js-sdk (Matrix) |
-| Voice | Cloudflare Tunnel (cloudflared), Web Speech API |
+| Browser | @playwright/cli |
+| Messenger | Baileys (WhatsApp), GramJS (Telegram), Slack Bolt, matrix-js-sdk |
+| Email | Microsoft Graph API (Outlook), Gmail API |
+| Voice | Cloudflare Tunnel, Web Speech API |
 | Build | PyInstaller, electron-builder (NSIS) |
+
+## Security
+
+- **Tunnel Guard**: Endpoint whitelist, request size limit (1 MB), path traversal prevention
+- **Rate Limiting**: Sliding-window (30 req/60s per IP) for tunnel requests
+- **CORS Lockdown**: Explicit origin whitelist
+- **Web Security**: Always enabled in Electron (no dev-mode bypass in production)
+- **Encryption**: API keys and OAuth tokens encrypted at rest in `config.json`
+- **File Safety**: Symlink resolution, `.sancho` directory protection
+- **Input Validation**: Message count, length, role, and model validation
+
+---
 
 ## License
 
