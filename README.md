@@ -37,6 +37,60 @@ Sancho is a **local AI agent desktop app** that runs entirely on your Windows PC
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="img/screenshots/chat.png" width="800" alt="Chat - WhatsApp & Telegram Integration">
+</p>
+<p align="center"><i>Chat with AI via WhatsApp, Telegram, Slack, or directly in the app</i></p>
+
+<details>
+<summary><b>More Screenshots</b></summary>
+
+<p align="center">
+  <img src="img/screenshots/settings-llm.png" width="800" alt="LLM Models - 17 Providers">
+</p>
+<p align="center"><i>17 LLM Providers — switch between models freely</i></p>
+
+<p align="center">
+  <img src="img/screenshots/settings-api.png" width="800" alt="Skills & API Settings">
+</p>
+<p align="center"><i>30 Built-in Skills + Custom API Registration</i></p>
+
+<p align="center">
+  <img src="img/screenshots/crypto-autotrading.png" width="800" alt="Auto Trading">
+</p>
+<p align="center"><i>Crypto Auto-Trading with LLM or Rule-based Strategies</i></p>
+
+<p align="center">
+  <img src="img/screenshots/crypto-analysis.png" width="800" alt="Crypto Technical Analysis">
+</p>
+<p align="center"><i>Technical Analysis — RSI, MACD, Bollinger Bands, Moving Averages</i></p>
+
+<p align="center">
+  <img src="img/screenshots/scheduler.png" width="800" alt="Task Scheduler">
+</p>
+<p align="center"><i>Task Scheduler — Automate recurring tasks with messenger notifications</i></p>
+
+<p align="center">
+  <img src="img/screenshots/settings-chatapp.png" width="800" alt="Messenger Settings">
+</p>
+<p align="center"><i>Messenger Integration — WhatsApp, Telegram, Slack, Matrix</i></p>
+
+<p align="center">
+  <img src="img/screenshots/settings-voice.png" width="800" alt="Voice App QR Code">
+</p>
+<p align="center"><i>Voice Chat — Scan QR to talk from your phone (Wi-Fi or Internet)</i></p>
+
+<p align="center">
+  <img src="img/screenshots/settings-language.png" width="800" alt="16 Languages">
+</p>
+<p align="center"><i>16 Languages — English, Korean, Japanese, Chinese, Spanish, and more</i></p>
+
+</details>
+
+---
+
 ## Quick Start
 
 ### 1. Download & Install

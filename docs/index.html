@@ -362,6 +362,53 @@
     </div>
   </section>
 
+  <!-- Screenshots -->
+  <section class="section" id="screenshots" style="padding-top: 20px; padding-bottom: 40px;">
+    <div class="container">
+      <div class="section-title">
+        <h2>See Sancho in Action</h2>
+      </div>
+      <div style="position: relative; overflow: hidden; border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.4);">
+        <div id="carousel" style="display: flex; transition: transform 0.5s ease; width: 500%;">
+          <img src="https://raw.githubusercontent.com/jihan972025/Sancho/main/img/screenshots/chat.png" alt="Chat" style="width: 20%; flex-shrink: 0;">
+          <img src="https://raw.githubusercontent.com/jihan972025/Sancho/main/img/screenshots/settings-llm.png" alt="LLM Models" style="width: 20%; flex-shrink: 0;">
+          <img src="https://raw.githubusercontent.com/jihan972025/Sancho/main/img/screenshots/settings-api.png" alt="Skills" style="width: 20%; flex-shrink: 0;">
+          <img src="https://raw.githubusercontent.com/jihan972025/Sancho/main/img/screenshots/crypto-autotrading.png" alt="Auto Trading" style="width: 20%; flex-shrink: 0;">
+          <img src="https://raw.githubusercontent.com/jihan972025/Sancho/main/img/screenshots/scheduler.png" alt="Scheduler" style="width: 20%; flex-shrink: 0;">
+        </div>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;">
+        <button onclick="goSlide(0)" class="dot active" style="width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--primary); cursor: pointer; transition: all 0.3s;"></button>
+        <button onclick="goSlide(1)" class="dot" style="width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--text-dim); cursor: pointer; transition: all 0.3s;"></button>
+        <button onclick="goSlide(2)" class="dot" style="width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--text-dim); cursor: pointer; transition: all 0.3s;"></button>
+        <button onclick="goSlide(3)" class="dot" style="width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--text-dim); cursor: pointer; transition: all 0.3s;"></button>
+        <button onclick="goSlide(4)" class="dot" style="width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--text-dim); cursor: pointer; transition: all 0.3s;"></button>
+      </div>
+      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;">
+        <span id="caption" style="color: var(--text-muted); font-size: 0.9rem;">Chat with AI via WhatsApp, Telegram, Slack, or directly in the app</span>
+      </div>
+      <script>
+        const captions = [
+          "Chat with AI via WhatsApp, Telegram, Slack, or directly in the app",
+          "17 LLM Providers — switch between models freely",
+          "30 Built-in Skills + Custom API Registration",
+          "Crypto Auto-Trading with LLM or Rule-based Strategies",
+          "Task Scheduler with messenger notifications"
+        ];
+        let current = 0;
+        function goSlide(i) {
+          current = i;
+          document.getElementById('carousel').style.transform = 'translateX(-' + (i * 20) + '%)';
+          document.getElementById('caption').textContent = captions[i];
+          document.querySelectorAll('.dot').forEach((d, idx) => {
+            d.style.background = idx === i ? '#6366f1' : '#64748b';
+          });
+        }
+        setInterval(() => { goSlide((current + 1) % 5); }, 5000);
+      </script>
+    </div>
+  </section>
+
   <!-- Features -->
   <section class="section" id="features">
     <div class="container">
