@@ -105,10 +105,19 @@ if (Test-Path $hashFile) {
 
 # Build current hashes and find changed files per channel
 $currentHashes = @{}
+# min_version = previous version from patch-version.json (users on this version or newer can use diff patch)
+$minVersion = "1.0.11"
+if (Test-Path "patch-version.json") {
+    try {
+        $prevVer = (Get-Content "patch-version.json" -Raw | ConvertFrom-Json).version
+        if ($prevVer) { $minVersion = $prevVer }
+    } catch {}
+}
+
 $manifest = @{
     version = $version
     requires_full_update = $false
-    min_version = "1.0.11"
+    min_version = $minVersion
     channels = @{}
 }
 

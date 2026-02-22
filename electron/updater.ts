@@ -265,9 +265,11 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
 
 async function applyFullUpdate(
   onProgress?: (percent: number) => void,
+  targetVersion?: string,
 ): Promise<{ success: boolean; error?: string }> {
   const data = await httpsGet(GITHUB_API_URL)
   const release: ReleaseInfo = JSON.parse(data)
+  const remoteVersion = targetVersion || release.tag_name.replace(/^v/, '')
 
   const installerAsset = release.assets.find((a) => a.name.endsWith('.exe') && a.name.includes('Setup'))
   if (!installerAsset) {
@@ -283,8 +285,18 @@ async function applyFullUpdate(
   })
 
   const appExePath = process.execPath
+  const installDir = path.dirname(appExePath)
   const batchPath = path.join(tempDir, 'sancho-update.bat')
   const logPath = path.join(tempDir, 'sancho-update.log')
+
+  // Write updated patch-version.json to temp for batch to copy after install
+  const newPatchVersion: PatchVersionFile = {
+    version: remoteVersion,
+    channels: { frontend: remoteVersion, electron: remoteVersion, backend: remoteVersion, html: remoteVersion },
+  }
+  const versionTmpPath = path.join(tempDir, 'patch-version-full.json')
+  fs.writeFileSync(versionTmpPath, JSON.stringify(newPatchVersion, null, 2))
+  const versionTargetPath = path.join(installDir, 'resources', 'patch-version.json').replace(/\//g, '\\')
 
   const batchContent = [
     '@echo off',
@@ -299,6 +311,11 @@ async function applyFullUpdate(
     `"${installerPath}" /S`,
     `echo [%date% %time%] Installer exited (%ERRORLEVEL%) >> "${logPath}"`,
     'ping -n 4 127.0.0.1 > nul 2>&1',
+    // After install, overwrite patch-version.json with correct version
+    `echo [%date% %time%] Updating patch-version.json to ${remoteVersion}... >> "${logPath}"`,
+    `copy /Y "${versionTmpPath.replace(/\//g, '\\')}" "${versionTargetPath}" >nul 2>&1`,
+    `if %ERRORLEVEL% NEQ 0 (echo [%date% %time%] WARNING: patch-version copy failed >> "${logPath}")`,
+    `del "${versionTmpPath.replace(/\//g, '\\')}" 2>nul`,
     `start "" "${appExePath}"`,
     `del "${installerPath}" 2>nul`,
     `echo [%date% %time%] Complete >> "${logPath}"`,
@@ -532,17 +549,19 @@ export async function applyPatch(
     const release: ReleaseInfo = JSON.parse(data)
     const manifest = await fetchManifest(release)
 
+    const remoteVersion = release.tag_name.replace(/^v/, '')
+
     // No manifest or full update required → full installer
     if (!manifest || manifest.requires_full_update) {
       console.log('[Updater] Using full installer update')
-      return applyFullUpdate((percent) => onProgress?.(percent))
+      return applyFullUpdate((percent) => onProgress?.(percent), remoteVersion)
     }
 
     // Current version too old → full installer
     const currentVersion = getEffectiveVersion()
     if (compareVersions(currentVersion, manifest.min_version)) {
       console.log(`[Updater] ${currentVersion} < min ${manifest.min_version}, full installer`)
-      return applyFullUpdate((percent) => onProgress?.(percent))
+      return applyFullUpdate((percent) => onProgress?.(percent), remoteVersion)
     }
 
     // Differential patch
