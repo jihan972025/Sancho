@@ -98,3 +98,49 @@ def save_trading_config(config: dict) -> None:
 def get_trading_config() -> dict:
     data = _load_raw()
     return data.get("config", {})
+
+
+# ── Trade Notifications ──
+
+_MAX_NOTIFICATIONS = 100
+
+
+def add_trade_notification(notif: dict) -> None:
+    """Queue a trade notification for Electron to deliver to chat apps."""
+    data = _load_raw()
+    notifications = data.get("notifications", [])
+    notifications.insert(0, notif)
+    data["notifications"] = notifications[:_MAX_NOTIFICATIONS]
+    _save_raw(data)
+
+
+def get_pending_trade_notifications() -> list[dict]:
+    """Return undelivered trade notifications."""
+    data = _load_raw()
+    notifications = data.get("notifications", [])
+    return [n for n in notifications if not n.get("delivered", False)]
+
+
+def ack_trade_notifications(ids: list[str]) -> None:
+    """Mark notifications as delivered and clean up old ones."""
+    from datetime import datetime, timezone
+
+    data = _load_raw()
+    notifications = data.get("notifications", [])
+    now = datetime.now(timezone.utc)
+    id_set = set(ids)
+    updated = []
+    for n in notifications:
+        if n.get("id") in id_set:
+            n["delivered"] = True
+        # Auto-clean delivered notifications older than 24h
+        if n.get("delivered", False):
+            try:
+                created = datetime.fromisoformat(n["created_at"])
+                if (now - created).total_seconds() > 86400:
+                    continue
+            except (ValueError, KeyError):
+                pass
+        updated.append(n)
+    data["notifications"] = updated
+    _save_raw(data)

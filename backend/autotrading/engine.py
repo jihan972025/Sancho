@@ -377,6 +377,11 @@ class TradingEngine:
                     "reasoning": reasoning,
                 },
             })
+            self._queue_trade_notification("BUY", {
+                "price": filled_price,
+                "quantity": filled_qty,
+                "amount_krw": round(cost, 0),
+            })
             logger.info("BUY executed: %s @ ₩%s qty=%s", self.coin, filled_price, filled_qty)
 
         except Exception as e:
@@ -447,6 +452,14 @@ class TradingEngine:
             self._emit({
                 "type": "trade",
                 "content": {"action": "SELL", **trade_record},
+            })
+            self._queue_trade_notification("SELL", {
+                "entry_price": round(self.entry_price or 0, 2),
+                "exit_price": round(filled_price, 2),
+                "quantity": round(self.quantity, 8),
+                "pnl_krw": round(pnl_krw, 0),
+                "pnl_pct": round(pnl_pct, 4),
+                "fee_krw": round(total_fee, 0),
             })
             logger.info(
                 "SELL executed: %s @ ₩%s PnL=₩%s (%s%%)",
@@ -845,6 +858,22 @@ class TradingEngine:
                 self.on_event(event)
             except Exception:
                 pass
+
+    def _queue_trade_notification(self, action: str, trade_data: dict) -> None:
+        """Queue a trade notification for chat app delivery."""
+        notif = {
+            "id": str(uuid.uuid4()),
+            "source": "auto",
+            "action": action,
+            "coin": self.coin,
+            "trade_data": trade_data,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "delivered": False,
+        }
+        try:
+            storage.add_trade_notification(notif)
+        except Exception:
+            logger.warning("Failed to queue trade notification")
 
     def get_status(self) -> dict:
         unrealized_pct = 0.0

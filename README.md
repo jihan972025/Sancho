@@ -254,6 +254,7 @@ Connect your favorite chat apps and talk to Sancho from your phone:
 | [WhatsApp Setup](docs/whatsapp-setup.md) | Connect WhatsApp via QR code |
 | [Telegram Setup](docs/telegram-setup.md) | Get API keys and connect Telegram |
 | [Element X Setup](docs/elementx-setup.md) | Connect Matrix / Element X |
+| [Slack Setup](docs/slack-setup.md) | Connect Slack bot via Socket Mode |
 | [Gmail Setup](docs/gmail-setup.md) | Connect Gmail via Google OAuth 2.0 |
 | [Outlook Setup](docs/outlook-setup.md) | Connect Outlook via Azure AD OAuth 2.0 |
 | [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |

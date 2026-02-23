@@ -5,7 +5,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import uuid
 from collections import deque
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -299,6 +301,21 @@ async def manual_buy(req: ManualBuyRequest):
 
         logger.info("Manual BUY: %s @ %s, qty=%s", req.coin, filled_price, filled_qty)
 
+        # Queue trade notification for chat apps
+        storage.add_trade_notification({
+            "id": str(uuid.uuid4()),
+            "source": "manual",
+            "action": "BUY",
+            "coin": req.coin,
+            "trade_data": {
+                "price": filled_price,
+                "quantity": filled_qty,
+                "amount_krw": req.amount_krw,
+            },
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "delivered": False,
+        })
+
         return {
             "status": "ok",
             "action": "BUY",
@@ -363,6 +380,21 @@ async def manual_sell(req: ManualSellRequest):
 
         logger.info("Manual SELL: %s @ %s, qty=%s", req.coin, filled_price, filled_qty)
 
+        # Queue trade notification for chat apps
+        storage.add_trade_notification({
+            "id": str(uuid.uuid4()),
+            "source": "manual",
+            "action": "SELL",
+            "coin": req.coin,
+            "trade_data": {
+                "price": filled_price,
+                "quantity": filled_qty,
+                "est_krw": round(est_krw),
+            },
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "delivered": False,
+        })
+
         return {
             "status": "ok",
             "action": "SELL",
@@ -409,6 +441,26 @@ async def stream_events():
             await asyncio.sleep(3)
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+# ── Trade Notifications (for chat app delivery via Electron) ──
+
+@router.get("/notifications")
+async def get_trade_notifications():
+    """Return pending trade notifications for Electron to send to chat apps."""
+    notifications = storage.get_pending_trade_notifications()
+    return {"notifications": notifications}
+
+
+class AckTradeNotificationsRequest(BaseModel):
+    ids: list[str]
+
+
+@router.post("/notifications/ack")
+async def ack_trade_notifications(req: AckTradeNotificationsRequest):
+    """Mark trade notifications as delivered."""
+    storage.ack_trade_notifications(req.ids)
+    return {"status": "ok"}
 
 
 _coins_cache: list[dict] | None = None

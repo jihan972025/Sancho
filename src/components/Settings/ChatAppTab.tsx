@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '../../stores/settingsStore'
 
 type AppStatus = 'disconnected' | 'connecting' | 'qr' | 'connected'
+type AppId = 'whatsapp' | 'telegram' | 'matrix' | 'slack'
 
 const statusLabel: Record<AppStatus, string> = {
   disconnected: 'Disconnected',
@@ -19,15 +20,41 @@ const statusColor: Record<AppStatus, string> = {
   connected: 'text-green-400',
 }
 
+interface AppDef {
+  id: AppId
+  name: string
+  icon: typeof MessageCircle
+  color: string
+  activeColor: string
+  bgColor: string
+  borderColor: string
+  ringColor: string
+}
+
+const APP_DEFS: AppDef[] = [
+  { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, color: 'text-green-400', activeColor: 'bg-green-500/15', bgColor: 'bg-green-600/20', borderColor: 'border-green-600/30', ringColor: 'ring-green-500/40' },
+  { id: 'telegram', name: 'Telegram', icon: Send, color: 'text-blue-400', activeColor: 'bg-blue-500/15', bgColor: 'bg-blue-600/20', borderColor: 'border-blue-600/30', ringColor: 'ring-blue-500/40' },
+  { id: 'matrix', name: 'Matrix', icon: Globe, color: 'text-purple-400', activeColor: 'bg-purple-500/15', bgColor: 'bg-purple-600/20', borderColor: 'border-purple-600/30', ringColor: 'ring-purple-500/40' },
+  { id: 'slack', name: 'Slack', icon: Hash, color: 'text-amber-400', activeColor: 'bg-amber-500/15', bgColor: 'bg-amber-600/20', borderColor: 'border-amber-600/30', ringColor: 'ring-amber-500/40' },
+]
+
 function StatusIcon({ status }: { status: AppStatus }) {
   if (status === 'connected') return <Wifi size={16} className="text-green-400" />
   if (status === 'connecting' || status === 'qr') return <Loader2 size={16} className="text-yellow-400 animate-spin" />
   return <WifiOff size={16} className="text-slate-400" />
 }
 
+function StatusDot({ status }: { status: AppStatus }) {
+  if (status === 'connected') return <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900" />
+  if (status === 'connecting' || status === 'qr') return <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border-2 border-slate-900 animate-pulse" />
+  return null
+}
+
 export default function ChatAppTab() {
   const { t } = useTranslation()
   const { config, updateWhatsAppConfig, updateTelegramConfig, updateMatrixConfig, updateSlackConfig, updateApiConfig } = useSettingsStore()
+
+  const [selectedApp, setSelectedApp] = useState<AppId>('whatsapp')
 
   // ── WhatsApp state ──
   const [waStatus, setWaStatus] = useState<AppStatus>('disconnected')
@@ -148,329 +175,440 @@ export default function ChatAppTab() {
     await slApi.disconnect()
   }, [slApi])
 
+  // ── Status map ──
+  const statusMap: Record<AppId, AppStatus> = {
+    whatsapp: waStatus,
+    telegram: tgStatus,
+    matrix: mxStatus,
+    slack: slStatus,
+  }
+
+  const enabledMap: Record<AppId, boolean> = {
+    whatsapp: config.whatsapp.enabled,
+    telegram: config.telegram.enabled,
+    matrix: config.matrix.enabled,
+    slack: config.slack.enabled,
+  }
+
+  const selectedDef = APP_DEFS.find(a => a.id === selectedApp)!
+  const currentStatus = statusMap[selectedApp]
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-slate-200 mb-1">Chat App Integrations</h2>
-        <p className="text-sm text-slate-400">
-          Connect messaging apps to receive and respond via Sancho AI.
-        </p>
+    <div className="flex gap-5 min-h-[480px]">
+      {/* ── Left: App Icon List ── */}
+      <div className="flex flex-col gap-3 pt-1">
+        {APP_DEFS.map((app) => {
+          const Icon = app.icon
+          const isSelected = selectedApp === app.id
+          const status = statusMap[app.id]
+          const enabled = enabledMap[app.id]
+
+          return (
+            <button
+              key={app.id}
+              onClick={() => setSelectedApp(app.id)}
+              className={`relative w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                isSelected
+                  ? `${app.activeColor} ring-2 ${app.ringColor} shadow-lg`
+                  : 'bg-slate-800/60 hover:bg-slate-700/60'
+              } ${!enabled ? 'opacity-40' : ''}`}
+              title={`${app.name}${status === 'connected' ? ' (Connected)' : ''}`}
+            >
+              <Icon size={24} className={isSelected ? app.color : 'text-slate-400'} />
+              {enabled && <StatusDot status={status} />}
+            </button>
+          )
+        })}
       </div>
 
-      {/* ── WhatsApp Card ── */}
-      <div className="border border-slate-700 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50">
-          <div className="flex items-center gap-2">
-            <MessageCircle size={18} className="text-green-400" />
-            <h3 className="font-medium text-slate-200">WhatsApp</h3>
+      {/* ── Right: Selected App Detail Panel ── */}
+      <div className="flex-1 border border-slate-700 rounded-xl overflow-hidden bg-slate-800/30">
+        {/* Panel Header */}
+        <div className={`flex items-center justify-between px-5 py-3.5 ${selectedDef.activeColor} border-b border-slate-700/50`}>
+          <div className="flex items-center gap-3">
+            <selectedDef.icon size={22} className={selectedDef.color} />
+            <h3 className="text-base font-semibold text-slate-200">{selectedDef.name}</h3>
+            <div className="flex items-center gap-1.5 ml-2">
+              <StatusIcon status={currentStatus} />
+              <span className={`text-xs font-medium ${statusColor[currentStatus]}`}>{statusLabel[currentStatus]}</span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <input type="checkbox" id="wa-enabled" checked={config.whatsapp.enabled}
-              onChange={(e) => updateWhatsAppConfig({ enabled: e.target.checked })}
+            <input type="checkbox" id={`${selectedApp}-enabled`}
+              checked={enabledMap[selectedApp]}
+              onChange={(e) => {
+                if (selectedApp === 'whatsapp') updateWhatsAppConfig({ enabled: e.target.checked })
+                else if (selectedApp === 'telegram') updateTelegramConfig({ enabled: e.target.checked })
+                else if (selectedApp === 'matrix') updateMatrixConfig({ enabled: e.target.checked })
+                else if (selectedApp === 'slack') updateSlackConfig({ enabled: e.target.checked })
+              }}
               className="rounded border-slate-600 bg-slate-800 text-angel-500 focus:ring-angel-500" />
-            <label htmlFor="wa-enabled" className="text-sm text-slate-300">Enabled</label>
+            <label htmlFor={`${selectedApp}-enabled`} className="text-sm text-slate-300">Enabled</label>
           </div>
         </div>
 
-        {config.whatsapp.enabled && (
-          <div className="px-4 py-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <StatusIcon status={waStatus} />
-                <span className={`text-sm font-medium ${statusColor[waStatus]}`}>{statusLabel[waStatus]}</span>
-              </div>
-              {waStatus === 'connected' ? (
-                <button onClick={handleWaDisconnect} className="px-3 py-1.5 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">Disconnect</button>
-              ) : waStatus === 'disconnected' ? (
-                <button onClick={handleWaConnect} className="px-3 py-1.5 text-sm bg-green-600/20 text-green-400 border border-green-600/30 rounded-lg hover:bg-green-600/30 transition-colors">Connect</button>
-              ) : null}
+        {/* Panel Content */}
+        <div className="px-5 py-5 overflow-y-auto max-h-[calc(100vh-320px)]">
+          {!enabledMap[selectedApp] ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <selectedDef.icon size={48} className="text-slate-600 mb-4" />
+              <p className="text-slate-400 text-sm">Enable {selectedDef.name} to configure and connect.</p>
             </div>
+          ) : (
+            <div className="space-y-5">
+              {/* ── WhatsApp Panel ── */}
+              {selectedApp === 'whatsapp' && (
+                <>
+                  {/* QR / Connection area */}
+                  <div className="flex flex-col items-center">
+                    {(waStatus === 'qr' || waStatus === 'connecting') && waQr ? (
+                      <div className="flex flex-col items-center gap-3 py-4 bg-white rounded-xl w-full max-w-[280px]">
+                        <img src={waQr} alt="WhatsApp QR Code" className="w-56 h-56" />
+                        <p className="text-xs text-gray-600 text-center px-4">
+                          Open WhatsApp on your phone &gt; Linked Devices &gt; Scan this QR code
+                        </p>
+                      </div>
+                    ) : waStatus === 'connecting' && !waQr ? (
+                      <div className="flex flex-col items-center gap-3 py-8">
+                        <QrCode size={56} className="text-slate-600" />
+                        <p className="text-sm text-slate-400">Waiting for QR code...</p>
+                      </div>
+                    ) : waStatus === 'connected' ? (
+                      <div className="flex flex-col items-center gap-2 py-6">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                          <Wifi size={28} className="text-green-400" />
+                        </div>
+                        <p className="text-sm font-medium text-green-400">WhatsApp Connected</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 py-6">
+                        <div className="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center">
+                          <QrCode size={28} className="text-slate-500" />
+                        </div>
+                        <p className="text-sm text-slate-400">Click Connect to scan QR code</p>
+                      </div>
+                    )}
 
-            {(waStatus === 'qr' || waStatus === 'connecting') && waQr && (
-              <div className="flex flex-col items-center gap-3 py-4 bg-white rounded-lg mx-auto max-w-[280px]">
-                <img src={waQr} alt="WhatsApp QR Code" className="w-56 h-56" />
-                <p className="text-xs text-gray-600 text-center px-4">
-                  Open WhatsApp on your phone &gt; Linked Devices &gt; Scan this QR code
-                </p>
-              </div>
-            )}
+                    {/* Connect / Disconnect */}
+                    <div className="mt-3">
+                      {waStatus === 'connected' ? (
+                        <button onClick={handleWaDisconnect}
+                          className="px-5 py-2 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">
+                          Disconnect
+                        </button>
+                      ) : waStatus === 'disconnected' ? (
+                        <button onClick={handleWaConnect}
+                          className={`px-5 py-2 text-sm ${selectedDef.bgColor} ${selectedDef.color} border ${selectedDef.borderColor} rounded-lg hover:brightness-125 transition-all`}>
+                          Connect
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
 
-            {waStatus === 'connecting' && !waQr && (
-              <div className="flex flex-col items-center gap-2 py-6">
-                <QrCode size={48} className="text-slate-600" />
-                <p className="text-sm text-slate-400">Waiting for QR code...</p>
-              </div>
-            )}
+                  <hr className="border-slate-700/50" />
 
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">WhatsApp Web Version</label>
-              <input type="text" value={config.whatsapp.wa_version}
-                onChange={(e) => updateWhatsAppConfig({ wa_version: e.target.value })}
-                placeholder="2,3000,1027934701"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-              <p className="text-xs text-slate-500 mt-1">Protocol version (comma-separated). Change if connection fails with 405 error.</p>
+                  {/* Settings */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">WhatsApp Web Version</label>
+                      <input type="text" value={config.whatsapp.wa_version}
+                        onChange={(e) => updateWhatsAppConfig({ wa_version: e.target.value })}
+                        placeholder="2,3000,1027934701"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                      <p className="text-xs text-slate-500 mt-1">Protocol version (comma-separated). Change if connection fails with 405 error.</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Default Model (optional)</label>
+                      <input type="text" value={config.whatsapp.default_model}
+                        onChange={(e) => updateWhatsAppConfig({ default_model: e.target.value })}
+                        placeholder="Leave empty to use global default model"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── Telegram Panel ── */}
+              {selectedApp === 'telegram' && (
+                <>
+                  {/* Credential Inputs */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">API ID</label>
+                      <input type="text" value={config.telegram.api_id}
+                        onChange={(e) => updateTelegramConfig({ api_id: e.target.value })}
+                        placeholder="12345678"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">API Hash</label>
+                      <div className="flex gap-2">
+                        <input type={showApiHash ? 'text' : 'password'} value={config.telegram.api_hash}
+                          onChange={(e) => updateTelegramConfig({ api_hash: e.target.value })}
+                          placeholder="abcdef1234567890abcdef1234567890"
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                        <button onClick={() => setShowApiHash(!showApiHash)}
+                          className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                          {showApiHash ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Get API credentials from <span className="text-blue-400">https://my.telegram.org</span> (free, instant)
+                      </p>
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  {/* QR / Connection area */}
+                  <div className="flex flex-col items-center">
+                    {(tgStatus === 'qr' || tgStatus === 'connecting') && tgQr ? (
+                      <div className="flex flex-col items-center gap-3 py-4 bg-white rounded-xl w-full max-w-[280px]">
+                        <img src={tgQr} alt="Telegram QR Code" className="w-56 h-56" />
+                        <p className="text-xs text-gray-600 text-center px-4">
+                          Open Telegram on your phone &gt; Settings &gt; Devices &gt; Link Desktop Device
+                        </p>
+                      </div>
+                    ) : tgStatus === 'connecting' && !tgQr ? (
+                      <div className="flex flex-col items-center gap-3 py-8">
+                        <QrCode size={56} className="text-slate-600" />
+                        <p className="text-sm text-slate-400">Waiting for QR code...</p>
+                      </div>
+                    ) : tgStatus === 'connected' ? (
+                      <div className="flex flex-col items-center gap-2 py-6">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                          <Wifi size={28} className="text-green-400" />
+                        </div>
+                        <p className="text-sm font-medium text-green-400">Telegram Connected</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 py-6">
+                        <div className="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center">
+                          <QrCode size={28} className="text-slate-500" />
+                        </div>
+                        <p className="text-sm text-slate-400">Enter credentials and click Connect</p>
+                      </div>
+                    )}
+
+                    <div className="mt-3">
+                      {tgStatus === 'connected' ? (
+                        <button onClick={handleTgDisconnect}
+                          className="px-5 py-2 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">
+                          Disconnect
+                        </button>
+                      ) : tgStatus === 'disconnected' ? (
+                        <button onClick={handleTgConnect}
+                          className={`px-5 py-2 text-sm ${selectedDef.bgColor} ${selectedDef.color} border ${selectedDef.borderColor} rounded-lg hover:brightness-125 transition-all`}>
+                          Connect
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Default Model (optional)</label>
+                    <input type="text" value={config.telegram.default_model}
+                      onChange={(e) => updateTelegramConfig({ default_model: e.target.value })}
+                      placeholder="Leave empty to use global default model"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
+                  </div>
+                </>
+              )}
+
+              {/* ── Matrix Panel ── */}
+              {selectedApp === 'matrix' && (
+                <>
+                  {/* Credential Inputs */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Homeserver URL</label>
+                      <input type="text" value={config.matrix.homeserver_url}
+                        onChange={(e) => updateMatrixConfig({ homeserver_url: e.target.value })}
+                        placeholder="https://matrix.org"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">User ID</label>
+                      <input type="text" value={config.matrix.user_id}
+                        onChange={(e) => updateMatrixConfig({ user_id: e.target.value })}
+                        placeholder="@username:matrix.org"
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+                      <div className="flex gap-2">
+                        <input type={showMxPassword ? 'text' : 'password'} value={config.matrix.password}
+                          onChange={(e) => updateMatrixConfig({ password: e.target.value })}
+                          placeholder="Matrix account password"
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
+                        <button onClick={() => setShowMxPassword(!showMxPassword)}
+                          className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                          {showMxPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{t('settings.matrixPasswordHelp')}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Access Token</label>
+                      <div className="flex gap-2">
+                        <input type={showMxToken ? 'text' : 'password'} value={config.matrix.access_token}
+                          onChange={(e) => updateMatrixConfig({ access_token: e.target.value })}
+                          placeholder="syt_..."
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                        <button onClick={() => setShowMxToken(!showMxToken)}
+                          className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                          {showMxToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{t('settings.matrixTokenHelp')}</p>
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  {/* Connection area */}
+                  <div className="flex flex-col items-center">
+                    {mxStatus === 'connected' ? (
+                      <div className="flex flex-col items-center gap-2 py-4">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                          <Wifi size={28} className="text-green-400" />
+                        </div>
+                        <p className="text-sm font-medium text-green-400">Matrix Connected</p>
+                      </div>
+                    ) : mxStatus === 'connecting' ? (
+                      <div className="flex flex-col items-center gap-3 py-6">
+                        <Loader2 size={36} className="text-purple-400 animate-spin" />
+                        <p className="text-sm text-slate-400">Connecting to Matrix...</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 py-4">
+                        <div className="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center">
+                          <Globe size={28} className="text-slate-500" />
+                        </div>
+                        <p className="text-sm text-slate-400">Fill in credentials and click Connect</p>
+                      </div>
+                    )}
+
+                    <div className="mt-2">
+                      {mxStatus === 'connected' ? (
+                        <button onClick={handleMxDisconnect}
+                          className="px-5 py-2 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">
+                          Disconnect
+                        </button>
+                      ) : mxStatus === 'disconnected' ? (
+                        <button onClick={handleMxConnect}
+                          className={`px-5 py-2 text-sm ${selectedDef.bgColor} ${selectedDef.color} border ${selectedDef.borderColor} rounded-lg hover:brightness-125 transition-all`}>
+                          Connect
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Default Model (optional)</label>
+                    <input type="text" value={config.matrix.default_model}
+                      onChange={(e) => updateMatrixConfig({ default_model: e.target.value })}
+                      placeholder="Leave empty to use global default model"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
+                  </div>
+                </>
+              )}
+
+              {/* ── Slack Panel ── */}
+              {selectedApp === 'slack' && (
+                <>
+                  {/* Token Inputs */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Bot Token</label>
+                      <div className="flex gap-2">
+                        <input type={showBotToken ? 'text' : 'password'}
+                          value={config.api.slack_bot_token}
+                          onChange={(e) => updateApiConfig({ slack_bot_token: e.target.value })}
+                          placeholder="xoxb-..."
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                        <button onClick={() => setShowBotToken(!showBotToken)}
+                          className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                          {showBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">App-Level Token (Socket Mode)</label>
+                      <div className="flex gap-2">
+                        <input type={showAppToken ? 'text' : 'password'}
+                          value={config.api.slack_app_token}
+                          onChange={(e) => updateApiConfig({ slack_app_token: e.target.value })}
+                          placeholder="xapp-..."
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                        <button onClick={() => setShowAppToken(!showAppToken)}
+                          className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                          {showAppToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">{t('settings.slackTokenHelp')}</p>
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  {/* Connection area */}
+                  <div className="flex flex-col items-center">
+                    {slStatus === 'connected' ? (
+                      <div className="flex flex-col items-center gap-2 py-4">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                          <Wifi size={28} className="text-green-400" />
+                        </div>
+                        <p className="text-sm font-medium text-green-400">Slack Connected</p>
+                      </div>
+                    ) : slStatus === 'connecting' ? (
+                      <div className="flex flex-col items-center gap-3 py-6">
+                        <Loader2 size={36} className="text-amber-400 animate-spin" />
+                        <p className="text-sm text-slate-400">Connecting to Slack...</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 py-4">
+                        <div className="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center">
+                          <Hash size={28} className="text-slate-500" />
+                        </div>
+                        <p className="text-sm text-slate-400">Enter tokens and click Connect</p>
+                      </div>
+                    )}
+
+                    <div className="mt-2">
+                      {slStatus === 'connected' ? (
+                        <button onClick={handleSlDisconnect}
+                          className="px-5 py-2 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">
+                          Disconnect
+                        </button>
+                      ) : slStatus === 'disconnected' ? (
+                        <button onClick={handleSlConnect}
+                          className={`px-5 py-2 text-sm ${selectedDef.bgColor} ${selectedDef.color} border ${selectedDef.borderColor} rounded-lg hover:brightness-125 transition-all`}>
+                          Connect
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Default Model (optional)</label>
+                    <input type="text" value={config.slack.default_model}
+                      onChange={(e) => updateSlackConfig({ default_model: e.target.value })}
+                      placeholder="Leave empty to use global default model"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
+                  </div>
+                </>
+              )}
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Default Model (optional)</label>
-              <input type="text" value={config.whatsapp.default_model}
-                onChange={(e) => updateWhatsAppConfig({ default_model: e.target.value })}
-                placeholder="Leave empty to use global default model"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Telegram Card ── */}
-      <div className="border border-slate-700 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50">
-          <div className="flex items-center gap-2">
-            <Send size={18} className="text-blue-400" />
-            <h3 className="font-medium text-slate-200">Telegram</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="tg-enabled" checked={config.telegram.enabled}
-              onChange={(e) => updateTelegramConfig({ enabled: e.target.checked })}
-              className="rounded border-slate-600 bg-slate-800 text-angel-500 focus:ring-angel-500" />
-            <label htmlFor="tg-enabled" className="text-sm text-slate-300">Enabled</label>
-          </div>
+          )}
         </div>
-
-        {config.telegram.enabled && (
-          <div className="px-4 py-4 space-y-4">
-            {/* API credentials */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">API ID</label>
-              <input type="text" value={config.telegram.api_id}
-                onChange={(e) => updateTelegramConfig({ api_id: e.target.value })}
-                placeholder="12345678"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">API Hash</label>
-              <div className="flex gap-2">
-                <input type={showApiHash ? 'text' : 'password'} value={config.telegram.api_hash}
-                  onChange={(e) => updateTelegramConfig({ api_hash: e.target.value })}
-                  placeholder="abcdef1234567890abcdef1234567890"
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-                <button onClick={() => setShowApiHash(!showApiHash)}
-                  className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white">
-                  {showApiHash ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Get API credentials from <span className="text-blue-400">https://my.telegram.org</span> (free, instant)
-              </p>
-            </div>
-
-            {/* Connection status */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <StatusIcon status={tgStatus} />
-                <span className={`text-sm font-medium ${statusColor[tgStatus]}`}>{statusLabel[tgStatus]}</span>
-              </div>
-              {tgStatus === 'connected' ? (
-                <button onClick={handleTgDisconnect} className="px-3 py-1.5 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">Disconnect</button>
-              ) : tgStatus === 'disconnected' ? (
-                <button onClick={handleTgConnect} className="px-3 py-1.5 text-sm bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-600/30 transition-colors">Connect</button>
-              ) : null}
-            </div>
-
-            {/* QR Code display */}
-            {(tgStatus === 'qr' || tgStatus === 'connecting') && tgQr && (
-              <div className="flex flex-col items-center gap-3 py-4 bg-white rounded-lg mx-auto max-w-[280px]">
-                <img src={tgQr} alt="Telegram QR Code" className="w-56 h-56" />
-                <p className="text-xs text-gray-600 text-center px-4">
-                  Open Telegram on your phone &gt; Settings &gt; Devices &gt; Link Desktop Device
-                </p>
-              </div>
-            )}
-
-            {tgStatus === 'connecting' && !tgQr && (
-              <div className="flex flex-col items-center gap-2 py-6">
-                <QrCode size={48} className="text-slate-600" />
-                <p className="text-sm text-slate-400">Waiting for QR code...</p>
-              </div>
-            )}
-
-            {/* Default model */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Default Model (optional)</label>
-              <input type="text" value={config.telegram.default_model}
-                onChange={(e) => updateTelegramConfig({ default_model: e.target.value })}
-                placeholder="Leave empty to use global default model"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* ── Matrix / Element Card ── */}
-      <div className="border border-slate-700 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50">
-          <div className="flex items-center gap-2">
-            <Globe size={18} className="text-purple-400" />
-            <h3 className="font-medium text-slate-200">Matrix / Element</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="mx-enabled" checked={config.matrix.enabled}
-              onChange={(e) => updateMatrixConfig({ enabled: e.target.checked })}
-              className="rounded border-slate-600 bg-slate-800 text-angel-500 focus:ring-angel-500" />
-            <label htmlFor="mx-enabled" className="text-sm text-slate-300">Enabled</label>
-          </div>
-        </div>
-
-        {config.matrix.enabled && (
-          <div className="px-4 py-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Homeserver URL</label>
-              <input type="text" value={config.matrix.homeserver_url}
-                onChange={(e) => updateMatrixConfig({ homeserver_url: e.target.value })}
-                placeholder="https://matrix.org"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">User ID</label>
-              <input type="text" value={config.matrix.user_id}
-                onChange={(e) => updateMatrixConfig({ user_id: e.target.value })}
-                placeholder="@username:matrix.org"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
-              <div className="flex gap-2">
-                <input type={showMxPassword ? 'text' : 'password'} value={config.matrix.password}
-                  onChange={(e) => updateMatrixConfig({ password: e.target.value })}
-                  placeholder="Matrix account password"
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
-                <button onClick={() => setShowMxPassword(!showMxPassword)}
-                  className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white">
-                  {showMxPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {t('settings.matrixPasswordHelp')}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Access Token</label>
-              <div className="flex gap-2">
-                <input type={showMxToken ? 'text' : 'password'} value={config.matrix.access_token}
-                  onChange={(e) => updateMatrixConfig({ access_token: e.target.value })}
-                  placeholder="syt_..."
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-                <button onClick={() => setShowMxToken(!showMxToken)}
-                  className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white">
-                  {showMxToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {t('settings.matrixTokenHelp')}
-              </p>
-            </div>
-
-            {/* Connection status */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <StatusIcon status={mxStatus} />
-                <span className={`text-sm font-medium ${statusColor[mxStatus]}`}>{statusLabel[mxStatus]}</span>
-              </div>
-              {mxStatus === 'connected' ? (
-                <button onClick={handleMxDisconnect} className="px-3 py-1.5 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">Disconnect</button>
-              ) : mxStatus === 'disconnected' ? (
-                <button onClick={handleMxConnect} className="px-3 py-1.5 text-sm bg-purple-600/20 text-purple-400 border border-purple-600/30 rounded-lg hover:bg-purple-600/30 transition-colors">Connect</button>
-              ) : null}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Default Model (optional)</label>
-              <input type="text" value={config.matrix.default_model}
-                onChange={(e) => updateMatrixConfig({ default_model: e.target.value })}
-                placeholder="Leave empty to use global default model"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Slack Card ── */}
-      <div className="border border-slate-700 rounded-lg overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-slate-800/50">
-          <div className="flex items-center gap-2">
-            <Hash size={18} className="text-amber-400" />
-            <h3 className="font-medium text-slate-200">Slack</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <input type="checkbox" id="slack-enabled" checked={config.slack.enabled}
-              onChange={(e) => updateSlackConfig({ enabled: e.target.checked })}
-              className="rounded border-slate-600 bg-slate-800 text-angel-500 focus:ring-angel-500" />
-            <label htmlFor="slack-enabled" className="text-sm text-slate-300">Enabled</label>
-          </div>
-        </div>
-
-        {config.slack.enabled && (
-          <div className="px-4 py-4 space-y-4">
-            {/* Bot Token */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Bot Token</label>
-              <div className="flex gap-2">
-                <input type={showBotToken ? 'text' : 'password'}
-                  value={config.api.slack_bot_token}
-                  onChange={(e) => updateApiConfig({ slack_bot_token: e.target.value })}
-                  placeholder="xoxb-..."
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-                <button onClick={() => setShowBotToken(!showBotToken)}
-                  className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white">
-                  {showBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            {/* App Token */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">App-Level Token (Socket Mode)</label>
-              <div className="flex gap-2">
-                <input type={showAppToken ? 'text' : 'password'}
-                  value={config.api.slack_app_token}
-                  onChange={(e) => updateApiConfig({ slack_app_token: e.target.value })}
-                  placeholder="xapp-..."
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
-                <button onClick={() => setShowAppToken(!showAppToken)}
-                  className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white">
-                  {showAppToken ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                {t('settings.slackTokenHelp')}
-              </p>
-            </div>
-
-            {/* Connection status */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <StatusIcon status={slStatus} />
-                <span className={`text-sm font-medium ${statusColor[slStatus]}`}>{statusLabel[slStatus]}</span>
-              </div>
-              {slStatus === 'connected' ? (
-                <button onClick={handleSlDisconnect} className="px-3 py-1.5 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">Disconnect</button>
-              ) : slStatus === 'disconnected' ? (
-                <button onClick={handleSlConnect} className="px-3 py-1.5 text-sm bg-amber-600/20 text-amber-400 border border-amber-600/30 rounded-lg hover:bg-amber-600/30 transition-colors">Connect</button>
-              ) : null}
-            </div>
-
-            {/* Default model */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Default Model (optional)</label>
-              <input type="text" value={config.slack.default_model}
-                onChange={(e) => updateSlackConfig({ default_model: e.target.value })}
-                placeholder="Leave empty to use global default model"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
-            </div>
-          </div>
-        )}
-      </div>
-
     </div>
   )
 }

@@ -15,6 +15,7 @@ import { startTunnel, stopTunnel, getTunnelUrl } from './tunnel'
 let mainWindow: BrowserWindow | null = null
 let pythonProcess: ChildProcess | null = null
 let notificationPollTimer: ReturnType<typeof setInterval> | null = null
+let tradePollTimer: ReturnType<typeof setInterval> | null = null
 let tray: Tray | null = null
 let isQuitting = false
 
@@ -291,6 +292,125 @@ function stopNotificationPolling(): void {
   }
 }
 
+// ── Auto-Trading Trade Notifications ──
+
+const TRADE_POLL_INTERVAL = 10_000 // 10 seconds
+
+function formatTradeNotification(notif: any): string {
+  const data = notif.trade_data || {}
+  const prefix = notif.source === 'manual' ? '[Manual Trade]' : '[Auto-Trading]'
+  const time = new Date(notif.created_at).toLocaleString()
+
+  if (notif.action === 'BUY') {
+    const price = Number(data.price || 0).toLocaleString()
+    const amount = Number(data.amount_krw || 0).toLocaleString()
+    const qty = Number(data.quantity || 0).toFixed(8)
+    return (
+      `\u{1F7E2} ${prefix} BUY ${notif.coin}\n` +
+      `Price: \u{20A9}${price}\n` +
+      `Amount: \u{20A9}${amount}\n` +
+      `Quantity: ${qty}\n` +
+      `Time: ${time}`
+    )
+  }
+
+  if (notif.action === 'SELL') {
+    const lines: string[] = [`\u{1F534} ${prefix} SELL ${notif.coin}`]
+
+    if (data.entry_price && data.exit_price) {
+      const entry = Number(data.entry_price).toLocaleString()
+      const exit = Number(data.exit_price).toLocaleString()
+      lines.push(`Entry: \u{20A9}${entry} \u{2192} Exit: \u{20A9}${exit}`)
+    } else {
+      lines.push(`Price: \u{20A9}${Number(data.price || 0).toLocaleString()}`)
+    }
+
+    if (data.pnl_krw !== undefined && data.pnl_pct !== undefined) {
+      const pnlKrw = Number(data.pnl_krw).toLocaleString()
+      const pnlPct = Number(data.pnl_pct).toFixed(2)
+      lines.push(`P&L: \u{20A9}${pnlKrw} (${pnlPct}%)`)
+    }
+    if (data.fee_krw !== undefined) {
+      lines.push(`Fee: \u{20A9}${Number(data.fee_krw).toLocaleString()}`)
+    }
+    if (data.est_krw !== undefined) {
+      lines.push(`Est: \u{20A9}${Number(data.est_krw).toLocaleString()}`)
+    }
+
+    const qty = Number(data.quantity || 0).toFixed(8)
+    lines.push(`Quantity: ${qty}`)
+    lines.push(`Time: ${time}`)
+
+    return lines.join('\n')
+  }
+
+  return `${prefix} ${notif.action} ${notif.coin}`
+}
+
+async function pollTradeNotifications(): Promise<void> {
+  try {
+    const resp = await fetch(`${BACKEND_URL}/api/autotrading/notifications`)
+    if (!resp.ok) return
+    const { notifications } = await resp.json()
+    if (!notifications || notifications.length === 0) return
+
+    const config = await fetchSettings()
+    const ackedIds: string[] = []
+
+    for (const notif of notifications) {
+      const message = formatTradeNotification(notif)
+      let sent = false
+
+      if (config.whatsapp?.enabled && getWhatsAppStatus() === 'connected') {
+        if (await sendWhatsAppMessage(message)) sent = true
+      }
+      if (config.telegram?.enabled && getTelegramStatus() === 'connected') {
+        if (await sendTelegramMessage(message)) sent = true
+      }
+      if (config.matrix?.enabled && getMatrixStatus() === 'connected') {
+        if (await sendMatrixMessage(message)) sent = true
+      }
+      if (config.slack?.enabled && getSlackStatus() === 'connected') {
+        if (await sendSlackMessage(message)) sent = true
+      }
+
+      if (sent) {
+        ackedIds.push(notif.id)
+        mainWindow?.webContents.send('autotrading:notification-sent', {
+          action: notif.action,
+          coin: notif.coin,
+          source: notif.source,
+        })
+      }
+    }
+
+    if (ackedIds.length > 0) {
+      await fetch(`${BACKEND_URL}/api/autotrading/notifications/ack`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: ackedIds }),
+      })
+      console.log(`[AutoTrading] Sent ${ackedIds.length} trade notification(s) to chat apps`)
+    }
+  } catch {
+    // Silent fail — backend may not be ready yet
+  }
+}
+
+function startTradeNotificationPolling(): void {
+  if (tradePollTimer) return
+  tradePollTimer = setInterval(pollTradeNotifications, TRADE_POLL_INTERVAL)
+  pollTradeNotifications()
+  console.log('[AutoTrading] Trade notification polling started (10s interval)')
+}
+
+function stopTradeNotificationPolling(): void {
+  if (tradePollTimer) {
+    clearInterval(tradePollTimer)
+    tradePollTimer = null
+  }
+}
+
 function createTray(): void {
   const trayIconPath = isDev
     ? path.join(__dirname, '..', 'assets', 'icon.ico')
@@ -421,6 +541,7 @@ app.whenReady().then(async () => {
     mainWindow.webContents.on('did-finish-load', () => {
       autoConnectChatApps()
       startNotificationPolling()
+      startTradeNotificationPolling()
     })
 
     // Start periodic update checks
@@ -442,6 +563,7 @@ app.on('before-quit', () => {
   isQuitting = true
   stopPeriodicCheck()
   stopNotificationPolling()
+  stopTradeNotificationPolling()
   stopTunnel()
   stopBackend()
   tray?.destroy()
