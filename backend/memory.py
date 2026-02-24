@@ -2,7 +2,6 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -17,10 +16,14 @@ _memories_file = _config_dir / "memories.json"
 class Memory(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:12])
     content: str
-    category: str = "fact"  # fact | preference | instruction
+    category: str = "fact"  # fact | preference | instruction | event | relationship | context
+    importance: int = 3  # 1-5, higher = more important
+    conversation_id: str = ""  # Which conversation this was extracted from
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
+    last_accessed: str = ""  # Last time this memory was included in a prompt
+    access_count: int = 0
     source: str = ""  # model name or "manual"
     enabled: bool = True
 
@@ -44,7 +47,9 @@ def save_memories(memories: list[Memory]) -> None:
     )
 
 
-def add_memories(new_items: list[dict], source: str = "") -> list[Memory]:
+def add_memories(
+    new_items: list[dict], source: str = "", conversation_id: str = ""
+) -> list[Memory]:
     """Add new memories, skipping duplicates (case-insensitive content match)."""
     memories = load_memories()
     existing = {m.content.lower().strip() for m in memories}
@@ -58,7 +63,9 @@ def add_memories(new_items: list[dict], source: str = "") -> list[Memory]:
         mem = Memory(
             content=content,
             category=item.get("category", "fact"),
+            importance=item.get("importance", 3),
             source=source,
+            conversation_id=conversation_id,
         )
         memories.append(mem)
         existing.add(content.lower())
@@ -100,26 +107,86 @@ def clear_all_memories() -> int:
     return count
 
 
-def build_memory_prompt(max_chars: int = 2000) -> Optional[str]:
-    """Build a system prompt block from enabled memories."""
+def build_memory_prompt(
+    recent_message: str = "", max_chars: int = 3000
+) -> Optional[str]:
+    """Build a system prompt block from enabled memories.
+
+    Uses relevance-based selection:
+    1. High-importance memories (importance >= 4) always included
+    2. Keyword-matched memories from recent_message
+    3. Remaining memories sorted by importance desc
+    """
     enabled = get_enabled_memories()
     if not enabled:
         return None
 
+    selected: list[Memory] = []
+    selected_ids: set[str] = set()
+
+    # 1. Always include high-importance memories
+    for m in enabled:
+        if m.importance >= 4 and m.id not in selected_ids:
+            selected.append(m)
+            selected_ids.add(m.id)
+
+    # 2. Keyword matching from recent message
+    if recent_message:
+        msg_lower = recent_message.lower()
+        words = set(msg_lower.split())
+        for m in enabled:
+            if m.id in selected_ids:
+                continue
+            content_lower = m.content.lower()
+            # Check if any word from the message appears in the memory
+            if any(w in content_lower for w in words if len(w) > 2):
+                selected.append(m)
+                selected_ids.add(m.id)
+
+    # 3. Fill remaining by importance desc
+    remaining = [m for m in enabled if m.id not in selected_ids]
+    remaining.sort(key=lambda m: m.importance, reverse=True)
+    selected.extend(remaining)
+
+    # Build output with char limit
     lines: list[str] = []
     total = 0
-    for m in enabled:
+    now = datetime.now(timezone.utc).isoformat()
+    accessed_ids: list[str] = []
+
+    for m in selected:
         line = f"- [{m.category}] {m.content}"
         if total + len(line) > max_chars:
             break
         lines.append(line)
-        total += len(line) + 1  # +1 for newline
+        total += len(line) + 1
+        accessed_ids.append(m.id)
 
     if not lines:
         return None
+
+    # Update access stats in background
+    _update_access_stats(accessed_ids, now)
 
     return (
         "\nUser memory (facts learned from previous conversations):\n"
         + "\n".join(lines)
         + "\n"
     )
+
+
+def _update_access_stats(memory_ids: list[str], timestamp: str) -> None:
+    """Update last_accessed and access_count for selected memories."""
+    try:
+        memories = load_memories()
+        changed = False
+        id_set = set(memory_ids)
+        for m in memories:
+            if m.id in id_set:
+                m.last_accessed = timestamp
+                m.access_count += 1
+                changed = True
+        if changed:
+            save_memories(memories)
+    except Exception:
+        pass  # Non-critical, don't break the flow

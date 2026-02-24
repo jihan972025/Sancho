@@ -35,8 +35,13 @@ logging.getLogger().addHandler(log_handler)
 
 @asynccontextmanager
 async def lifespan(app):
+    import asyncio
     from backend.scheduler.runner import start_scheduler, stop_scheduler
+    from backend.conversation.summarizer import summarize_unsummarized_conversations
+
     start_scheduler()
+    # Summarize any conversations that were missed (e.g. after force-close)
+    asyncio.create_task(summarize_unsummarized_conversations())
     yield
     stop_scheduler()
 

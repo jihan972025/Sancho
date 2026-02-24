@@ -12,6 +12,7 @@ from .executors.confluence_executor import ConfluenceExecutor
 from .executors.outlook_executor import OutlookExecutor
 from .executors.gmail_executor import GmailExecutor
 from .executors.google_calendar_executor import GoogleCalendarExecutor
+from .executors.google_tasks_executor import GoogleTasksExecutor
 from .executors.google_sheets_executor import GoogleSheetsExecutor
 from .executors.slack_executor import SlackExecutor
 from .executors.filesystem_executor import FilesystemExecutor
@@ -56,6 +57,7 @@ ALL_SKILL_EXECUTORS: list[type[SkillExecutor]] = [
     OutlookExecutor,
     GmailExecutor,
     GoogleCalendarExecutor,
+    GoogleTasksExecutor,
     GoogleSheetsExecutor,
     SlackExecutor,
     YFinanceExecutor,

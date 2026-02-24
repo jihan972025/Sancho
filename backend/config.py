@@ -388,6 +388,13 @@ def save_sancho_md(content: str) -> None:
     _sancho_md_file.write_text(content, encoding="utf-8")
 
 
+_persona_file = _config_dir / "persona.json"
+
+
+def get_persona_path() -> Path:
+    return _persona_file
+
+
 _current_config: Optional[AppConfig] = None
 
 

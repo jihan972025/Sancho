@@ -124,15 +124,26 @@ Switch between **14 LLM providers** freely in a single conversation:
 | NVIDIA NIM | Local LLM (Ollama / LM Studio) | |
 
 - Real-time SSE streaming responses
-- Conversation memory that persists across sessions
-- User profile & AI persona customization
+- **Conversation memory** — remembers facts, preferences, and context across all sessions
+- **AI Persona** — customize name, personality traits, tone, speaking style, and behavior
+- **Conversation summaries** — past conversations are automatically summarized and referenced
+
+### AI Persona & Memory
+Give your AI a unique identity and let it remember everything:
+
+- **Persona customization** — set a custom name, personality traits (tags), tone, speaking style, greeting, and special behavioral instructions
+- **Preset personas** — one-click presets: Friendly Assistant, Professional Consultant, Casual Buddy
+- **Long-term memory** — automatically extracts and remembers facts, preferences, relationships, events, and context from every conversation (6 categories, importance scoring 1-5)
+- **Conversation summaries** — when you start a new conversation, the previous one is summarized and stored. Recent summaries are injected into every new chat for continuity
+- **Relevance-based recall** — high-importance memories and keyword-matched memories are prioritized in the system prompt
 
 ### Messenger Integration
-Connect your favorite chat apps and talk to Sancho from your phone:
+Connect your favorite chat apps and talk to Sancho from your phone.
+All messengers share the same **AI persona, long-term memory, and conversation context** as the desktop app.
 
 | Messenger | Connection |
 |-----------|------------|
-| **WhatsApp** | QR code scan |
+| **WhatsApp** | QR code scan (auto WA Web version detection) |
 | **Telegram** | API key + QR code |
 | **Slack** | Bot Token + App Token (Socket Mode) |
 | **Matrix / Element X** | Password or Access Token |
@@ -143,6 +154,7 @@ Connect your favorite chat apps and talk to Sancho from your phone:
 | **Gmail** | Search, read, send emails |
 | **Outlook** | Search, read, send emails (Microsoft Graph API) |
 | **Google Calendar** | Create, search, list, delete events |
+| **Google Tasks** | Create, list, complete, delete to-do items |
 | **Google Sheets** | Read and write spreadsheet data |
 
 ### Browser Automation
@@ -174,7 +186,7 @@ Connect your favorite chat apps and talk to Sancho from your phone:
 
 ## Skills
 
-**30 built-in skills** — 21 free, 9 with API key integration, plus custom API support.
+**31 built-in skills** — 21 free, 10 with API key integration, plus custom API support.
 
 <details>
 <summary><b>Free Skills (No API Key Required)</b></summary>
@@ -214,11 +226,12 @@ Connect your favorite chat apps and talk to Sancho from your phone:
 | 2 | **outlook** | Microsoft Outlook email (Azure AD OAuth) |
 | 3 | **gmail** | Gmail email (Google OAuth 2.0) |
 | 4 | **google_calendar** | Google Calendar management |
-| 5 | **google_sheets** | Google Sheets read/write |
-| 6 | **jira** | Atlassian Jira project management |
-| 7 | **confluence** | Atlassian Confluence documentation |
-| 8 | **slack** | Slack workspace messaging |
-| 9 | **upbit** | Crypto auto-trading on Upbit |
+| 5 | **google_tasks** | Google Tasks to-do list management |
+| 6 | **google_sheets** | Google Sheets read/write |
+| 7 | **jira** | Atlassian Jira project management |
+| 8 | **confluence** | Atlassian Confluence documentation |
+| 9 | **slack** | Slack workspace messaging |
+| 10 | **upbit** | Crypto auto-trading on Upbit |
 
 </details>
 
@@ -243,7 +256,10 @@ Connect your favorite chat apps and talk to Sancho from your phone:
 | "Organize my Downloads folder" | Sorts files by type into subfolders |
 | "Search for flights to Tokyo on Google" | Opens browser, navigates, and extracts results |
 | "Add a meeting tomorrow at 3pm" | Creates Google Calendar event |
+| "Add to my tasks: submit report by Friday" | Creates a Google Tasks to-do item with due date |
 | "Analyze Bitcoin on the daily chart" | Returns RSI, MACD, Bollinger, MA signals |
+| "Remember that I prefer short answers" | Saves preference and applies to all future conversations |
+| "What did we discuss yesterday?" | Uses conversation summaries to recall recent topics |
 
 ---
 
@@ -258,6 +274,7 @@ Connect your favorite chat apps and talk to Sancho from your phone:
 | [Gmail Setup](docs/gmail-setup.md) | Connect Gmail via Google OAuth 2.0 |
 | [Outlook Setup](docs/outlook-setup.md) | Connect Outlook via Azure AD OAuth 2.0 |
 | [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |
+| [Google Tasks Setup](docs/google-calendar-setup.md) | Google Tasks uses the same Google OAuth 2.0 login |
 | [Google Sheets Setup](docs/google-sheets-setup.md) | Connect Google Sheets via OAuth 2.0 |
 | [GitHub LLM Models](docs/github-llm-setup.md) | Use free LLM models via GitHub |
 
@@ -270,11 +287,15 @@ Electron + React (Vite + Tailwind CSS)     <- Desktop UI
         | REST API + SSE
 Python FastAPI Backend (port 8765)         <- Subprocess managed by Electron
   |-- 14 LLM Providers
-  |-- Skill System (30 built-in + custom API)
+  |-- AI Persona (persona.json) & Memory System
+  |     |-- Long-term Memory (6 categories, importance scoring)
+  |     |-- Conversation Summarizer (auto-summary on switch)
+  |     +-- Relevance-based Prompt Assembly
+  |-- Skill System (31 built-in + custom API)
   |-- File Agent
   |-- Browser Agent (@playwright/cli)
   |-- Email (Gmail + Outlook via Graph API)
-  |-- Calendar & Sheets (Google APIs)
+  |-- Calendar, Tasks & Sheets (Google APIs)
   |-- Messenger Bots (WhatsApp, Telegram, Slack, Matrix)
   |-- Auto-Trading Engine (Upbit)
   |-- Voice App (Cloudflare Tunnel)

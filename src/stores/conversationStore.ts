@@ -41,7 +41,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   },
 
   newConversation: async (model = '') => {
-    const { conversation } = await createConversation('', model)
+    const previousId = get().activeConversationId || ''
+    const { conversation } = await createConversation('', model, previousId)
     const summary: ConversationSummary = {
       id: conversation.id,
       title: conversation.title,

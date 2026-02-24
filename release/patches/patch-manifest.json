@@ -3,23 +3,23 @@
     "channels":  {
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "abf7480cd966d39fea741ece29f35bde5c0e32203fdb92c3421307698c416320",
-                                     "asset":  "patch-backend-1.0.30.zip",
-                                     "size":  46044746
+                                     "sha256":  "14a30fea77e7a8fd50ee44afd062f51ee17cbf0eff4023da5ccc63b6b9e1cbed",
+                                     "asset":  "patch-backend-1.0.31.zip",
+                                     "size":  23672835
                                  },
                      "frontend":  {
                                       "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "10df83b1081d514855fab1b30039f150d95314ef4ff44b872bd80ee285a0f90d",
-                                      "asset":  "patch-frontend-1.0.30.zip",
-                                      "size":  199813
+                                      "sha256":  "a901ed817f8493140fdb5ddce204bfed55d3e23578c7993f1eaec66c4f84d1f3",
+                                      "asset":  "patch-frontend-1.0.31.zip",
+                                      "size":  202092
                                   },
                      "electron":  {
                                       "target":  "app.asar.unpacked/dist-electron",
-                                      "sha256":  "4b61c4d8d3b60d2dcc13e271476cf0e686afeaf70ad77824586ee9d293f1ec46",
-                                      "asset":  "patch-electron-1.0.30.zip",
-                                      "size":  11691
+                                      "sha256":  "4fc9c42d86bf2018d15f466636890f1d951bcee779d02fe84e351b05ba00ceae",
+                                      "asset":  "patch-electron-1.0.31.zip",
+                                      "size":  6460
                                   }
                  },
     "min_version":  "1.0.30",
-    "version":  "1.0.30"
+    "version":  "1.0.31"
 }

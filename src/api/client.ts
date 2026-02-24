@@ -265,6 +265,34 @@ export function saveSanchoProfile(data: { nickname: string; role: string }) {
   })
 }
 
+// Persona API
+export function getPersona() {
+  return request<{
+    name: string
+    greeting_name: string
+    role: string
+    personality: { traits: string[]; tone: string; speaking_style: string }
+    behavior: { greeting: string; custom_instructions: string }
+  }>('/api/settings/persona')
+}
+
+export function savePersona(data: {
+  name: string
+  greeting_name: string
+  role: string
+  personality: { traits: string[]; tone: string; speaking_style: string }
+  behavior: { greeting: string; custom_instructions: string }
+}) {
+  return request('/api/settings/persona', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function getPersonaPresets() {
+  return request<{ presets: any[] }>('/api/settings/persona/presets')
+}
+
 // Logs API
 export function streamLogs(
   onLogEntry: (entry: { timestamp: string; level: string; name: string; message: string }) => void,
@@ -340,10 +368,14 @@ export function getConversations() {
   return request<{ conversations: any[] }>('/api/conversations')
 }
 
-export function createConversation(title = '', model = '') {
+export function createConversation(title = '', model = '', previousConversationId = '') {
   return request<{ conversation: any }>('/api/conversations', {
     method: 'POST',
-    body: JSON.stringify({ title, model }),
+    body: JSON.stringify({
+      title,
+      model,
+      previous_conversation_id: previousConversationId || undefined,
+    }),
   })
 }
 

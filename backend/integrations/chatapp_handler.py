@@ -4,9 +4,13 @@ import json
 import logging
 import re
 
-from ..config import get_config, load_user_md
+from ..config import get_config, load_user_md, load_sancho_md
 from ..i18n import t, lang_instruction
 from ..llm.registry import get_provider_for_model, get_available_models
+from ..memory import build_memory_prompt
+from ..memory_extractor import trigger_memory_extraction
+from ..persona import build_persona_prompt
+from ..conversation.summarizer import build_conversation_context
 from ..agents.browser_agent import get_browser_agent, AgentStatus
 from ..agents.file_agent import organize_directory
 from ..skills.loader import build_skill_system_prompt
@@ -115,6 +119,49 @@ def _extract_path(text: str) -> str | None:
     return match.group(0).rstrip(".,;:!?") if match else None
 
 
+def _build_system_prompt(lang: str, recent_message: str = "") -> str:
+    """Build a full system prompt with persona, user profile, conversation context, and memory.
+
+    Mirrors the system prompt assembly logic in routes_chat.py so that
+    external chat apps (Telegram, WhatsApp, Matrix, Slack) get the same
+    AI persona, long-term memory, and conversation summary context.
+    """
+    parts: list[str] = []
+
+    # 1) Memory (prepended first so it appears at the top)
+    memory_block = build_memory_prompt(recent_message=recent_message)
+    if memory_block:
+        parts.append(memory_block)
+
+    # 2) Conversation summaries
+    conv_context = build_conversation_context()
+    if conv_context:
+        parts.append(conv_context)
+
+    # 3) User profile
+    user_md = load_user_md()
+    if user_md:
+        parts.append(f"\nUser profile:\n{user_md}\n")
+
+    # 4) Persona (persona.json takes priority, falls back to SANCHO.md)
+    persona_block = build_persona_prompt()
+    if persona_block:
+        parts.append(persona_block)
+    else:
+        sancho_md = load_sancho_md()
+        if sancho_md:
+            parts.append(f"\nYour persona (follow this identity):\n{sancho_md}\n")
+        else:
+            parts.append("You are Sancho, a helpful AI assistant. Keep responses concise.")
+
+    # 5) Language instruction
+    li = lang_instruction(lang)
+    if li:
+        parts.append(li)
+
+    return "\n".join(parts)
+
+
 async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> str:
     effective_model = _resolve_model(model)
     if not effective_model:
@@ -127,23 +174,20 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
 
     skill_prompt = build_skill_system_prompt()
 
-    li = lang_instruction(lang)
-
-    # Build user profile block
-    user_md = load_user_md()
-    profile_block = f"\nUser profile:\n{user_md}\n" if user_md else ""
+    # Build full system prompt (persona + memory + conversation summaries + user profile)
+    system_content = _build_system_prompt(lang, recent_message=text)
 
     if skill_prompt is None:
         # No skills configured — original path
         messages = [
-            {"role": "system", "content": profile_block + "You are Sancho, a helpful AI assistant. Keep responses concise." + li},
+            {"role": "system", "content": system_content},
             *history.get_messages(sender),
         ]
         response = await provider.complete(messages, effective_model)
     else:
-        # Phase 1: detect skill call
+        # Phase 1: detect skill call (include memory/persona context in skill prompt)
         messages = [
-            {"role": "system", "content": skill_prompt},
+            {"role": "system", "content": system_content + "\n\n" + skill_prompt},
             *history.get_messages(sender),
         ]
         try:
@@ -155,13 +199,15 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
             await asyncio.sleep(3)
             try:
                 fallback_messages = [
-                    {"role": "system", "content": profile_block + "You are Sancho, a helpful AI assistant. Keep responses concise." + li},
+                    {"role": "system", "content": system_content},
                     *history.get_messages(sender),
                 ]
                 response = await provider.complete(fallback_messages, effective_model)
             except Exception:
                 response = "⚠️ " + t("rate_limit", lang)
             history.add_message(sender, "assistant", response)
+            # Trigger memory extraction even on fallback
+            _trigger_extraction(messages + [{"role": "assistant", "content": response}], model)
             return response
 
         skill_call = parse_skill_call(phase1)
@@ -242,7 +288,7 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
                     {
                         "role": "system",
                         "content": (
-                            profile_block + skill_prompt + "\n\n" + system_hint + li
+                            system_content + "\n\n" + skill_prompt + "\n\n" + system_hint
                         ),
                     },
                     *history.get_messages(sender),
@@ -281,7 +327,23 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
                 response = phase2_response
 
     history.add_message(sender, "assistant", response)
+
+    # Trigger memory extraction from this conversation
+    extraction_msgs = [
+        {"role": "system", "content": system_content},
+        *history.get_messages(sender),
+    ]
+    _trigger_extraction(extraction_msgs, model)
+
     return response
+
+
+def _trigger_extraction(messages: list[dict], model: str) -> None:
+    """Fire-and-forget memory extraction from chat app conversation."""
+    try:
+        trigger_memory_extraction(messages, model, conversation_id="")
+    except Exception:
+        logger.debug("Memory extraction trigger failed (non-critical)", exc_info=True)
 
 
 async def _handle_file_organize(sender: str, text: str, model: str, lang: str = "en") -> str:

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { User, Bot, LogOut, Save, CheckCircle, Loader2, Mail } from 'lucide-react'
+import { User, Bot, LogOut, Save, CheckCircle, Loader2, Mail, X, Plus, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { getUserProfile, saveUserProfile, getSanchoProfile, saveSanchoProfile } from '../../api/client'
+import { getUserProfile, saveUserProfile, getPersona, savePersona, getPersonaPresets } from '../../api/client'
 import { LANGUAGES, GENDERS, COUNTRIES, TIMEZONES } from '../../constants/profileOptions'
 import { useSettingsStore } from '../../stores/settingsStore'
 
@@ -18,9 +18,34 @@ interface OutlookAuthStatus {
   name?: string
 }
 
+interface PersonaState {
+  name: string
+  greeting_name: string
+  role: string
+  personality: {
+    traits: string[]
+    tone: string
+    speaking_style: string
+  }
+  behavior: {
+    greeting: string
+    custom_instructions: string
+  }
+}
+
+const DEFAULT_PERSONA: PersonaState = {
+  name: 'Sancho',
+  greeting_name: '',
+  role: '',
+  personality: { traits: ['friendly', 'helpful'], tone: '', speaking_style: '' },
+  behavior: { greeting: '', custom_instructions: '' },
+}
+
 export default function ProfileTab() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { config } = useSettingsStore()
+  const isKo = i18n.language === 'ko'
+
   // Google auth state
   const [googleAuth, setGoogleAuth] = useState<GoogleAuthStatus>({ logged_in: false })
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -35,8 +60,11 @@ export default function ProfileTab() {
   const [country, setCountry] = useState('')
   const [city, setCity] = useState('')
   const [timezone, setTimezone] = useState('Asia/Seoul')
-  const [sanchoNickname, setSanchoNickname] = useState('Sancho')
-  const [sanchoRole, setSanchoRole] = useState('')
+
+  // Persona fields
+  const [persona, setPersona] = useState<PersonaState>(DEFAULT_PERSONA)
+  const [newTrait, setNewTrait] = useState('')
+  const [presets, setPresets] = useState<any[]>([])
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -72,7 +100,6 @@ export default function ProfileTab() {
           if (fields.Gender) setGender(fields.Gender)
           if (fields.Language) setLanguage(fields.Language)
           if (fields.Country) {
-            // Country is stored as name, need to reverse-lookup code or keep as name
             const found = COUNTRIES.find((c) => c.name === fields.Country)
             setCountry(found ? found.code : fields.Country)
           }
@@ -80,13 +107,28 @@ export default function ProfileTab() {
           if (fields.Timezone) setTimezone(fields.Timezone)
         }
 
-        // Load sancho profile
-        const sanchoProfile = await getSanchoProfile()
-        if (sanchoProfile.exists && sanchoProfile.content) {
-          const fields = parseProfileMd(sanchoProfile.content)
-          if (fields.Nickname) setSanchoNickname(fields.Nickname)
-          if (fields.Role) setSanchoRole(fields.Role)
+        // Load persona
+        const personaData = await getPersona()
+        if (personaData) {
+          setPersona({
+            name: personaData.name || 'Sancho',
+            greeting_name: personaData.greeting_name || '',
+            role: personaData.role || '',
+            personality: {
+              traits: personaData.personality?.traits || ['friendly', 'helpful'],
+              tone: personaData.personality?.tone || '',
+              speaking_style: personaData.personality?.speaking_style || '',
+            },
+            behavior: {
+              greeting: personaData.behavior?.greeting || '',
+              custom_instructions: personaData.behavior?.custom_instructions || '',
+            },
+          })
         }
+
+        // Load presets
+        const { presets: presetList } = await getPersonaPresets()
+        setPresets(presetList || [])
       } catch (err) {
         console.error('Failed to load profile:', err)
       } finally {
@@ -153,6 +195,38 @@ export default function ProfileTab() {
     }
   }
 
+  const addTrait = () => {
+    const trait = newTrait.trim()
+    if (trait && !persona.personality.traits.includes(trait)) {
+      setPersona((p) => ({
+        ...p,
+        personality: { ...p.personality, traits: [...p.personality.traits, trait] },
+      }))
+      setNewTrait('')
+    }
+  }
+
+  const removeTrait = (trait: string) => {
+    setPersona((p) => ({
+      ...p,
+      personality: {
+        ...p.personality,
+        traits: p.personality.traits.filter((t) => t !== trait),
+      },
+    }))
+  }
+
+  const applyPreset = (preset: any) => {
+    const p = preset.persona
+    setPersona({
+      name: p.name,
+      greeting_name: p.greeting_name,
+      role: p.role,
+      personality: { ...p.personality },
+      behavior: { ...p.behavior },
+    })
+  }
+
   const handleSaveProfile = async () => {
     setSaving(true)
     try {
@@ -165,10 +239,7 @@ export default function ProfileTab() {
         city: city.trim() || '-',
         timezone,
       })
-      await saveSanchoProfile({
-        nickname: sanchoNickname.trim() || 'Sancho',
-        role: sanchoRole.trim(),
-      })
+      await savePersona(persona)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
@@ -386,31 +457,175 @@ export default function ProfileTab() {
         </div>
       </div>
 
-      {/* Sancho Profile Section */}
+      {/* AI Persona Section */}
       <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-5">
         <div className="flex items-center gap-2 text-angel-400 mb-4">
           <Bot size={18} />
-          <h3 className="text-sm font-semibold uppercase tracking-wider">{t('profile.sanchoIdentity')}</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-wider">
+            {t('profile.sanchoIdentity')}
+          </h3>
         </div>
+
+        {/* Presets */}
+        {presets.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-xs text-slate-400 mb-2">{t('profile.presets')}</label>
+            <div className="flex flex-wrap gap-2">
+              {presets.map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => applyPreset(preset)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-slate-600 bg-slate-900 text-slate-300 rounded-lg hover:border-angel-500 hover:text-angel-300 transition-colors"
+                >
+                  <Sparkles size={12} />
+                  {isKo ? preset.label_ko : preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
+          {/* Name */}
           <div>
             <label className="block text-xs text-slate-400 mb-1">{t('profile.nickname')}</label>
             <input
               type="text"
-              value={sanchoNickname}
-              onChange={(e) => setSanchoNickname(e.target.value)}
+              value={persona.name}
+              onChange={(e) => setPersona((p) => ({ ...p, name: e.target.value }))}
               placeholder="e.g. Sancho, Buddy, Jarvis..."
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
             />
           </div>
+
+          {/* Greeting Name */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('profile.greetingName')}</label>
+            <input
+              type="text"
+              value={persona.greeting_name}
+              onChange={(e) => setPersona((p) => ({ ...p, greeting_name: e.target.value }))}
+              placeholder={isKo ? "e.g. 산초야, 버디야..." : "e.g. Hey Sancho, Buddy..."}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+            />
+          </div>
+
+          {/* Role */}
           <div>
             <label className="block text-xs text-slate-400 mb-1">{t('profile.role')}</label>
             <input
               type="text"
-              value={sanchoRole}
-              onChange={(e) => setSanchoRole(e.target.value)}
-              placeholder="e.g. Personal secretary, Programming tutor..."
+              value={persona.role}
+              onChange={(e) => setPersona((p) => ({ ...p, role: e.target.value }))}
+              placeholder={isKo ? "e.g. 개인 비서, 프로그래밍 튜터..." : "e.g. Personal secretary, Programming tutor..."}
               className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+            />
+          </div>
+
+          {/* Personality Traits */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('profile.traits')}</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {persona.personality.traits.map((trait) => (
+                <span
+                  key={trait}
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-angel-600/10 border border-angel-500/30 rounded-md text-xs text-angel-300"
+                >
+                  {trait}
+                  <button
+                    onClick={() => removeTrait(trait)}
+                    className="hover:text-red-400 transition-colors"
+                  >
+                    <X size={10} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newTrait}
+                onChange={(e) => setNewTrait(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTrait())}
+                placeholder={isKo ? "e.g. 친근한, 유머러스한..." : "e.g. friendly, witty..."}
+                className="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-600 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+              />
+              <button
+                onClick={addTrait}
+                className="px-2 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-xs text-slate-300 hover:border-angel-500 transition-colors"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Tone */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('profile.tone')}</label>
+            <input
+              type="text"
+              value={persona.personality.tone}
+              onChange={(e) =>
+                setPersona((p) => ({
+                  ...p,
+                  personality: { ...p.personality, tone: e.target.value },
+                }))
+              }
+              placeholder={isKo ? "e.g. 반말, 존댓말, 캐주얼..." : "e.g. Casual, Formal, Warm..."}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+            />
+          </div>
+
+          {/* Speaking Style */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('profile.speakingStyle')}</label>
+            <input
+              type="text"
+              value={persona.personality.speaking_style}
+              onChange={(e) =>
+                setPersona((p) => ({
+                  ...p,
+                  personality: { ...p.personality, speaking_style: e.target.value },
+                }))
+              }
+              placeholder={isKo ? "e.g. 짧고 명확한 문장, 이모티콘 사용..." : "e.g. Short clear sentences, uses emoji..."}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+            />
+          </div>
+
+          {/* Greeting */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('profile.greeting')}</label>
+            <input
+              type="text"
+              value={persona.behavior.greeting}
+              onChange={(e) =>
+                setPersona((p) => ({
+                  ...p,
+                  behavior: { ...p.behavior, greeting: e.target.value },
+                }))
+              }
+              placeholder={isKo ? "e.g. 안녕! 오늘은 뭘 도와줄까?" : "e.g. Hey! What can I help you with?"}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors"
+            />
+          </div>
+
+          {/* Custom Instructions */}
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">{t('profile.customInstructions')}</label>
+            <textarea
+              value={persona.behavior.custom_instructions}
+              onChange={(e) =>
+                setPersona((p) => ({
+                  ...p,
+                  behavior: { ...p.behavior, custom_instructions: e.target.value },
+                }))
+              }
+              rows={3}
+              placeholder={isKo
+                ? "e.g. 사용자가 기분이 안 좋아 보이면 먼저 안부를 물어본다..."
+                : "e.g. If the user seems upset, ask how they're feeling first..."}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 transition-colors resize-none"
             />
           </div>
         </div>

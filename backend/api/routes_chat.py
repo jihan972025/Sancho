@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from ..config import get_config, load_user_md, load_sancho_md, _BROWSER_KEYWORDS, _FILE_ORGANIZE_KEYWORDS
 from ..memory import build_memory_prompt
 from ..memory_extractor import trigger_memory_extraction
+from ..persona import build_persona_prompt
+from ..conversation.summarizer import build_conversation_context
 from ..i18n import t, lang_instruction
 from ..llm.registry import get_provider_for_model, get_available_models
 from ..skills.loader import build_skill_system_prompt, build_skill_reminder
@@ -165,14 +167,22 @@ async def send_message(req: ChatRequest, request: Request):
         else:
             messages.insert(0, {"role": "system", "content": li.strip()})
 
-    # Inject Sancho persona from SANCHO.md
-    sancho_md = load_sancho_md()
-    if sancho_md:
-        persona_block = f"\nYour persona (follow this identity):\n{sancho_md}\n"
+    # Inject AI persona (persona.json takes priority, falls back to SANCHO.md)
+    persona_block = build_persona_prompt()
+    if persona_block:
         if messages and messages[0]["role"] == "system":
             messages[0] = {**messages[0], "content": persona_block + messages[0]["content"]}
         else:
             messages.insert(0, {"role": "system", "content": persona_block.strip()})
+    else:
+        # Fallback: legacy SANCHO.md
+        sancho_md = load_sancho_md()
+        if sancho_md:
+            legacy_block = f"\nYour persona (follow this identity):\n{sancho_md}\n"
+            if messages and messages[0]["role"] == "system":
+                messages[0] = {**messages[0], "content": legacy_block + messages[0]["content"]}
+            else:
+                messages.insert(0, {"role": "system", "content": legacy_block.strip()})
 
     # Inject user profile from USER.md
     user_md = load_user_md()
@@ -183,8 +193,16 @@ async def send_message(req: ChatRequest, request: Request):
         else:
             messages.insert(0, {"role": "system", "content": profile_block.strip()})
 
-    # Inject memory from previous conversations
-    memory_prompt = build_memory_prompt()
+    # Inject conversation summaries from past conversations
+    conv_context = build_conversation_context()
+    if conv_context:
+        if messages and messages[0]["role"] == "system":
+            messages[0] = {**messages[0], "content": conv_context + messages[0]["content"]}
+        else:
+            messages.insert(0, {"role": "system", "content": conv_context.strip()})
+
+    # Inject memory from previous conversations (relevance-based)
+    memory_prompt = build_memory_prompt(recent_message=last_user_msg)
     if memory_prompt:
         if messages and messages[0]["role"] == "system":
             messages[0] = {**messages[0], "content": memory_prompt + messages[0]["content"]}
@@ -234,7 +252,10 @@ async def send_message(req: ChatRequest, request: Request):
                         extraction_msgs = messages + [
                             {"role": "assistant", "content": full_text}
                         ]
-                        trigger_memory_extraction(extraction_msgs, req.model)
+                        trigger_memory_extraction(
+                            extraction_msgs, req.model,
+                            conversation_id=req.conversation_id or "",
+                        )
                         # Auto-save to conversation
                         if req.conversation_id and last_user_msg:
                             _save_to_conversation(
@@ -413,7 +434,10 @@ async def send_message(req: ChatRequest, request: Request):
                     yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
                 finally:
                     _cancel_events.pop(session_id, None)
-                    trigger_memory_extraction(messages, req.model)
+                    trigger_memory_extraction(
+                        messages, req.model,
+                        conversation_id=req.conversation_id or "",
+                    )
                     # Auto-save to conversation (skill path)
                     if req.conversation_id and last_user_msg and skill_final_response:
                         _save_to_conversation(

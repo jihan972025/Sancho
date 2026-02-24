@@ -1,11 +1,13 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from ..conversation.models import Conversation
 from ..conversation import storage
+from ..conversation.summarizer import trigger_summary_generation, get_summary_for_conversation
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
@@ -13,6 +15,7 @@ router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 class CreateConversationRequest(BaseModel):
     title: str = ""
     model: str = ""
+    previous_conversation_id: Optional[str] = None  # ID of the conversation being left
 
 
 class RenameConversationRequest(BaseModel):
@@ -27,6 +30,23 @@ async def list_conversations():
 
 @router.post("")
 async def create_conversation(req: CreateConversationRequest):
+    # Trigger summary generation for the previous conversation
+    if req.previous_conversation_id:
+        prev_conv = storage.get_conversation(req.previous_conversation_id)
+        if prev_conv and len(prev_conv.messages) >= 4:
+            messages = [
+                {"role": m.role, "content": m.content}
+                for m in prev_conv.messages
+            ]
+            model = req.model or prev_conv.model
+            if model:
+                trigger_summary_generation(
+                    messages=messages,
+                    title=prev_conv.title,
+                    model=model,
+                    conversation_id=prev_conv.id,
+                )
+
     now = datetime.now(timezone.utc).isoformat()
     conv = Conversation(
         id=uuid.uuid4().hex[:12],

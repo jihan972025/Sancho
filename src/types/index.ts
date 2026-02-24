@@ -166,10 +166,40 @@ export interface CustomApiDef {
 export interface Memory {
   id: string
   content: string
-  category: 'fact' | 'preference' | 'instruction'
+  category: 'fact' | 'preference' | 'instruction' | 'event' | 'relationship' | 'context'
+  importance: number
+  conversation_id: string
   created_at: string
+  last_accessed: string
+  access_count: number
   source: string
   enabled: boolean
+}
+
+export interface PersonalityConfig {
+  traits: string[]
+  tone: string
+  speaking_style: string
+}
+
+export interface BehaviorConfig {
+  greeting: string
+  custom_instructions: string
+}
+
+export interface PersonaConfig {
+  name: string
+  greeting_name: string
+  role: string
+  personality: PersonalityConfig
+  behavior: BehaviorConfig
+}
+
+export interface PersonaPreset {
+  id: string
+  label: string
+  label_ko: string
+  persona: PersonaConfig
 }
 
 export interface GoogleAuthConfig {

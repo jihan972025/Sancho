@@ -114,16 +114,48 @@ export async function connectWhatsApp(waVersion?: string): Promise<void> {
   const logger = pino({ level: 'warn' })
   const { state, saveCreds } = await useMultiFileAuthState(getAuthDir())
 
-  // Parse version from settings (format: "2,3000,1027934701")
-  const DEFAULT_VERSION = '2,3000,1027934701'
-  const versionStr = waVersion || DEFAULT_VERSION
-  const parts = versionStr.split(',').map((s: string) => parseInt(s.trim(), 10))
-  const WA_VERSION: [number, number, number] = [
-    parts[0] || 2,
-    parts[1] || 3000,
-    parts[2] || 1027934701,
-  ]
-  console.log(`[WhatsApp] Using version: ${WA_VERSION.join('.')}`)
+  // Resolve WhatsApp Web version:
+  // 1) User-specified version from settings
+  // 2) fetchLatestBaileysVersion() — fetches from GitHub
+  // 3) fetchLatestWaWebVersion() — scrapes web.whatsapp.com
+  // 4) Hardcoded fallback
+  const { fetchLatestBaileysVersion, fetchLatestWaWebVersion } = baileys
+  const FALLBACK_VERSION: [number, number, number] = [2, 3000, 1027934701]
+
+  let WA_VERSION: [number, number, number]
+
+  if (waVersion) {
+    // User explicitly set a version in settings
+    const parts = waVersion.split(',').map((s: string) => parseInt(s.trim(), 10))
+    WA_VERSION = [parts[0] || 2, parts[1] || 3000, parts[2] || FALLBACK_VERSION[2]]
+    console.log(`[WhatsApp] Using user-specified version: ${WA_VERSION.join('.')}`)
+  } else {
+    // Auto-detect latest version
+    try {
+      const result = await fetchLatestBaileysVersion({ timeout: 5000 })
+      if (result.isLatest && result.version) {
+        WA_VERSION = result.version as [number, number, number]
+        console.log(`[WhatsApp] Fetched latest Baileys version: ${WA_VERSION.join('.')}`)
+      } else {
+        throw new Error(result.error?.message || 'Not latest')
+      }
+    } catch (err1) {
+      console.warn(`[WhatsApp] fetchLatestBaileysVersion failed: ${err1}. Trying fetchLatestWaWebVersion...`)
+      try {
+        const result2 = await fetchLatestWaWebVersion({ timeout: 5000 })
+        if (result2.isLatest && result2.version) {
+          WA_VERSION = result2.version as [number, number, number]
+          console.log(`[WhatsApp] Fetched latest WA Web version: ${WA_VERSION.join('.')}`)
+        } else {
+          throw new Error(result2.error?.message || 'Not latest')
+        }
+      } catch (err2) {
+        console.warn(`[WhatsApp] fetchLatestWaWebVersion also failed: ${err2}. Using fallback.`)
+        WA_VERSION = FALLBACK_VERSION
+        console.log(`[WhatsApp] Using fallback version: ${WA_VERSION.join('.')}`)
+      }
+    }
+  }
 
   sock = makeWASocket({
     auth: {
