@@ -274,14 +274,14 @@ async def _handle_chat(sender: str, text: str, model: str, lang: str = "en") -> 
                     search_hint +
                     dedup_hint +
                     "You have access to all skills listed above. "
-                    "If you need to call a DIFFERENT skill to complete the task (e.g. save results to a file), "
+                    "If you need to call another skill to complete the task (same skill with different parameters, or a different skill), "
                     "output ONLY a [SKILL_CALL] block. Otherwise, answer the user directly."
                 )
                 user_hint = (
                     "Based on the skill results above, either:\n"
-                    "1. Call a DIFFERENT skill if more steps are needed (output ONLY a [SKILL_CALL] block), or\n"
+                    "1. Call another skill if more steps are needed — same skill with different parameters, or a different skill (output ONLY a [SKILL_CALL] block), or\n"
                     "2. Answer the user's question directly.\n"
-                    "Do NOT repeat a skill call that was already executed above."
+                    "Do NOT repeat a skill call with the exact same parameters that was already executed above."
                 )
 
                 phase2_messages = [

@@ -11,8 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onQR: (cb: (dataUrl: string) => void) => {
       ipcRenderer.on('whatsapp:qr', (_event, qr) => cb(qr))
     },
-    onStatusUpdate: (cb: (status: string) => void) => {
-      ipcRenderer.on('whatsapp:status-update', (_event, s) => cb(s))
+    onStatusUpdate: (cb: (status: string, error?: string) => void) => {
+      ipcRenderer.on('whatsapp:status-update', (_event, s, error) => cb(s, error))
     },
     onChatMessage: (cb: (msg: { role: string; content: string; source: string }) => void) => {
       ipcRenderer.on('whatsapp:chat-message', (_event, msg) => cb(msg))

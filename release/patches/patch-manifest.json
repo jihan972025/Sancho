@@ -3,23 +3,23 @@
     "channels":  {
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "14a30fea77e7a8fd50ee44afd062f51ee17cbf0eff4023da5ccc63b6b9e1cbed",
-                                     "asset":  "patch-backend-1.0.31.zip",
-                                     "size":  23672835
+                                     "sha256":  "d24568fe48a3cc06620b7af75e060bb21219a18339160ba7302c4efd2746feab",
+                                     "asset":  "patch-backend-1.0.32.zip",
+                                     "size":  23686449
                                  },
                      "frontend":  {
                                       "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "a901ed817f8493140fdb5ddce204bfed55d3e23578c7993f1eaec66c4f84d1f3",
-                                      "asset":  "patch-frontend-1.0.31.zip",
-                                      "size":  202092
+                                      "sha256":  "cafde6c37281af92dd94d150713cb773e002a8fce095dd9a4f419ba0b39ecf7a",
+                                      "asset":  "patch-frontend-1.0.32.zip",
+                                      "size":  203758
                                   },
                      "electron":  {
                                       "target":  "app.asar.unpacked/dist-electron",
-                                      "sha256":  "4fc9c42d86bf2018d15f466636890f1d951bcee779d02fe84e351b05ba00ceae",
-                                      "asset":  "patch-electron-1.0.31.zip",
-                                      "size":  6460
+                                      "sha256":  "9581ded6c8efdfdc7cca3662ff87db13ea364b9ba1c537ea723f67bf0cbe863c",
+                                      "asset":  "patch-electron-1.0.32.zip",
+                                      "size":  5896
                                   }
                  },
-    "min_version":  "1.0.30",
-    "version":  "1.0.31"
+    "min_version":  "1.0.32",
+    "version":  "1.0.32"
 }

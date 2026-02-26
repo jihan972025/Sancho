@@ -11,11 +11,105 @@ from typing import Any, Callable
 
 from ..config import get_config
 from ..llm.registry import get_provider_for_model
+from ..memory import add_trade_memory
 from . import indicators, storage
 
 logger = logging.getLogger(__name__)
 
-UPBIT_FEE = 0.0005  # 0.05 %
+UPBIT_FEE = 0.0005  # 0.05 % (legacy fallback)
+
+# ── Exchange configuration ──
+
+EXCHANGE_CONFIG: dict[str, dict] = {
+    "upbit": {
+        "quote": "KRW",
+        "fee": 0.0005,       # 0.05%
+        "currency_symbol": "₩",
+        "ccxt_options": {"createMarketBuyOrderRequiresPrice": False},
+        "buy_by_cost": True,  # amount param = quote currency cost
+        "min_order": 5000,
+    },
+    "binance": {
+        "quote": "USDT",
+        "fee": 0.001,         # 0.1%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 5,
+    },
+    "coinbase": {
+        "quote": "USDT",
+        "fee": 0.006,         # 0.6%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 1,
+    },
+    "bybit": {
+        "quote": "USDT",
+        "fee": 0.001,         # 0.1%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 1,
+    },
+    "okx": {
+        "quote": "USDT",
+        "fee": 0.001,         # 0.1%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 1,
+    },
+    "kraken": {
+        "quote": "USD",
+        "fee": 0.0026,        # 0.26%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 5,
+    },
+    "mexc": {
+        "quote": "USDT",
+        "fee": 0.001,         # 0.1%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 1,
+    },
+    "gateio": {
+        "quote": "USDT",
+        "fee": 0.002,         # 0.2%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 1,
+    },
+    "kucoin": {
+        "quote": "USDT",
+        "fee": 0.001,         # 0.1%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 0.1,
+    },
+    "bitget": {
+        "quote": "USDT",
+        "fee": 0.001,         # 0.1%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 1,
+    },
+    "htx": {
+        "quote": "USDT",
+        "fee": 0.002,         # 0.2%
+        "currency_symbol": "$",
+        "ccxt_options": {},
+        "buy_by_cost": False,
+        "min_order": 1,
+    },
+}
 
 TIMEFRAME_SECONDS = {
     "1m": 1 * 60,
@@ -43,17 +137,17 @@ HIGHER_TF_MAP = {
 # ── LLM Strategy Prompt ──
 
 _SYSTEM_PROMPT = """\
-You are a professional cryptocurrency quantitative trader for Upbit KRW market.
+You are a professional cryptocurrency quantitative trader for {exchange_name} {quote_currency} market.
 
 ## Goal
-Generate profitable short-term trading signals. Upbit charges 0.05 % fee per trade (0.1 % round-trip).
-Only recommend a BUY or SELL when you are highly confident the expected gain exceeds 0.15 %.
+Generate profitable short-term trading signals. {exchange_name} charges {fee_pct} fee per trade ({fee_round_trip} round-trip).
+Only recommend a BUY or SELL when you are highly confident the expected gain exceeds {min_gain}.
 
 ## Current Market State
-Coin: {coin}/KRW
+Coin: {coin}/{quote_currency}
 Analysis Interval: {timeframe}
 Candle Interval: {candle_interval}
-Current Price: ₩{current_price:,.0f}
+Current Price: {cs}{current_price:,.{price_decimals}f}
 
 ## Trend Summary
 {trend_summary}
@@ -64,13 +158,13 @@ Current Price: ₩{current_price:,.0f}
 ## Technical Indicators ({candle_interval})
 - RSI(14): {rsi}
 - MACD: {macd} | Signal: {macd_signal} | Histogram: {macd_histogram}
-- Bollinger Bands: Upper=₩{bb_upper:,.0f}  Mid=₩{bb_middle:,.0f}  Lower=₩{bb_lower:,.0f}  Position={bb_position}
-- SMA(20): ₩{sma_20:,.0f}  SMA(50): ₩{sma_50:,.0f}
-- EMA(12): ₩{ema_12:,.0f}  EMA(26): ₩{ema_26:,.0f}
+- Bollinger Bands: Upper={cs}{bb_upper:,.{price_decimals}f}  Mid={cs}{bb_middle:,.{price_decimals}f}  Lower={cs}{bb_lower:,.{price_decimals}f}  Position={bb_position}
+- SMA(20): {cs}{sma_20:,.{price_decimals}f}  SMA(50): {cs}{sma_50:,.{price_decimals}f}
+- EMA(12): {cs}{ema_12:,.{price_decimals}f}  EMA(26): {cs}{ema_26:,.{price_decimals}f}
 - Volume: {volume:,.2f}  (20-avg: {volume_avg_20:,.2f})
-- ATR(14): ₩{atr:,.0f}
-- ATR-based Stop-Loss: ₩{atr_stop_loss:,.0f} ({atr_stop_loss_pct:+.2f}%)
-- ATR-based Take-Profit: ₩{atr_take_profit:,.0f} ({atr_take_profit_pct:+.2f}%)
+- ATR(14): {cs}{atr:,.{price_decimals}f}
+- ATR-based Stop-Loss: {cs}{atr_stop_loss:,.{price_decimals}f} ({atr_stop_loss_pct:+.2f}%)
+- ATR-based Take-Profit: {cs}{atr_take_profit:,.{price_decimals}f} ({atr_take_profit_pct:+.2f}%)
 - Last candle change: {price_change_pct}%
 
 ## Recent Candles
@@ -85,7 +179,7 @@ Current Price: ₩{current_price:,.0f}
 ## Rules
 1. Require confluence of 3+ indicators before BUY/SELL.
 2. HOLD if uncertain – no trade is better than a losing trade.
-3. Factor in 0.05 % fee per side.
+3. Factor in {fee_pct} fee per side.
 4. Use ATR-based dynamic stop-loss/take-profit levels. Prefer stop_loss_pct and take_profit_pct derived from ATR rather than fixed values.
 5. Avoid overtrading.
 6. Volume confirmation: prefer BUY/SELL signals backed by above-average volume; be cautious when volume is below the 20-period average.
@@ -119,6 +213,7 @@ class TradingEngine:
         language: str = "en",
         candle_interval: str = "15m",
         strategy: str = "llm",
+        exchange: str = "upbit",
     ):
         self.coin = coin
         self.timeframe = timeframe
@@ -128,6 +223,13 @@ class TradingEngine:
         self.on_event = on_event  # SSE callback
         self.language = language
         self.strategy = strategy  # "llm" or "rule"
+        self.exchange = exchange
+
+        # Exchange-specific config
+        self._ex_cfg = EXCHANGE_CONFIG.get(exchange, EXCHANGE_CONFIG["upbit"])
+        self._quote = self._ex_cfg["quote"]
+        self._fee = self._ex_cfg["fee"]
+        self._cs = self._ex_cfg["currency_symbol"]
 
         self.is_running = False
         self._task: asyncio.Task | None = None
@@ -167,7 +269,7 @@ class TradingEngine:
             return
         self.is_running = True
         self._task = asyncio.create_task(self._loop())
-        logger.info("AutoTrading started: %s interval=%s candle=%s ₩%s %s strategy=%s", self.coin, self.timeframe, self.candle_interval, self.amount_krw, self.model, self.strategy)
+        logger.info("AutoTrading started: %s %s/%s interval=%s candle=%s %s%s %s strategy=%s", self.exchange, self.coin, self._quote, self.timeframe, self.candle_interval, self._cs, self.amount_krw, self.model, self.strategy)
 
     async def stop(self) -> None:
         self.is_running = False
@@ -195,7 +297,7 @@ class TradingEngine:
         while self.is_running:
             try:
                 self._candle_count += 1
-                self._emit({"type": "progress", "content": f"Fetching {self.coin}/KRW {self.candle_interval} data..."})
+                self._emit({"type": "progress", "content": f"Fetching {self.coin}/{self._quote} {self.candle_interval} data..."})
 
                 # 1. Fetch candles
                 candles = await loop.run_in_executor(None, self._fetch_candles, ccxt_tf)
@@ -295,31 +397,57 @@ class TradingEngine:
 
             await asyncio.sleep(interval)
 
-    # ── Upbit interaction ──
+    # ── Exchange interaction ──
 
     def _get_exchange(self):
         import ccxt
 
         cfg = get_config()
-        return ccxt.upbit({
+        ex_id = self.exchange
+
+        # Build credential dict based on exchange
+        key_map = {
+            "upbit":    ("upbit_access_key",   "upbit_secret_key",   None),
+            "binance":  ("binance_api_key",    "binance_secret_key", None),
+            "coinbase": ("coinbase_api_key",   "coinbase_secret_key", None),
+            "bybit":    ("bybit_api_key",      "bybit_secret_key",   None),
+            "okx":      ("okx_api_key",        "okx_secret_key",     "okx_passphrase"),
+            "kraken":   ("kraken_api_key",     "kraken_secret_key",  None),
+            "mexc":     ("mexc_api_key",       "mexc_secret_key",    None),
+            "gateio":   ("gateio_api_key",     "gateio_secret_key",  None),
+            "kucoin":   ("kucoin_api_key",     "kucoin_secret_key",  "kucoin_passphrase"),
+            "bitget":   ("bitget_api_key",     "bitget_secret_key",  "bitget_passphrase"),
+            "htx":      ("htx_api_key",        "htx_secret_key",     None),
+        }
+
+        api_key_field, secret_field, passphrase_field = key_map.get(ex_id, key_map["upbit"])
+        api_key = getattr(cfg.api, api_key_field, "")
+        secret = getattr(cfg.api, secret_field, "")
+
+        params: dict = {
             "enableRateLimit": True,
-            "apiKey": cfg.api.upbit_access_key,
-            "secret": cfg.api.upbit_secret_key,
-            "options": {
-                "createMarketBuyOrderRequiresPrice": False,
-            },
-        })
+            "apiKey": api_key,
+            "secret": secret,
+            "options": dict(self._ex_cfg.get("ccxt_options", {})),
+        }
+        if passphrase_field:
+            params["password"] = getattr(cfg.api, passphrase_field, "")
+
+        exchange_class = getattr(ccxt, ex_id, None)
+        if not exchange_class:
+            raise ValueError(f"Unsupported exchange: {ex_id}")
+        return exchange_class(params)
 
     def _fetch_candles(self, tf: str) -> list:
         exchange = self._get_exchange()
-        symbol = f"{self.coin}/KRW"
+        symbol = f"{self.coin}/{self._quote}"
         return exchange.fetch_ohlcv(symbol, tf, limit=150)
 
     async def _execute_buy(self, reasoning: str, loop: asyncio.AbstractEventLoop) -> None:
         try:
             self._emit({"type": "progress", "content": f"Executing BUY {self.coin}..."})
             exchange = self._get_exchange()
-            symbol = f"{self.coin}/KRW"
+            symbol = f"{self.coin}/{self._quote}"
 
             # Fetch current price
             ticker = await loop.run_in_executor(None, exchange.fetch_ticker, symbol)
@@ -328,12 +456,19 @@ class TradingEngine:
                 self._emit({"type": "error", "content": "Invalid price"})
                 return
 
-            # Execute market buy – pass KRW cost directly
-            # (createMarketBuyOrderRequiresPrice=False → amount = cost in KRW)
+            # Execute market buy
             cost = self.amount_krw
-            order = await loop.run_in_executor(
-                None, lambda: exchange.create_market_buy_order(symbol, cost)
-            )
+            if self._ex_cfg["buy_by_cost"]:
+                # Upbit style: amount = quote currency cost
+                order = await loop.run_in_executor(
+                    None, lambda: exchange.create_market_buy_order(symbol, cost)
+                )
+            else:
+                # Most exchanges: amount = base currency quantity
+                qty = cost / price
+                order = await loop.run_in_executor(
+                    None, lambda: exchange.create_market_buy_order(symbol, qty)
+                )
 
             filled_price = order.get("average") or order.get("price") or price
             filled_qty = order.get("filled") or cost / (filled_price or price)
@@ -382,6 +517,17 @@ class TradingEngine:
                 "quantity": filled_qty,
                 "amount_krw": round(cost, 0),
             })
+
+            # Save BUY as long-term memory
+            try:
+                add_trade_memory({
+                    **buy_record,
+                    "exchange": self.exchange,
+                    "currency_symbol": self._cs,
+                }, action="BUY")
+            except Exception:
+                logger.debug("Failed to save BUY trade memory")
+
             logger.info("BUY executed: %s @ ₩%s qty=%s", self.coin, filled_price, filled_qty)
 
         except Exception as e:
@@ -394,7 +540,7 @@ class TradingEngine:
         try:
             self._emit({"type": "progress", "content": f"Executing SELL {self.coin}..."})
             exchange = self._get_exchange()
-            symbol = f"{self.coin}/KRW"
+            symbol = f"{self.coin}/{self._quote}"
 
             order = await loop.run_in_executor(
                 None, lambda: exchange.create_market_sell_order(symbol, self.quantity)
@@ -406,8 +552,8 @@ class TradingEngine:
             # P&L calculation
             entry_total = (self.entry_price or self.current_price) * self.quantity
             exit_total = filled_price * self.quantity
-            fee_buy = entry_total * UPBIT_FEE
-            fee_sell = exit_total * UPBIT_FEE
+            fee_buy = entry_total * self._fee
+            fee_sell = exit_total * self._fee
             total_fee = fee_buy + fee_sell
             pnl_krw = exit_total - entry_total - total_fee
             pnl_pct = (pnl_krw / entry_total) * 100 if entry_total > 0 else 0
@@ -448,6 +594,16 @@ class TradingEngine:
                 self._consecutive_losses += 1
             else:
                 self._consecutive_losses = 0
+
+            # Save completed trade (BUY→SELL) as long-term memory
+            try:
+                add_trade_memory({
+                    **trade_record,
+                    "exchange": self.exchange,
+                    "currency_symbol": self._cs,
+                }, action="SELL")
+            except Exception:
+                logger.debug("Failed to save SELL trade memory")
 
             self._emit({
                 "type": "trade",
@@ -496,15 +652,15 @@ class TradingEngine:
         # Build input summary (indicator snapshot)
         input_summary = (
             f"[Rule-Based Input]\n"
-            f"Coin: {self.coin}/KRW | Candle: {self.candle_interval} | Analysis: {self.timeframe}\n"
-            f"Price: ₩{price:,.0f}\n"
+            f"Coin: {self.coin}/{self._quote} | Candle: {self.candle_interval} | Analysis: {self.timeframe}\n"
+            f"Price: {self._cs}{price:,.2f}\n"
             f"RSI(14): {rsi:.1f}\n"
             f"MACD Histogram: {macd_hist:.4f}\n"
             f"BB Position: {bb_pos:.2f}\n"
-            f"SMA(20): ₩{sma20:,.0f} | SMA(50): ₩{ind.get('sma_50', 0):,.0f}\n"
-            f"EMA(12): ₩{ema12:,.0f} | EMA(26): ₩{ema26:,.0f}\n"
+            f"SMA(20): {self._cs}{sma20:,.2f} | SMA(50): {self._cs}{ind.get('sma_50', 0):,.2f}\n"
+            f"EMA(12): {self._cs}{ema12:,.2f} | EMA(26): {self._cs}{ema26:,.2f}\n"
             f"Volume: {vol:,.2f} (20-avg: {vol_avg:,.2f})\n"
-            f"ATR(14): ₩{atr_val:,.0f}\n"
+            f"ATR(14): {self._cs}{atr_val:,.2f}\n"
             f"Higher TF: {self._higher_tf_label or 'N/A'} → {self._higher_tf_trend}\n"
             f"Position: {'IN' if self.in_position else 'OUT'}"
         )
@@ -648,7 +804,7 @@ class TradingEngine:
             entry = self.entry_price or ind["current_price"]
             unrealized = (ind["current_price"] - entry) / entry * 100 if entry else 0
             position_text = (
-                f"IN POSITION — Entry: ₩{entry:,.0f}  "
+                f"IN POSITION — Entry: {self._cs}{entry:,.2f}  "
                 f"Unrealized P&L: {unrealized:+.2f}%  "
                 f"Quantity: {self.quantity:.8f}"
             )
@@ -691,6 +847,12 @@ class TradingEngine:
         # Ensure all indicator values are numeric (never None) for prompt formatting
         safe_ind = {k: (v if v is not None else 0) for k, v in ind.items()}
 
+        # Exchange-specific prompt variables
+        fee_pct_val = self._fee * 100
+        fee_rt_val = fee_pct_val * 2
+        min_gain_val = fee_rt_val * 1.5
+        price_decimals = 0 if self._quote == "KRW" else 2
+
         prompt = _SYSTEM_PROMPT.format(
             coin=self.coin,
             timeframe=self.timeframe,
@@ -705,6 +867,13 @@ class TradingEngine:
             atr_take_profit=atr_take_profit,
             atr_take_profit_pct=atr_take_profit_pct,
             recent_trades_text=recent_trades_text,
+            exchange_name=self.exchange.capitalize(),
+            quote_currency=self._quote,
+            fee_pct=f"{fee_pct_val:.2f} %",
+            fee_round_trip=f"{fee_rt_val:.2f} %",
+            min_gain=f"{min_gain_val:.2f} %",
+            cs=self._cs,
+            price_decimals=price_decimals,
             **safe_ind,
         )
 
@@ -805,8 +974,8 @@ class TradingEngine:
         h = self._higher_tf_ind
         return (
             f"Timeframe: {self._higher_tf_label} | Trend: {self._higher_tf_trend}\n"
-            f"  EMA(12): ₩{h.get('ema_12', 0):,.0f}  EMA(26): ₩{h.get('ema_26', 0):,.0f}\n"
-            f"  SMA(50): ₩{h.get('sma_50', 0):,.0f}  RSI: {h.get('rsi', 0):.1f}\n"
+            f"  EMA(12): {self._cs}{h.get('ema_12', 0):,.2f}  EMA(26): {self._cs}{h.get('ema_26', 0):,.2f}\n"
+            f"  SMA(50): {self._cs}{h.get('sma_50', 0):,.2f}  RSI: {h.get('rsi', 0):.1f}\n"
             f"  MACD Hist: {h.get('macd_histogram', 0):.4f}"
         )
 
@@ -881,7 +1050,7 @@ class TradingEngine:
         if self.in_position and self.current_price > 0:
             entry_total = (self.entry_price or self.current_price) * self.quantity
             current_total = self.current_price * self.quantity
-            fee_est = entry_total * UPBIT_FEE + current_total * UPBIT_FEE
+            fee_est = entry_total * self._fee + current_total * self._fee
             unrealized_krw = current_total - entry_total - fee_est
             unrealized_pct = (unrealized_krw / entry_total * 100) if entry_total > 0 else 0
 
@@ -891,6 +1060,7 @@ class TradingEngine:
 
         return {
             "running": self.is_running,
+            "exchange": self.exchange,
             "coin": self.coin,
             "timeframe": self.timeframe,
             "candle_interval": self.candle_interval,

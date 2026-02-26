@@ -12,6 +12,7 @@ interface ElectronChatAppAPI {
 
 interface ElectronWhatsAppAPI extends ElectronChatAppAPI {
   connect: (waVersion?: string) => Promise<void>
+  onStatusUpdate: (cb: (status: string, error?: string) => void) => void
 }
 
 interface ElectronTelegramAPI extends ElectronChatAppAPI {

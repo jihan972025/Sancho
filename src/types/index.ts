@@ -116,6 +116,29 @@ export interface ApiConfig {
   slack_app_token: string
   upbit_access_key: string
   upbit_secret_key: string
+  binance_api_key: string
+  binance_secret_key: string
+  coinbase_api_key: string
+  coinbase_secret_key: string
+  bybit_api_key: string
+  bybit_secret_key: string
+  okx_api_key: string
+  okx_secret_key: string
+  okx_passphrase: string
+  kraken_api_key: string
+  kraken_secret_key: string
+  mexc_api_key: string
+  mexc_secret_key: string
+  gateio_api_key: string
+  gateio_secret_key: string
+  kucoin_api_key: string
+  kucoin_secret_key: string
+  kucoin_passphrase: string
+  bitget_api_key: string
+  bitget_secret_key: string
+  bitget_passphrase: string
+  htx_api_key: string
+  htx_secret_key: string
 }
 
 export interface NotifyApps {

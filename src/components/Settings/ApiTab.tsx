@@ -345,6 +345,9 @@ const services: ServiceDef[] = [
     ],
     description: 'Slack workspace messaging.',
   },
+]
+
+const exchangeServices: ServiceDef[] = [
   {
     id: 'upbit',
     name: 'Upbit',
@@ -356,7 +359,140 @@ const services: ServiceDef[] = [
       { key: 'upbit_access_key', label: 'Access Key', placeholder: 'Upbit Open API Access Key', secret: true },
       { key: 'upbit_secret_key', label: 'Secret Key', placeholder: 'Upbit Open API Secret Key', secret: true },
     ],
-    description: 'Upbit cryptocurrency exchange API (KRW market). Get keys at upbit.com/mypage/open_api_management.',
+    description: 'Upbit cryptocurrency exchange (KRW market). Get keys at upbit.com/mypage/open_api_management.',
+  },
+  {
+    id: 'binance',
+    name: 'Binance',
+    icon: Coins,
+    color: 'text-yellow-400',
+    bgColor: 'bg-yellow-500/10 border-yellow-500/20',
+    isConfigured: (api) => !!(api.binance_api_key && api.binance_secret_key),
+    fields: [
+      { key: 'binance_api_key', label: 'API Key', placeholder: 'Binance API Key', secret: true },
+      { key: 'binance_secret_key', label: 'Secret Key', placeholder: 'Binance Secret Key', secret: true },
+    ],
+    description: 'Binance cryptocurrency exchange (USDT market). Get keys at binance.com/en/my/settings/api-management.',
+  },
+  {
+    id: 'coinbase',
+    name: 'Coinbase',
+    icon: Wallet,
+    color: 'text-blue-500',
+    bgColor: 'bg-blue-600/10 border-blue-600/20',
+    isConfigured: (api) => !!(api.coinbase_api_key && api.coinbase_secret_key),
+    fields: [
+      { key: 'coinbase_api_key', label: 'API Key', placeholder: 'Coinbase API Key', secret: true },
+      { key: 'coinbase_secret_key', label: 'Secret Key', placeholder: 'Coinbase API Secret', secret: true },
+    ],
+    description: 'Coinbase cryptocurrency exchange (USD market). Get keys at coinbase.com/settings/api.',
+  },
+  {
+    id: 'bybit',
+    name: 'Bybit',
+    icon: TrendingUp,
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/10 border-orange-500/20',
+    isConfigured: (api) => !!(api.bybit_api_key && api.bybit_secret_key),
+    fields: [
+      { key: 'bybit_api_key', label: 'API Key', placeholder: 'Bybit API Key', secret: true },
+      { key: 'bybit_secret_key', label: 'Secret Key', placeholder: 'Bybit API Secret', secret: true },
+    ],
+    description: 'Bybit cryptocurrency exchange (USDT market). Get keys at bybit.com/app/user/api-management.',
+  },
+  {
+    id: 'okx',
+    name: 'OKX',
+    icon: BarChart3,
+    color: 'text-slate-200',
+    bgColor: 'bg-slate-500/10 border-slate-500/20',
+    isConfigured: (api) => !!(api.okx_api_key && api.okx_secret_key && api.okx_passphrase),
+    fields: [
+      { key: 'okx_api_key', label: 'API Key', placeholder: 'OKX API Key', secret: true },
+      { key: 'okx_secret_key', label: 'Secret Key', placeholder: 'OKX Secret Key', secret: true },
+      { key: 'okx_passphrase', label: 'Passphrase', placeholder: 'OKX API Passphrase', secret: true },
+    ],
+    description: 'OKX cryptocurrency exchange (USDT market). Get keys at okx.com/account/my-api.',
+  },
+  {
+    id: 'kraken',
+    name: 'Kraken',
+    icon: Activity,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/10 border-purple-500/20',
+    isConfigured: (api) => !!(api.kraken_api_key && api.kraken_secret_key),
+    fields: [
+      { key: 'kraken_api_key', label: 'API Key', placeholder: 'Kraken API Key', secret: true },
+      { key: 'kraken_secret_key', label: 'Private Key', placeholder: 'Kraken Private Key', secret: true },
+    ],
+    description: 'Kraken cryptocurrency exchange (USD/EUR market). Get keys at kraken.com/u/security/api.',
+  },
+  {
+    id: 'mexc',
+    name: 'MEXC',
+    icon: TrendingUp,
+    color: 'text-blue-300',
+    bgColor: 'bg-blue-400/10 border-blue-400/20',
+    isConfigured: (api) => !!(api.mexc_api_key && api.mexc_secret_key),
+    fields: [
+      { key: 'mexc_api_key', label: 'API Key', placeholder: 'MEXC API Key', secret: true },
+      { key: 'mexc_secret_key', label: 'Secret Key', placeholder: 'MEXC Secret Key', secret: true },
+    ],
+    description: 'MEXC cryptocurrency exchange (USDT market). Get keys at mexc.com/user/openapi.',
+  },
+  {
+    id: 'gateio',
+    name: 'Gate.io',
+    icon: Coins,
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/10 border-green-500/20',
+    isConfigured: (api) => !!(api.gateio_api_key && api.gateio_secret_key),
+    fields: [
+      { key: 'gateio_api_key', label: 'API Key', placeholder: 'Gate.io API Key', secret: true },
+      { key: 'gateio_secret_key', label: 'Secret Key', placeholder: 'Gate.io Secret Key', secret: true },
+    ],
+    description: 'Gate.io cryptocurrency exchange (USDT market). Get keys at gate.io/myaccount/apikeys.',
+  },
+  {
+    id: 'kucoin',
+    name: 'KuCoin',
+    icon: Wallet,
+    color: 'text-teal-400',
+    bgColor: 'bg-teal-500/10 border-teal-500/20',
+    isConfigured: (api) => !!(api.kucoin_api_key && api.kucoin_secret_key && api.kucoin_passphrase),
+    fields: [
+      { key: 'kucoin_api_key', label: 'API Key', placeholder: 'KuCoin API Key', secret: true },
+      { key: 'kucoin_secret_key', label: 'Secret Key', placeholder: 'KuCoin API Secret', secret: true },
+      { key: 'kucoin_passphrase', label: 'Passphrase', placeholder: 'KuCoin API Passphrase', secret: true },
+    ],
+    description: 'KuCoin cryptocurrency exchange (USDT market). Get keys at kucoin.com/account/api.',
+  },
+  {
+    id: 'bitget',
+    name: 'Bitget',
+    icon: BarChart3,
+    color: 'text-cyan-400',
+    bgColor: 'bg-cyan-500/10 border-cyan-500/20',
+    isConfigured: (api) => !!(api.bitget_api_key && api.bitget_secret_key && api.bitget_passphrase),
+    fields: [
+      { key: 'bitget_api_key', label: 'API Key', placeholder: 'Bitget API Key', secret: true },
+      { key: 'bitget_secret_key', label: 'Secret Key', placeholder: 'Bitget Secret Key', secret: true },
+      { key: 'bitget_passphrase', label: 'Passphrase', placeholder: 'Bitget API Passphrase', secret: true },
+    ],
+    description: 'Bitget cryptocurrency exchange (USDT market). Get keys at bitget.com/account/newapi.',
+  },
+  {
+    id: 'htx',
+    name: 'HTX',
+    icon: Activity,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/10 border-blue-500/20',
+    isConfigured: (api) => !!(api.htx_api_key && api.htx_secret_key),
+    fields: [
+      { key: 'htx_api_key', label: 'API Key', placeholder: 'HTX Access Key', secret: true },
+      { key: 'htx_secret_key', label: 'Secret Key', placeholder: 'HTX Secret Key', secret: true },
+    ],
+    description: 'HTX (formerly Huobi) cryptocurrency exchange (USDT market). Get keys at htx.com/en-us/apikey.',
   },
 ]
 
@@ -542,7 +678,7 @@ export default function ApiTab() {
   const [addingNew, setAddingNew] = useState(false)
   const [newApi, setNewApi] = useState<CustomApiDef>({ ...EMPTY_CUSTOM_API })
 
-  const selectedService = services.find((s) => s.id === selected)
+  const selectedService = services.find((s) => s.id === selected) || exchangeServices.find((s) => s.id === selected)
 
   const handleAddApi = () => {
     if (!newApi.name || !newApi.url) return
@@ -566,6 +702,7 @@ export default function ApiTab() {
   const paidServices = services.filter((s) => !s.alwaysOn)
   const [freeCollapsed, setFreeCollapsed] = useState(false)
   const [paidCollapsed, setPaidCollapsed] = useState(false)
+  const [exchangeCollapsed, setExchangeCollapsed] = useState(false)
 
   const renderServiceGrid = (list: ServiceDef[]) => (
     <div className="grid grid-cols-10 gap-2">
@@ -643,6 +780,26 @@ export default function ApiTab() {
       </div>
 
       {!paidCollapsed && renderServiceGrid(paidServices)}
+
+      {/* ── Crypto Exchanges ── */}
+      <div className="border-t border-slate-700 pt-6">
+        <button
+          onClick={() => setExchangeCollapsed(!exchangeCollapsed)}
+          className="flex items-center gap-2 w-full text-left group"
+        >
+          {exchangeCollapsed ? <ChevronRight size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+          <Coins size={16} className="text-emerald-400" />
+          <h2 className="text-lg font-semibold text-slate-200">Crypto Exchanges</h2>
+          <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            {exchangeServices.filter((s) => s.isConfigured(api)).length}/{exchangeServices.length} Connected
+          </span>
+        </button>
+        <p className="text-sm text-slate-500 ml-9 mt-1">
+          Connect exchange APIs for trading and portfolio management.
+        </p>
+      </div>
+
+      {!exchangeCollapsed && renderServiceGrid(exchangeServices)}
 
       {/* Config panel for selected service */}
       {selectedService && (

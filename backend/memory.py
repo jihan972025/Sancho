@@ -107,6 +107,67 @@ def clear_all_memories() -> int:
     return count
 
 
+def add_trade_memory(trade: dict, action: str = "SELL") -> Optional[Memory]:
+    """Save a completed trade (BUY+SELL) as a long-term memory.
+
+    Called after a sell execution so the full round-trip is recorded,
+    or after a buy to note that a position was opened.
+    """
+    coin = trade.get("coin", "?")
+    cs = trade.get("currency_symbol", "₩")
+
+    if action == "SELL":
+        entry_price = trade.get("entry_price", 0)
+        exit_price = trade.get("exit_price", 0)
+        pnl_pct = trade.get("pnl_pct", 0)
+        pnl_krw = trade.get("pnl_krw", 0)
+        buy_reason = trade.get("buy_reasoning", "")
+        sell_reason = trade.get("sell_reasoning", "")
+        entry_time = trade.get("entry_time", "")
+        exit_time = trade.get("exit_time", "")
+        exchange = trade.get("exchange", "")
+
+        # Format date portion only
+        entry_date = entry_time[:10] if entry_time else "?"
+        exit_date = exit_time[:10] if exit_time else "?"
+        result_emoji = "수익" if pnl_pct >= 0 else "손실"
+
+        content = (
+            f"[자동매매 거래완료] {exchange} {coin} "
+            f"매수 {cs}{entry_price:,.0f} → 매도 {cs}{exit_price:,.0f} | "
+            f"{result_emoji} {pnl_pct:+.2f}% ({cs}{pnl_krw:,.0f}) | "
+            f"{entry_date}~{exit_date}"
+        )
+        if sell_reason:
+            content += f" | 매도사유: {sell_reason[:80]}"
+
+        importance = 4 if abs(pnl_pct) >= 1.0 else 3
+    else:
+        # BUY — record position open
+        entry_price = trade.get("entry_price", 0)
+        amount = trade.get("amount_krw", 0)
+        reason = trade.get("buy_reasoning", "") or trade.get("reasoning", "")
+        entry_time = trade.get("entry_time", "")
+        entry_date = entry_time[:10] if entry_time else "?"
+        exchange = trade.get("exchange", "")
+
+        content = (
+            f"[자동매매 매수] {exchange} {coin} "
+            f"매수가 {cs}{entry_price:,.0f} | 투자금 {cs}{amount:,.0f} | "
+            f"{entry_date}"
+        )
+        if reason:
+            content += f" | 매수사유: {reason[:80]}"
+
+        importance = 3
+
+    added = add_memories(
+        [{"content": content, "category": "event", "importance": importance}],
+        source="autotrading",
+    )
+    return added[0] if added else None
+
+
 def build_memory_prompt(
     recent_message: str = "", max_chars: int = 3000
 ) -> Optional[str]:

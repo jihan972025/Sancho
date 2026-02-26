@@ -79,9 +79,9 @@ function clearAuthDir(): void {
   }
 }
 
-function setStatus(s: WAStatus): void {
+function setStatus(s: WAStatus, error?: string): void {
   status = s
-  mainWin?.webContents.send('whatsapp:status-update', s)
+  mainWin?.webContents.send('whatsapp:status-update', s, error)
 }
 
 export function initWhatsApp(win: BrowserWindow): void {
@@ -98,8 +98,21 @@ export async function connectWhatsApp(waVersion?: string): Promise<void> {
   setStatus('connecting')
   ensureAuthDir()
 
-  // Dynamic import for ESM-only packages (must use esmImport to avoid require())
-  const baileys = await esmImport('@whiskeysockets/baileys')
+  let baileys: any
+  let pino: any
+  let QRCode: any
+
+  try {
+    // Dynamic import for ESM-only packages (must use esmImport to avoid require())
+    baileys = await esmImport('@whiskeysockets/baileys')
+    pino = (await esmImport('pino')).default
+    QRCode = await esmImport('qrcode')
+  } catch (err) {
+    console.error('[WhatsApp] Failed to load dependencies:', err)
+    setStatus('disconnected', `Failed to load WhatsApp libraries: ${err instanceof Error ? err.message : String(err)}`)
+    return
+  }
+
   const makeWASocket = baileys.default
   const {
     useMultiFileAuthState,
@@ -108,11 +121,19 @@ export async function connectWhatsApp(waVersion?: string): Promise<void> {
     Browsers,
   } = baileys
 
-  const pino = (await esmImport('pino')).default
-  const QRCode = await esmImport('qrcode')
-
   const logger = pino({ level: 'warn' })
-  const { state, saveCreds } = await useMultiFileAuthState(getAuthDir())
+
+  let state: any
+  let saveCreds: any
+  try {
+    const auth = await useMultiFileAuthState(getAuthDir())
+    state = auth.state
+    saveCreds = auth.saveCreds
+  } catch (err) {
+    console.error('[WhatsApp] Failed to load auth state:', err)
+    setStatus('disconnected', `Failed to load auth state: ${err instanceof Error ? err.message : String(err)}`)
+    return
+  }
 
   // Resolve WhatsApp Web version:
   // 1) User-specified version from settings
@@ -157,6 +178,7 @@ export async function connectWhatsApp(waVersion?: string): Promise<void> {
     }
   }
 
+  try {
   sock = makeWASocket({
     auth: {
       creds: state.creds,
@@ -221,6 +243,11 @@ export async function connectWhatsApp(waVersion?: string): Promise<void> {
       } else if (statusCode === DisconnectReason.restartRequired) {
         // Restart immediately
         connectWhatsApp(lastWaVersion).catch(console.error)
+      } else if (statusCode === 405 && lastWaVersion) {
+        // 405 = version outdated. Retry WITHOUT user-specified version to auto-detect.
+        console.log('[WhatsApp] Version 405 error — retrying with auto-detected version')
+        lastWaVersion = undefined
+        connectWhatsApp(undefined).catch(console.error)
       } else if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         // Auto-reconnect with backoff
         reconnectAttempts++
@@ -233,7 +260,7 @@ export async function connectWhatsApp(waVersion?: string): Promise<void> {
         }, delay)
       } else {
         console.log('[WhatsApp] Max reconnect attempts reached. Giving up.')
-        setStatus('disconnected')
+        setStatus('disconnected', 'Connection failed after multiple attempts. Check your WhatsApp Web Version in settings or clear it for auto-detection.')
         reconnectAttempts = 0
       }
     }
@@ -327,6 +354,11 @@ export async function connectWhatsApp(waVersion?: string): Promise<void> {
       }
     }
   })
+  } catch (err) {
+    console.error('[WhatsApp] Failed to create socket:', err)
+    sock = null
+    setStatus('disconnected', `Connection failed: ${err instanceof Error ? err.message : String(err)}`)
+  }
 }
 
 export async function disconnectWhatsApp(): Promise<void> {

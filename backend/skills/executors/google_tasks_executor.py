@@ -37,20 +37,31 @@ class GoogleTasksExecutor(SkillExecutor):
                 return await self._list_tasks(headers, params)
             elif action == "create":
                 return await self._create_task(headers, params)
+            elif action == "batch_create":
+                return await self._batch_create_tasks(headers, params)
             elif action == "complete":
                 return await self._complete_task(headers, params)
             elif action == "delete":
                 return await self._delete_task(headers, params)
             else:
-                return f"[SKILL_ERROR] Unknown action '{action}'. Use: list, create, complete, delete"
+                return f"[SKILL_ERROR] Unknown action '{action}'. Use: list, create, batch_create, complete, delete"
         except httpx.HTTPStatusError as e:
+            body = e.response.text[:500]
+            logger.error("Tasks API HTTP %s: %s", e.response.status_code, body)
             if e.response.status_code == 403:
+                # Distinguish between "API not enabled" vs "insufficient scope"
+                if "has not been used" in body or "is disabled" in body:
+                    return (
+                        "[SKILL_ERROR] Google Tasks API is not enabled in the Google Cloud project. "
+                        "The project admin must enable it at: "
+                        "https://console.cloud.google.com/apis/library/tasks.googleapis.com"
+                    )
                 return (
-                    "[SKILL_ERROR] Insufficient permissions for Google Tasks. "
-                    "Please log out and log back in from Settings > Profile to grant Tasks access."
+                    "[SKILL_ERROR] Insufficient permissions for Google Tasks (403). "
+                    "Please log out and log back in from Settings > Profile to grant Tasks access. "
+                    f"Detail: {body[:200]}"
                 )
-            body = e.response.text[:300]
-            return f"[SKILL_ERROR] Tasks API error: {e.response.status_code} {body}"
+            return f"[SKILL_ERROR] Tasks API error: {e.response.status_code} {body[:300]}"
         except Exception as e:
             logger.error("Tasks executor error: %s", e, exc_info=True)
             return f"[SKILL_ERROR] Tasks error: {e}"
@@ -114,6 +125,50 @@ class GoogleTasksExecutor(SkillExecutor):
             f"  ID: {result.get('id', '')}"
             f"{due_str}"
         )
+
+    async def _batch_create_tasks(self, headers: dict, params: dict) -> str:
+        tasklist = params.get("tasklist", "@default")
+        tasks = params.get("tasks", [])
+
+        if not tasks or not isinstance(tasks, list):
+            return "[SKILL_ERROR] 'tasks' (array of {title, notes?, due?}) is required for batch_create"
+
+        url = f"{TASKS_BASE}/lists/{tasklist}/tasks"
+        created: list[str] = []
+        errors: list[str] = []
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            for i, task_item in enumerate(tasks):
+                title = task_item.get("title", "") if isinstance(task_item, dict) else str(task_item)
+                if not title:
+                    errors.append(f"#{i + 1}: missing title")
+                    continue
+
+                task_body: dict[str, Any] = {"title": title}
+                if isinstance(task_item, dict):
+                    if task_item.get("notes"):
+                        task_body["notes"] = task_item["notes"]
+                    if task_item.get("due"):
+                        task_body["due"] = task_item["due"]
+
+                try:
+                    resp = await client.post(
+                        url,
+                        headers={**headers, "Content-Type": "application/json"},
+                        json=task_body,
+                    )
+                    resp.raise_for_status()
+                    result = resp.json()
+                    created.append(f"  ✅ {result.get('title', title)}")
+                except Exception as e:
+                    errors.append(f"  ❌ {title}: {e}")
+
+        lines = [f"Created {len(created)} of {len(tasks)} task(s):"]
+        lines.extend(created)
+        if errors:
+            lines.append(f"\nFailed ({len(errors)}):")
+            lines.extend(errors)
+        return "\n".join(lines)
 
     async def _complete_task(self, headers: dict, params: dict) -> str:
         tasklist = params.get("tasklist", "@default")

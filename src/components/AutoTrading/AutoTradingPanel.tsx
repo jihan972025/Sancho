@@ -33,7 +33,20 @@ interface CoinDef {
   volume_24h?: number
 }
 
-// Coins will be loaded dynamically from Upbit API
+// Exchange definitions
+const EXCHANGES = [
+  { id: 'upbit',    name: 'Upbit',    quote: 'KRW', cs: '₩' },
+  { id: 'binance',  name: 'Binance',  quote: 'USDT', cs: '$' },
+  { id: 'coinbase', name: 'Coinbase', quote: 'USDT', cs: '$' },
+  { id: 'bybit',    name: 'Bybit',    quote: 'USDT', cs: '$' },
+  { id: 'okx',      name: 'OKX',      quote: 'USDT', cs: '$' },
+  { id: 'kraken',   name: 'Kraken',   quote: 'USD',  cs: '$' },
+  { id: 'mexc',     name: 'MEXC',     quote: 'USDT', cs: '$' },
+  { id: 'gateio',   name: 'Gate.io',  quote: 'USDT', cs: '$' },
+  { id: 'kucoin',   name: 'KuCoin',   quote: 'USDT', cs: '$' },
+  { id: 'bitget',   name: 'Bitget',   quote: 'USDT', cs: '$' },
+  { id: 'htx',      name: 'HTX',      quote: 'USDT', cs: '$' },
+] as const
 
 const TIMEFRAME_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h'] as const
 const CANDLE_IDS = ['1m', '3m', '5m', '10m', '15m', '30m', '1h', '4h', '1d', '1w', '1M'] as const
@@ -109,6 +122,7 @@ function yesterdayStr(): string {
 
 export default function AutoTradingPanel() {
   const { t, i18n } = useTranslation()
+  const [selectedExchange, setSelectedExchange] = useState('upbit')
   const [coins, setCoins] = useState<CoinDef[]>([])
   const [coinsLoading, setCoinsLoading] = useState(true)
   const [coin, setCoin] = useState('BTC')
@@ -213,12 +227,14 @@ export default function AutoTradingPanel() {
     setAmountDisplay(formatComma(amountKrw))
   }
 
-  // Load available coins from Upbit
+  const currentExchange = EXCHANGES.find((e) => e.id === selectedExchange) || EXCHANGES[0]
+
+  // Load available coins from selected exchange
   useEffect(() => {
     const loadCoins = async () => {
       try {
         setCoinsLoading(true)
-        const res = await fetch(`${BASE_URL}/api/autotrading/available-coins`)
+        const res = await fetch(`${BASE_URL}/api/autotrading/available-coins?exchange=${selectedExchange}`)
         if (res.ok) {
           const data = await res.json()
           if (data.coins && data.coins.length > 0) {
@@ -230,6 +246,10 @@ export default function AutoTradingPanel() {
               volume_24h: c.volume_24h || 0,
             }))
             setCoins(mapped)
+            // Reset coin to BTC if current coin not in new list
+            if (!mapped.some((c: CoinDef) => c.id === coin)) {
+              setCoin(mapped[0]?.id || 'BTC')
+            }
           }
         }
       } catch (err) {
@@ -243,7 +263,7 @@ export default function AutoTradingPanel() {
       }
     }
     loadCoins()
-  }, [])
+  }, [selectedExchange])
 
   // Load initial status + history
   useEffect(() => {
@@ -267,6 +287,7 @@ export default function AutoTradingPanel() {
           setAmountDisplay(formatComma(amt))
           setSelectedModel(data.model || '')
           setStrategy(data.strategy || 'llm')
+          setSelectedExchange(data.exchange || 'upbit')
         } else if (data.saved_config) {
           setCoin(data.saved_config.coin || 'BTC')
           setTimeframe(data.saved_config.timeframe || '15m')
@@ -276,6 +297,7 @@ export default function AutoTradingPanel() {
           setAmountDisplay(formatComma(amt))
           setSelectedModel(data.saved_config.model || '')
           setStrategy(data.saved_config.strategy || 'llm')
+          setSelectedExchange(data.saved_config.exchange || 'upbit')
         }
       }
     } catch {
@@ -302,7 +324,7 @@ export default function AutoTradingPanel() {
   const fetchAssets = async () => {
     setAssetsLoading(true)
     try {
-      const res = await fetch(`${BASE_URL}/api/autotrading/assets`)
+      const res = await fetch(`${BASE_URL}/api/autotrading/assets?exchange=${selectedExchange}`)
       if (res.ok) {
         const data = await res.json()
         setAssets(data)
@@ -319,7 +341,7 @@ export default function AutoTradingPanel() {
     fetchAssets()
     const iv = setInterval(fetchAssets, 30000)
     return () => clearInterval(iv)
-  }, [])
+  }, [selectedExchange])
 
   // Manual trade handlers
   const handleManualAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -357,7 +379,7 @@ export default function AutoTradingPanel() {
       const res = await fetch(`${BASE_URL}/api/autotrading/manual-buy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coin: manualCoin, amount_krw: manualAmountKrw }),
+        body: JSON.stringify({ coin: manualCoin, amount_krw: manualAmountKrw, exchange: selectedExchange }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({ detail: res.statusText }))
@@ -381,7 +403,7 @@ export default function AutoTradingPanel() {
     setManualError(null)
     setManualResult(null)
     try {
-      const body: any = { coin: manualCoin }
+      const body: any = { coin: manualCoin, exchange: selectedExchange }
       if (!manualSellAll && manualSellQty) {
         body.quantity = parseFloat(manualSellQty)
       }
@@ -486,6 +508,7 @@ export default function AutoTradingPanel() {
           model: selectedModel,
           language: i18n.language,
           strategy,
+          exchange: selectedExchange,
         }),
       })
       if (!res.ok) {
@@ -530,6 +553,31 @@ export default function AutoTradingPanel() {
     <div className="flex flex-col h-full bg-slate-900 overflow-y-auto">
       {/* Controls */}
       <div className="border-b border-slate-800 px-5 py-4 space-y-3">
+        {/* Exchange + Coin selection */}
+        <div className="flex gap-4 items-end">
+        {/* Exchange selection */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
+            {t('crypto.exchange', 'Exchange')}
+          </label>
+          <div className="flex gap-1 flex-wrap">
+            {EXCHANGES.map((ex) => (
+              <button
+                key={ex.id}
+                onClick={() => setSelectedExchange(ex.id)}
+                disabled={isRunning}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  selectedExchange === ex.id
+                    ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-800 border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {ex.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Coin selection */}
         <div>
           <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
@@ -549,6 +597,7 @@ export default function AutoTradingPanel() {
             <span className="text-slate-500 text-xs">{coins.find((c) => c.id === coin)?.name || ''}</span>
             <Search size={13} className="text-slate-500 ml-1" />
           </button>
+        </div>
         </div>
         {showCoinSearch && (
           <CoinSearchPopup
@@ -810,11 +859,11 @@ export default function AutoTradingPanel() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2">
                   <div className="text-xs text-slate-500">{t('crypto.krwBalance')}</div>
-                  <div className="text-sm font-bold text-slate-100">₩{(assets.krw_balance || 0).toLocaleString()}</div>
+                  <div className="text-sm font-bold text-slate-100">{currentExchange.cs}{(assets.krw_balance || 0).toLocaleString()}</div>
                 </div>
                 <div className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2">
                   <div className="text-xs text-slate-500">{t('crypto.totalEval')}</div>
-                  <div className="text-sm font-bold text-amber-400">₩{(assets.total_eval_krw || 0).toLocaleString()}</div>
+                  <div className="text-sm font-bold text-amber-400">{currentExchange.cs}{(assets.total_eval_krw || 0).toLocaleString()}</div>
                 </div>
               </div>
               {/* Hide zero balance checkbox */}
@@ -847,9 +896,9 @@ export default function AutoTradingPanel() {
                         <tr key={c.currency} className="border-t border-slate-800/50">
                           <td className="px-3 py-1.5 text-slate-200 font-medium">{c.currency}</td>
                           <td className="px-3 py-1.5 text-right text-slate-300">{c.balance.toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
-                          <td className="px-3 py-1.5 text-right text-slate-400">₩{c.avg_buy_price.toLocaleString()}</td>
-                          <td className="px-3 py-1.5 text-right text-slate-300">₩{c.current_price.toLocaleString()}</td>
-                          <td className="px-3 py-1.5 text-right text-slate-300">₩{c.eval_krw.toLocaleString()}</td>
+                          <td className="px-3 py-1.5 text-right text-slate-400">{currentExchange.cs}{c.avg_buy_price.toLocaleString()}</td>
+                          <td className="px-3 py-1.5 text-right text-slate-300">{currentExchange.cs}{c.current_price.toLocaleString()}</td>
+                          <td className="px-3 py-1.5 text-right text-slate-300">{currentExchange.cs}{c.eval_krw.toLocaleString()}</td>
                           <td className={`px-3 py-1.5 text-right font-medium ${c.pnl_pct > 0 ? 'text-emerald-400' : c.pnl_pct < 0 ? 'text-red-400' : 'text-slate-400'}`}>
                             {c.pnl_pct > 0 ? '+' : ''}{c.pnl_pct.toFixed(2)}%
                           </td>
@@ -888,7 +937,7 @@ export default function AutoTradingPanel() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             <DashCard
               label={t('crypto.currentPrice')}
-              value={`₩${(status.current_price || 0).toLocaleString()}`}
+              value={`${currentExchange.cs}${(status.current_price || 0).toLocaleString()}`}
               color="text-slate-100"
             />
             <DashCard
@@ -900,14 +949,14 @@ export default function AutoTradingPanel() {
               label={t('crypto.unrealizedPnl')}
               value={
                 status.in_position
-                  ? `${status.unrealized_pct >= 0 ? '+' : ''}${status.unrealized_pct.toFixed(2)}% (₩${status.unrealized_krw.toLocaleString()})`
+                  ? `${status.unrealized_pct >= 0 ? '+' : ''}${status.unrealized_pct.toFixed(2)}% (${currentExchange.cs}${status.unrealized_krw.toLocaleString()})`
                   : '-'
               }
               color={status.unrealized_pct > 0 ? 'text-emerald-400' : status.unrealized_pct < 0 ? 'text-red-400' : 'text-slate-400'}
             />
             <DashCard
               label={t('crypto.todayPnl')}
-              value={`₩${(status.today_pnl_krw || 0).toLocaleString()} (${t('crypto.todayTradesCount', { count: status.today_trades || 0 })})`}
+              value={`${currentExchange.cs}${(status.today_pnl_krw || 0).toLocaleString()} (${t('crypto.todayTradesCount', { count: status.today_trades || 0 })})`}
               color={status.today_pnl_krw > 0 ? 'text-emerald-400' : status.today_pnl_krw < 0 ? 'text-red-400' : 'text-slate-400'}
             />
           </div>
@@ -1053,9 +1102,9 @@ export default function AutoTradingPanel() {
         {trades.length > 0 && (
           <div className="flex gap-4 text-xs mb-3">
             <span className={totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-              {t('crypto.totalPnl')}: ₩{totalPnl.toLocaleString()}
+              {t('crypto.totalPnl')}: {currentExchange.cs}{totalPnl.toLocaleString()}
             </span>
-            <span className="text-slate-500">{t('crypto.totalFees')}: ₩{totalFees.toLocaleString()}</span>
+            <span className="text-slate-500">{t('crypto.totalFees')}: {currentExchange.cs}{totalFees.toLocaleString()}</span>
             <span className="text-slate-500">{t('crypto.winRate')}: {winRate}%</span>
           </div>
         )}
@@ -1114,13 +1163,13 @@ export default function AutoTradingPanel() {
                         <td className="px-3 py-1.5 text-slate-400">{trade.timeframe}</td>
                         <td className="px-3 py-1.5 text-slate-400">{trade.candle_interval || '-'}</td>
                         <td className="px-3 py-1.5 text-right text-slate-300">
-                          ₩{trade.entry_price.toLocaleString()}
+                          {currentExchange.cs}{trade.entry_price.toLocaleString()}
                         </td>
                         <td className="px-3 py-1.5 text-right text-slate-300">
-                          {isOpen ? <span className="text-slate-500">-</span> : `₩${trade.exit_price.toLocaleString()}`}
+                          {isOpen ? <span className="text-slate-500">-</span> : `${currentExchange.cs}${trade.exit_price.toLocaleString()}`}
                         </td>
                         <td className="px-3 py-1.5 text-right text-slate-300">
-                          ₩{trade.amount_krw.toLocaleString()}
+                          {currentExchange.cs}{trade.amount_krw.toLocaleString()}
                         </td>
                         <td
                           className={`px-3 py-1.5 text-right font-medium ${
@@ -1149,13 +1198,13 @@ export default function AutoTradingPanel() {
                                 {trade.pnl_pct.toFixed(2)}%
                               </span>
                               <div className="text-slate-500 font-normal">
-                                ₩{trade.pnl_krw.toLocaleString()}
+                                {currentExchange.cs}{trade.pnl_krw.toLocaleString()}
                               </div>
                             </>
                           )}
                         </td>
                         <td className="px-3 py-1.5 text-right text-slate-500">
-                          {isOpen ? '-' : `₩${trade.fee_krw.toLocaleString()}`}
+                          {isOpen ? '-' : `${currentExchange.cs}${trade.fee_krw.toLocaleString()}`}
                         </td>
                         <td className="px-3 py-1.5 text-emerald-400/80 max-w-[200px] truncate" title={trade.buy_reasoning || trade.reasoning}>
                           {trade.buy_reasoning || '-'}
@@ -1277,7 +1326,7 @@ export default function AutoTradingPanel() {
                       onBlur={() => setManualAmountDisplay(formatComma(manualAmountKrw))}
                       className="flex-1 px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-sm text-slate-200 outline-none focus:ring-1 focus:ring-emerald-500 text-right"
                     />
-                    <span className="text-xs text-slate-500">KRW</span>
+                    <span className="text-xs text-slate-500">{currentExchange.quote}</span>
                   </div>
                   {/* Quick amount buttons */}
                   <div className="flex gap-1.5 mt-2">

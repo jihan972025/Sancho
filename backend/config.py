@@ -173,6 +173,29 @@ class ApiConfig(BaseModel):
     slack_app_token: str = ""
     upbit_access_key: str = ""
     upbit_secret_key: str = ""
+    binance_api_key: str = ""
+    binance_secret_key: str = ""
+    coinbase_api_key: str = ""
+    coinbase_secret_key: str = ""
+    bybit_api_key: str = ""
+    bybit_secret_key: str = ""
+    okx_api_key: str = ""
+    okx_secret_key: str = ""
+    okx_passphrase: str = ""
+    kraken_api_key: str = ""
+    kraken_secret_key: str = ""
+    mexc_api_key: str = ""
+    mexc_secret_key: str = ""
+    gateio_api_key: str = ""
+    gateio_secret_key: str = ""
+    kucoin_api_key: str = ""
+    kucoin_secret_key: str = ""
+    kucoin_passphrase: str = ""
+    bitget_api_key: str = ""
+    bitget_secret_key: str = ""
+    bitget_passphrase: str = ""
+    htx_api_key: str = ""
+    htx_secret_key: str = ""
 
 
 class GoogleAuthConfig(BaseModel):
@@ -247,6 +270,29 @@ SENSITIVE_FIELDS: list[str] = [
     "api.slack_app_token",
     "api.upbit_access_key",
     "api.upbit_secret_key",
+    "api.binance_api_key",
+    "api.binance_secret_key",
+    "api.coinbase_api_key",
+    "api.coinbase_secret_key",
+    "api.bybit_api_key",
+    "api.bybit_secret_key",
+    "api.okx_api_key",
+    "api.okx_secret_key",
+    "api.okx_passphrase",
+    "api.kraken_api_key",
+    "api.kraken_secret_key",
+    "api.mexc_api_key",
+    "api.mexc_secret_key",
+    "api.gateio_api_key",
+    "api.gateio_secret_key",
+    "api.kucoin_api_key",
+    "api.kucoin_secret_key",
+    "api.kucoin_passphrase",
+    "api.bitget_api_key",
+    "api.bitget_secret_key",
+    "api.bitget_passphrase",
+    "api.htx_api_key",
+    "api.htx_secret_key",
     # TelegramConfig
     "telegram.api_hash",
     # MatrixConfig

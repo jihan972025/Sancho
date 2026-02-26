@@ -59,15 +59,17 @@ export default function ChatAppTab() {
   // ── WhatsApp state ──
   const [waStatus, setWaStatus] = useState<AppStatus>('disconnected')
   const [waQr, setWaQr] = useState<string | null>(null)
+  const [waError, setWaError] = useState<string | null>(null)
   const waApi = window.electronAPI?.whatsapp
 
   useEffect(() => {
     if (!waApi) return
     waApi.getStatus().then((s) => setWaStatus(s as AppStatus))
     waApi.onQR((dataUrl) => setWaQr(dataUrl))
-    waApi.onStatusUpdate((s) => {
+    waApi.onStatusUpdate((s, error) => {
       setWaStatus(s as AppStatus)
       if (s === 'connected') setWaQr(null)
+      setWaError(error || null)
     })
     return () => { waApi.removeSettingsListeners() }
   }, [waApi])
@@ -75,7 +77,13 @@ export default function ChatAppTab() {
   const handleWaConnect = useCallback(async () => {
     if (!waApi) return
     setWaQr(null)
-    await waApi.connect(config.whatsapp.wa_version)
+    setWaError(null)
+    try {
+      await waApi.connect(config.whatsapp.wa_version)
+    } catch (err: any) {
+      setWaError(err?.message || 'Connection failed')
+      setWaStatus('disconnected')
+    }
   }, [waApi, config.whatsapp.wa_version])
 
   const handleWaDisconnect = useCallback(async () => {
@@ -270,7 +278,7 @@ export default function ChatAppTab() {
                       </div>
                     ) : waStatus === 'connecting' && !waQr ? (
                       <div className="flex flex-col items-center gap-3 py-8">
-                        <QrCode size={56} className="text-slate-600" />
+                        <Loader2 size={56} className="text-slate-600 animate-spin" />
                         <p className="text-sm text-slate-400">Waiting for QR code...</p>
                       </div>
                     ) : waStatus === 'connected' ? (
@@ -282,10 +290,10 @@ export default function ChatAppTab() {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-3 py-6">
-                        <div className="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center">
-                          <QrCode size={28} className="text-slate-500" />
+                        <div className={`w-16 h-16 rounded-full ${waError ? 'bg-red-500/10' : 'bg-slate-700/50'} flex items-center justify-center`}>
+                          <QrCode size={28} className={waError ? 'text-red-400' : 'text-slate-500'} />
                         </div>
-                        <p className="text-sm text-slate-400">Click Connect to scan QR code</p>
+                        <p className="text-sm text-slate-400">{waError ? 'Connection failed. Click Connect to retry.' : 'Click Connect to scan QR code'}</p>
                       </div>
                     )}
 
@@ -303,6 +311,13 @@ export default function ChatAppTab() {
                         </button>
                       ) : null}
                     </div>
+
+                    {/* Error display */}
+                    {waError && (
+                      <div className="mt-3 w-full max-w-[360px] px-4 py-2.5 bg-red-600/10 border border-red-600/20 rounded-lg">
+                        <p className="text-xs text-red-400 break-words">{waError}</p>
+                      </div>
+                    )}
                   </div>
 
                   <hr className="border-slate-700/50" />
