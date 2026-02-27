@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -902,6 +903,13 @@ class TradingEngine:
             elif start != -1:
                 # Closing brace missing – likely truncated response; append it
                 text = text[start:] + "}"
+
+            # LLMs often put literal newlines/tabs inside JSON string values;
+            # replace control characters (except already-escaped ones) so
+            # json.loads doesn't choke on "Invalid control character".
+            text = re.sub(r'[\x00-\x1f\x7f]', lambda m: {
+                '\n': '\\n', '\r': '\\r', '\t': '\\t',
+            }.get(m.group(), ''), text)
 
             result = json.loads(text)
             result["input_prompt"] = prompt
