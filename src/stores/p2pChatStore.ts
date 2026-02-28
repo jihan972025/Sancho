@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import type { P2PChatMessage, P2PChatRoom } from '../types'
 
-// Central chat server URL — change this after deploying to Render.com etc.
-const CHAT_SERVER_WS = 'ws://127.0.0.1:8000'
-const CHAT_SERVER_HTTP = 'http://127.0.0.1:8000'
+// Central chat server (Render.com)
+const CHAT_SERVER_WS = 'wss://sancho-nanj.onrender.com'
+const CHAT_SERVER_HTTP = 'https://sancho-nanj.onrender.com'
 
 interface P2PChatState {
   connected: boolean
