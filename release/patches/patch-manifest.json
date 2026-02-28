@@ -1,19 +1,19 @@
 {
-    "requires_full_update":  false,
+    "requires_full_update":  true,
     "channels":  {
-                     "frontend":  {
-                                      "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "940008259650b16d0e6c1cbc48559756334f097e9f116eff9dd7e5f7cf739572",
-                                      "asset":  "patch-frontend-1.1.2.zip",
-                                      "size":  261880
-                                  },
                      "electron":  {
                                       "target":  "app.asar.unpacked/dist-electron",
-                                      "sha256":  "0d1f1fc1c802801979d1f180652452a294347c889e34c1c8e4eaafd23b9780ac",
+                                      "sha256":  "96d1d022cf14dd6da40a7d3f59094ec8d8b77dc157eeb173a2a52515ec213ae3",
                                       "asset":  "patch-electron-1.1.2.zip",
-                                      "size":  35795
-                                  }
+                                      "size":  6763
+                                  },
+                     "backend":  {
+                                     "target":  "backend",
+                                     "sha256":  "616527c4be9f17eeb62a29924566c33fa9b63bbbdac783a08b3d7e1d407531ae",
+                                     "asset":  "patch-backend-1.1.2.zip",
+                                     "size":  64409866
+                                 }
                  },
-    "min_version":  "1.1.0",
+    "min_version":  "1.1.2",
     "version":  "1.1.2"
 }

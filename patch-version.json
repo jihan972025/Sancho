@@ -2,7 +2,7 @@
     "version":  "1.1.2",
     "channels":  {
                      "html":  "1.1.0",
-                     "backend":  "1.1.0",
+                     "backend":  "1.1.2",
                      "frontend":  "1.1.2",
                      "electron":  "1.1.2"
                  }

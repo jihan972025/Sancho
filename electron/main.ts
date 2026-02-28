@@ -6,7 +6,30 @@ import { initWhatsApp, connectWhatsApp, disconnectWhatsApp, getWhatsAppStatus, s
 import { initTelegram, connectTelegram, disconnectTelegram, getTelegramStatus, sendTelegramMessage } from './telegram'
 import { initMatrix, connectMatrix, disconnectMatrix, getMatrixStatus, sendMatrixMessage } from './matrix'
 import { initSlack, connectSlack, disconnectSlack, getSlackStatus, sendSlackMessage } from './slack'
-import { initDiscord, connectDiscord, disconnectDiscord, getDiscordStatus, sendDiscordMessage } from './discord'
+// Discord: lazy-loaded to support differential patching (new file not in original asar)
+let _discord: typeof import('./discord') | null = null
+function getDiscordModule() {
+  if (!_discord) {
+    try {
+      // Try asar.unpacked path first (for patched installs), then normal require
+      const unpackedPath = __dirname.replace('app.asar', 'app.asar.unpacked')
+      const discordPath = require('path').join(unpackedPath, 'discord')
+      if (require('fs').existsSync(discordPath + '.js')) {
+        _discord = require(discordPath)
+      } else {
+        _discord = require('./discord')
+      }
+    } catch {
+      _discord = null
+    }
+  }
+  return _discord
+}
+const initDiscord = (win: BrowserWindow) => getDiscordModule()?.initDiscord(win)
+const connectDiscord = (botToken: string) => getDiscordModule()?.connectDiscord(botToken) ?? Promise.resolve()
+const disconnectDiscord = () => getDiscordModule()?.disconnectDiscord()
+const getDiscordStatus = () => getDiscordModule()?.getDiscordStatus() ?? 'disconnected'
+const sendDiscordMessage = (text: string) => getDiscordModule()?.sendDiscordMessage(text) ?? Promise.resolve(false)
 import { setSelectedModel } from './selectedModel'
 import { startPeriodicCheck, stopPeriodicCheck, checkForUpdate, applyPatch, dismissUpdate } from './updater'
 import { startGoogleOAuth } from './googleAuth'
