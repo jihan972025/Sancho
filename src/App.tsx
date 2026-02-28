@@ -3,9 +3,10 @@ import Sidebar from './components/Layout/Sidebar'
 import Header from './components/Layout/Header'
 import ChatWindow from './components/Chat/ChatWindow'
 import CryptoPanel from './components/Crypto/CryptoPanel'
-import SchedulerPanel from './components/Scheduler/SchedulerPanel'
+import AgentPanel from './components/Agent/AgentPanel'
 import SettingsPanel from './components/Settings/SettingsPanel'
 import LogPanel from './components/Log/LogPanel'
+import P2PChatPanel from './components/P2PChat/P2PChatPanel'
 import { healthCheck, getSettings, getModels, getUserProfile } from './api/client'
 import OnboardingModal from './components/Onboarding/OnboardingModal'
 import { useSettingsStore } from './stores/settingsStore'
@@ -14,7 +15,7 @@ import { useMemoryStore } from './stores/memoryStore'
 import { useConversationStore } from './stores/conversationStore'
 import PatchNotification from './components/PatchNotification'
 
-type Tab = 'chat' | 'crypto' | 'scheduler' | 'logs' | 'settings'
+type Tab = 'chat' | 'crypto' | 'scheduler' | 'p2pchat' | 'logs' | 'settings'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
@@ -131,7 +132,8 @@ export default function App() {
             <>
               {activeTab === 'chat' && <ChatWindow />}
               {activeTab === 'crypto' && <CryptoPanel />}
-              {activeTab === 'scheduler' && <SchedulerPanel />}
+              {activeTab === 'scheduler' && <AgentPanel />}
+              {activeTab === 'p2pchat' && <P2PChatPanel />}
               {activeTab === 'logs' && <LogPanel />}
               {activeTab === 'settings' && <SettingsPanel />}
             </>

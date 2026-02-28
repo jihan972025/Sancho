@@ -394,6 +394,57 @@ export function deleteConversationApi(id: string) {
   return request('/api/conversations/' + id, { method: 'DELETE' })
 }
 
+// Agent API
+export function getAgents() {
+  return request<{ agents: any[] }>('/api/agents')
+}
+
+export function createAgent(data: Record<string, any>) {
+  return request<{ agent: any }>('/api/agents', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateAgent(id: string, data: Record<string, any>) {
+  return request<{ agent: any }>(`/api/agents/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteAgent(id: string) {
+  return request('/api/agents/' + id, { method: 'DELETE' })
+}
+
+export function toggleAgent(id: string) {
+  return request<{ agent: any }>(`/api/agents/${id}/toggle`, {
+    method: 'POST',
+  })
+}
+
+export function runAgent(id: string) {
+  return request<{ agent: any }>(`/api/agents/${id}/run`, {
+    method: 'POST',
+  })
+}
+
+export function getAgentLogs(agentId?: string) {
+  const query = agentId ? `?agent_id=${agentId}` : ''
+  return request<{ logs: any[] }>(`/api/agents/logs${query}`)
+}
+
+export function aiAgentBuild(prompt: string, model: string) {
+  return request<{
+    name: string
+    nodes: { serviceId: string; serviceType: string; prompt: string; order: number }[]
+    schedule: Record<string, any>
+  }>('/api/agents/ai-build', {
+    method: 'POST',
+    body: JSON.stringify({ prompt, model }),
+  })
+}
+
 // Health check
 export function healthCheck() {
   return request<{ status: string }>('/api/health')

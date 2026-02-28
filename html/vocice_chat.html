@@ -858,8 +858,11 @@ async function sendMessage(text) {
 // ═══════════════════════════════════════════════════════════
 
 function speakText(text) {
-  // Clean markdown for speech
+  // Remove skill call/result tags (not meant to be spoken)
   let clean = text
+    .replace(/\[SKILL_CALL\][\s\S]*?\[\/SKILL_CALL\]/g, '')
+    .replace(/\[SKILL_RESULT[^\]]*\][\s\S]*?\[\/SKILL_RESULT[^\]]*\]/g, '')
+    // Clean markdown for speech
     .replace(/```[\s\S]*?```/g, ' code block ')
     .replace(/\*\*(.*?)\*\*/g, '$1')
     .replace(/\*(.*?)\*/g, '$1')
@@ -867,6 +870,7 @@ function speakText(text) {
     .replace(/#{1,6}\s/g, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/\n/g, '. ')
+    .replace(/\s{2,}/g, ' ')
     .trim();
 
   if (!clean) {

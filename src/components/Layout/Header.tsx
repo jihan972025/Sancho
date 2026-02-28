@@ -9,7 +9,8 @@ interface Props {
 const tabNames: Record<string, string> = {
   chat: 'Chat',
   crypto: 'Crypto Analysis',
-  scheduler: 'Scheduler',
+  scheduler: 'Agent',
+  p2pchat: 'P2P Chat',
   logs: 'Logs',
   settings: 'Settings',
 }

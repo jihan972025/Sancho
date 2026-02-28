@@ -272,3 +272,80 @@ export interface ConversationDetail {
   created_at: string
   updated_at: string
 }
+
+// ---- Agent Builder Types ----
+
+export type AgentExecutionType = 'recurring' | 'onetime'
+
+export interface AgentNodeDef {
+  id: string
+  serviceId: string
+  serviceType: 'api' | 'chatapp'
+  prompt: string
+  order: number
+  x: number
+  y: number
+}
+
+export type PortSide = 'top' | 'bottom' | 'left' | 'right'
+
+export interface AgentEdge {
+  id: string
+  source: string
+  target: string
+  sourcePort: PortSide
+  targetPort: PortSide
+}
+
+export interface AgentSchedule {
+  execution_type: AgentExecutionType
+  schedule_type: 'cron' | 'interval'
+  cron_hour: number
+  cron_minute: number
+  cron_days: string[]
+  interval_minutes: number
+  timezone: string
+  start_time: string | null
+  execute_immediately: boolean
+}
+
+export interface AgentWorkflow {
+  id: string
+  name: string
+  nodes: AgentNodeDef[]
+  edges: AgentEdge[]
+  schedule: AgentSchedule
+  notify_apps: NotifyApps
+  model: string
+  enabled: boolean
+  created_at: string
+  updated_at: string
+  last_run: string | null
+  last_result: string | null
+  status: 'idle' | 'running' | 'completed' | 'error'
+}
+
+export interface AgentLog {
+  id: string
+  agent_id: string
+  agent_name: string
+  executed_at: string
+  result: string
+  status: 'success' | 'error'
+}
+
+// ---- P2P Chat Types ----
+
+export interface P2PChatMessage {
+  id: string
+  username: string
+  content: string
+  timestamp: string
+  type: 'message' | 'join' | 'leave'
+}
+
+export interface P2PChatRoom {
+  id: string
+  name: string
+  user_count: number
+}

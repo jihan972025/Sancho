@@ -24,6 +24,7 @@ from backend.api.routes_google_auth import router as google_auth_router
 from backend.api.routes_outlook_auth import router as outlook_auth_router
 from backend.api.routes_autotrading import router as autotrading_router
 from backend.api.routes_voice import router as voice_router
+from backend.api.routes_agents import router as agents_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +47,7 @@ async def lifespan(app):
     stop_scheduler()
 
 
-app = FastAPI(title="Sancho Backend", version="1.0.29", lifespan=lifespan)
+app = FastAPI(title="Sancho Backend", version="1.1.0", lifespan=lifespan)
 
 app.add_middleware(TunnelGuardMiddleware)
 app.add_middleware(TunnelRateLimitMiddleware)
@@ -82,11 +83,12 @@ app.include_router(google_auth_router)
 app.include_router(outlook_auth_router)
 app.include_router(autotrading_router)
 app.include_router(voice_router)
+app.include_router(agents_router)
 
 
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok", "version": "1.0.29"}
+    return {"status": "ok", "version": "1.1.0"}
 
 
 if __name__ == "__main__":
