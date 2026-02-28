@@ -237,7 +237,8 @@
     "languageTab": "ภาษา",
     "matrixPasswordHelp": "รหัสผ่านบัญชี Element X ของคุณ หากสมัครด้วย SSO (Gmail เป็นต้น) ให้ใช้โทเค็นการเข้าถึงด้านล่าง",
     "matrixTokenHelp": "หากสมัครผ่าน SSO โดยไม่มีรหัสผ่าน: Element Web → Settings → Help & About → คัดลอกโทเค็นการเข้าถึง",
-    "voiceApp": "แอปเสียง"
+    "voiceApp": "แอปเสียง",
+    "discordTokenHelp": "สร้าง Discord Bot ที่ discord.com/developers/applications คัดลอก Bot Token จากส่วน Bot เปิดใช้งาน Message Content Intent"
   },
   "profile": {
     "googleAccount": "บัญชี Google",

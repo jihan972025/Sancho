@@ -6,6 +6,7 @@ import { initWhatsApp, connectWhatsApp, disconnectWhatsApp, getWhatsAppStatus, s
 import { initTelegram, connectTelegram, disconnectTelegram, getTelegramStatus, sendTelegramMessage } from './telegram'
 import { initMatrix, connectMatrix, disconnectMatrix, getMatrixStatus, sendMatrixMessage } from './matrix'
 import { initSlack, connectSlack, disconnectSlack, getSlackStatus, sendSlackMessage } from './slack'
+import { initDiscord, connectDiscord, disconnectDiscord, getDiscordStatus, sendDiscordMessage } from './discord'
 import { setSelectedModel } from './selectedModel'
 import { startPeriodicCheck, stopPeriodicCheck, checkForUpdate, applyPatch, dismissUpdate } from './updater'
 import { startGoogleOAuth } from './googleAuth'
@@ -212,6 +213,12 @@ async function autoConnectChatApps(): Promise<void> {
       console.log('[Slack] Auto-connecting (enabled in settings)...')
       connectSlack(config.api.slack_bot_token, config.api.slack_app_token).catch((err: Error) => console.log('[Slack] Auto-connect failed:', err.message))
     }
+
+    // Discord auto-connect
+    if (config.discord?.enabled && config.discord?.bot_token) {
+      console.log('[Discord] Auto-connecting (enabled in settings)...')
+      connectDiscord(config.discord.bot_token).catch((err: Error) => console.log('[Discord] Auto-connect failed:', err.message))
+    }
   } catch (err) {
     console.log('[ChatApps] Auto-connect skipped:', (err as Error).message)
   }
@@ -251,6 +258,9 @@ async function pollSchedulerNotifications(): Promise<void> {
       }
       if (apps.slack && getSlackStatus() === 'connected') {
         if (await sendSlackMessage(message)) sent = true
+      }
+      if (apps.discord && getDiscordStatus() === 'connected') {
+        if (await sendDiscordMessage(message)) sent = true
       }
 
       if (sent) {
@@ -372,6 +382,9 @@ async function pollTradeNotifications(): Promise<void> {
       }
       if (config.slack?.enabled && getSlackStatus() === 'connected') {
         if (await sendSlackMessage(message)) sent = true
+      }
+      if (config.discord?.enabled && getDiscordStatus() === 'connected') {
+        if (await sendDiscordMessage(message)) sent = true
       }
 
       if (sent) {
@@ -536,6 +549,7 @@ app.whenReady().then(async () => {
     initTelegram(mainWindow)
     initMatrix(mainWindow)
     initSlack(mainWindow)
+    initDiscord(mainWindow)
 
     // Auto-connect chat apps after renderer is ready (so IPC listeners are registered)
     mainWindow.webContents.on('did-finish-load', () => {
@@ -594,6 +608,11 @@ ipcMain.handle('matrix:status', () => getMatrixStatus())
 ipcMain.handle('slack:connect', (_event, botToken: string, appToken: string) => connectSlack(botToken, appToken))
 ipcMain.handle('slack:disconnect', () => disconnectSlack())
 ipcMain.handle('slack:status', () => getSlackStatus())
+
+// Discord IPC handlers
+ipcMain.handle('discord:connect', (_event, botToken: string) => connectDiscord(botToken))
+ipcMain.handle('discord:disconnect', () => disconnectDiscord())
+ipcMain.handle('discord:status', () => getDiscordStatus())
 
 // Patch updater IPC handlers
 ipcMain.handle('patch:check', async () => {

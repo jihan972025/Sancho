@@ -119,6 +119,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeAllListeners('slack:chat-typing')
     },
   },
+  discord: {
+    connect: (botToken: string) => ipcRenderer.invoke('discord:connect', botToken),
+    disconnect: () => ipcRenderer.invoke('discord:disconnect'),
+    getStatus: () => ipcRenderer.invoke('discord:status'),
+    onQR: () => { /* Discord uses token auth, no QR */ },
+    onStatusUpdate: (cb: (status: string) => void) => {
+      ipcRenderer.on('discord:status-update', (_event, s) => cb(s))
+    },
+    onChatMessage: (cb: (msg: { role: string; content: string; source: string }) => void) => {
+      ipcRenderer.on('discord:chat-message', (_event, msg) => cb(msg))
+    },
+    onTyping: (cb: (typing: boolean) => void) => {
+      ipcRenderer.on('discord:chat-typing', (_event, typing) => cb(typing))
+    },
+    removeSettingsListeners: () => {
+      ipcRenderer.removeAllListeners('discord:status-update')
+    },
+    removeChatListeners: () => {
+      ipcRenderer.removeAllListeners('discord:chat-message')
+      ipcRenderer.removeAllListeners('discord:chat-typing')
+    },
+  },
   googleAuth: {
     login: () => ipcRenderer.invoke('google-auth:login'),
     getStatus: () => ipcRenderer.invoke('google-auth:status'),

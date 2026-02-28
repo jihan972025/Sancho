@@ -29,7 +29,7 @@ function newAgent(): AgentWorkflow {
     nodes: [],
     edges: [],
     schedule: { ...defaultSchedule },
-    notify_apps: { whatsapp: false, telegram: false, matrix: false, slack: false },
+    notify_apps: { whatsapp: false, telegram: false, matrix: false, slack: false, discord: false },
     model: '',
     enabled: true,
     created_at: '',

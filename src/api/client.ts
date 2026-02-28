@@ -197,7 +197,7 @@ export function createSchedulerTask(data: {
   cron_days?: string[]
   interval_minutes?: number
   timezone?: string
-  notify_apps?: { whatsapp: boolean; telegram: boolean; matrix: boolean }
+  notify_apps?: { whatsapp: boolean; telegram: boolean; matrix: boolean; slack: boolean; discord: boolean }
   enabled?: boolean
 }) {
   return request<{ task: any }>('/api/scheduler/tasks', {

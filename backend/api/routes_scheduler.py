@@ -15,6 +15,8 @@ class NotifyAppsRequest(BaseModel):
     whatsapp: bool = False
     telegram: bool = False
     matrix: bool = False
+    slack: bool = False
+    discord: bool = False
 
 
 class CreateTaskRequest(BaseModel):

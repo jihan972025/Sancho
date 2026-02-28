@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { MessageCircle, Send, Globe, Hash, Wifi, WifiOff, Loader2, QrCode, Eye, EyeOff } from 'lucide-react'
+import { MessageCircle, Send, Globe, Hash, MessageSquare, Wifi, WifiOff, Loader2, QrCode, Eye, EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '../../stores/settingsStore'
 
 type AppStatus = 'disconnected' | 'connecting' | 'qr' | 'connected'
-type AppId = 'whatsapp' | 'telegram' | 'matrix' | 'slack'
+type AppId = 'whatsapp' | 'telegram' | 'matrix' | 'slack' | 'discord'
 
 const statusLabel: Record<AppStatus, string> = {
   disconnected: 'Disconnected',
@@ -36,6 +36,7 @@ const APP_DEFS: AppDef[] = [
   { id: 'telegram', name: 'Telegram', icon: Send, color: 'text-blue-400', activeColor: 'bg-blue-500/15', bgColor: 'bg-blue-600/20', borderColor: 'border-blue-600/30', ringColor: 'ring-blue-500/40' },
   { id: 'matrix', name: 'Matrix', icon: Globe, color: 'text-purple-400', activeColor: 'bg-purple-500/15', bgColor: 'bg-purple-600/20', borderColor: 'border-purple-600/30', ringColor: 'ring-purple-500/40' },
   { id: 'slack', name: 'Slack', icon: Hash, color: 'text-amber-400', activeColor: 'bg-amber-500/15', bgColor: 'bg-amber-600/20', borderColor: 'border-amber-600/30', ringColor: 'ring-amber-500/40' },
+  { id: 'discord', name: 'Discord', icon: MessageSquare, color: 'text-indigo-400', activeColor: 'bg-indigo-500/15', bgColor: 'bg-indigo-600/20', borderColor: 'border-indigo-600/30', ringColor: 'ring-indigo-500/40' },
 ]
 
 function StatusIcon({ status }: { status: AppStatus }) {
@@ -52,7 +53,7 @@ function StatusDot({ status }: { status: AppStatus }) {
 
 export default function ChatAppTab() {
   const { t } = useTranslation()
-  const { config, updateWhatsAppConfig, updateTelegramConfig, updateMatrixConfig, updateSlackConfig, updateApiConfig } = useSettingsStore()
+  const { config, updateWhatsAppConfig, updateTelegramConfig, updateMatrixConfig, updateSlackConfig, updateDiscordConfig, updateApiConfig } = useSettingsStore()
 
   const [selectedApp, setSelectedApp] = useState<AppId>('whatsapp')
 
@@ -183,12 +184,39 @@ export default function ChatAppTab() {
     await slApi.disconnect()
   }, [slApi])
 
+  // ── Discord state ──
+  const [dcStatus, setDcStatus] = useState<AppStatus>('disconnected')
+  const [showDcBotToken, setShowDcBotToken] = useState(false)
+  const dcApi = window.electronAPI?.discord
+
+  useEffect(() => {
+    if (!dcApi) return
+    dcApi.getStatus().then((s) => setDcStatus(s as AppStatus))
+    dcApi.onStatusUpdate((s) => setDcStatus(s as AppStatus))
+    return () => { dcApi.removeSettingsListeners() }
+  }, [dcApi])
+
+  const handleDcConnect = useCallback(async () => {
+    if (!dcApi) return
+    if (!config.discord.bot_token) {
+      alert('Discord Bot Token is required. Get it from https://discord.com/developers/applications')
+      return
+    }
+    await dcApi.connect(config.discord.bot_token)
+  }, [dcApi, config.discord.bot_token])
+
+  const handleDcDisconnect = useCallback(async () => {
+    if (!dcApi) return
+    await dcApi.disconnect()
+  }, [dcApi])
+
   // ── Status map ──
   const statusMap: Record<AppId, AppStatus> = {
     whatsapp: waStatus,
     telegram: tgStatus,
     matrix: mxStatus,
     slack: slStatus,
+    discord: dcStatus,
   }
 
   const enabledMap: Record<AppId, boolean> = {
@@ -196,6 +224,7 @@ export default function ChatAppTab() {
     telegram: config.telegram.enabled,
     matrix: config.matrix.enabled,
     slack: config.slack.enabled,
+    discord: config.discord.enabled,
   }
 
   const selectedDef = APP_DEFS.find(a => a.id === selectedApp)!
@@ -249,6 +278,7 @@ export default function ChatAppTab() {
                 else if (selectedApp === 'telegram') updateTelegramConfig({ enabled: e.target.checked })
                 else if (selectedApp === 'matrix') updateMatrixConfig({ enabled: e.target.checked })
                 else if (selectedApp === 'slack') updateSlackConfig({ enabled: e.target.checked })
+                else if (selectedApp === 'discord') updateDiscordConfig({ enabled: e.target.checked })
               }}
               className="rounded border-slate-600 bg-slate-800 text-angel-500 focus:ring-angel-500" />
             <label htmlFor={`${selectedApp}-enabled`} className="text-sm text-slate-300">Enabled</label>
@@ -615,6 +645,82 @@ export default function ChatAppTab() {
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">Default Model (optional)</label>
                     <input type="text" value={config.slack.default_model}
                       onChange={(e) => updateSlackConfig({ default_model: e.target.value })}
+                      placeholder="Leave empty to use global default model"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
+                  </div>
+                </>
+              )}
+
+              {/* ── Discord Panel ── */}
+              {selectedApp === 'discord' && (
+                <>
+                  {/* Token Input */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Bot Token</label>
+                      <div className="flex gap-2">
+                        <input type={showDcBotToken ? 'text' : 'password'}
+                          value={config.discord.bot_token}
+                          onChange={(e) => updateDiscordConfig({ bot_token: e.target.value })}
+                          placeholder="MTIz..."
+                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600 font-mono" />
+                        <button onClick={() => setShowDcBotToken(!showDcBotToken)}
+                          className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+                          {showDcBotToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {t('settings.discordTokenHelp')}
+                      </p>
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  {/* Connection area */}
+                  <div className="flex flex-col items-center">
+                    {dcStatus === 'connected' ? (
+                      <div className="flex flex-col items-center gap-2 py-4">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+                          <Wifi size={28} className="text-green-400" />
+                        </div>
+                        <p className="text-sm font-medium text-green-400">Discord Connected</p>
+                      </div>
+                    ) : dcStatus === 'connecting' ? (
+                      <div className="flex flex-col items-center gap-3 py-6">
+                        <Loader2 size={36} className="text-indigo-400 animate-spin" />
+                        <p className="text-sm text-slate-400">Connecting to Discord...</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 py-4">
+                        <div className="w-16 h-16 rounded-full bg-slate-700/50 flex items-center justify-center">
+                          <MessageSquare size={28} className="text-slate-500" />
+                        </div>
+                        <p className="text-sm text-slate-400">Enter bot token and click Connect</p>
+                      </div>
+                    )}
+
+                    <div className="mt-2">
+                      {dcStatus === 'connected' ? (
+                        <button onClick={handleDcDisconnect}
+                          className="px-5 py-2 text-sm bg-red-600/20 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-600/30 transition-colors">
+                          Disconnect
+                        </button>
+                      ) : dcStatus === 'disconnected' ? (
+                        <button onClick={handleDcConnect}
+                          className={`px-5 py-2 text-sm ${selectedDef.bgColor} ${selectedDef.color} border ${selectedDef.borderColor} rounded-lg hover:brightness-125 transition-all`}>
+                          Connect
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <hr className="border-slate-700/50" />
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Default Model (optional)</label>
+                    <input type="text" value={config.discord.default_model}
+                      onChange={(e) => updateDiscordConfig({ default_model: e.target.value })}
                       placeholder="Leave empty to use global default model"
                       className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-600" />
                   </div>

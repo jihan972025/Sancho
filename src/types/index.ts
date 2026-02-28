@@ -3,7 +3,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: number
-  source?: 'chat' | 'whatsapp' | 'telegram' | 'matrix' | 'slack'
+  source?: 'chat' | 'whatsapp' | 'telegram' | 'matrix' | 'slack' | 'discord'
 }
 
 export interface ModelInfo {
@@ -95,6 +95,13 @@ export interface SlackConfig {
   browser_keywords: string[]
 }
 
+export interface DiscordConfig {
+  enabled: boolean
+  bot_token: string
+  default_model: string
+  browser_keywords: string[]
+}
+
 export interface ApiConfig {
   duckduckgo_enabled: boolean
   tavily_api_key: string
@@ -146,6 +153,7 @@ export interface NotifyApps {
   telegram: boolean
   matrix: boolean
   slack: boolean
+  discord: boolean
 }
 
 export interface ScheduledTask {
@@ -241,6 +249,7 @@ export interface AppConfig {
   telegram: TelegramConfig
   matrix: MatrixConfig
   slack: SlackConfig
+  discord: DiscordConfig
   api: ApiConfig
   custom_apis: CustomApiDef[]
   safe_directories: string[]

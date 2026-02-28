@@ -140,6 +140,14 @@ class SlackConfig(BaseModel):
     file_organize_keywords: list[str] = _FILE_ORGANIZE_KEYWORDS
 
 
+class DiscordConfig(BaseModel):
+    enabled: bool = False
+    bot_token: str = ""
+    default_model: str = ""
+    browser_keywords: list[str] = _BROWSER_KEYWORDS
+    file_organize_keywords: list[str] = _FILE_ORGANIZE_KEYWORDS
+
+
 class CustomApiDef(BaseModel):
     name: str           # Skill name (lowercase + underscores)
     display_name: str   # UI display name
@@ -223,6 +231,7 @@ class AppConfig(BaseModel):
     telegram: TelegramConfig = TelegramConfig()
     matrix: MatrixConfig = MatrixConfig()
     slack: SlackConfig = SlackConfig()
+    discord: DiscordConfig = DiscordConfig()
     api: ApiConfig = ApiConfig()
     custom_apis: list[CustomApiDef] = []
     safe_directories: list[str] = []
@@ -293,6 +302,8 @@ SENSITIVE_FIELDS: list[str] = [
     "api.bitget_passphrase",
     "api.htx_api_key",
     "api.htx_secret_key",
+    # DiscordConfig
+    "discord.bot_token",
     # TelegramConfig
     "telegram.api_hash",
     # MatrixConfig

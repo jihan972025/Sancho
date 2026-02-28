@@ -237,7 +237,8 @@
     "languageTab": "भाषा",
     "matrixPasswordHelp": "आपके Element X खाते का पासवर्ड। यदि आपने SSO (Gmail, आदि) से साइन अप किया है, तो नीचे दिए गए एक्सेस टोकन का उपयोग करें।",
     "matrixTokenHelp": "यदि SSO से बिना पासवर्ड के साइन अप किया है: Element Web → Settings → Help & About → एक्सेस टोकन कॉपी करें",
-    "voiceApp": "वॉइस ऐप"
+    "voiceApp": "वॉइस ऐप",
+    "discordTokenHelp": "discord.com/developers/applications पर Discord बॉट बनाएं। Bot अनुभाग से Bot Token कॉपी करें। Message Content Intent सक्षम करें।"
   },
   "profile": {
     "googleAccount": "Google खाता",

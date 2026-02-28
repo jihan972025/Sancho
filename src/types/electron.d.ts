@@ -27,6 +27,10 @@ interface ElectronSlackAPI extends ElectronChatAppAPI {
   connect: (botToken: string, appToken: string) => Promise<void>
 }
 
+interface ElectronDiscordAPI extends ElectronChatAppAPI {
+  connect: (botToken: string) => Promise<void>
+}
+
 interface ElectronTunnelAPI {
   start: () => Promise<string | { url: string; error: string }>
   stop: () => Promise<void>
@@ -53,6 +57,7 @@ interface ElectronAPI {
   telegram: ElectronTelegramAPI
   matrix: ElectronMatrixAPI
   slack: ElectronSlackAPI
+  discord: ElectronDiscordAPI
   googleAuth: ElectronGoogleAuthAPI
   outlookAuth: ElectronOutlookAuthAPI
   tunnel: ElectronTunnelAPI

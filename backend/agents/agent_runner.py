@@ -167,8 +167,9 @@ async def execute_agent(agent_id: str) -> None:
         send_telegram = "telegram" in chatapp_service_ids
         send_matrix = "matrix" in chatapp_service_ids
         send_slack = "slack_app" in chatapp_service_ids or "slack" in chatapp_service_ids
+        send_discord = "discord" in chatapp_service_ids
 
-        if send_whatsapp or send_telegram or send_matrix or send_slack:
+        if send_whatsapp or send_telegram or send_matrix or send_slack or send_discord:
             notif = Notification(
                 id=str(uuid.uuid4()),
                 task_id=agent.id,
@@ -179,13 +180,14 @@ async def execute_agent(agent_id: str) -> None:
                     telegram=send_telegram,
                     matrix=send_matrix,
                     slack=send_slack,
+                    discord=send_discord,
                 ),
                 created_at=now,
             )
             scheduler_storage.add_notification(notif)
             logger.info(
-                "Notification queued for agent '%s' -> WA=%s TG=%s MX=%s SL=%s",
-                agent.name, send_whatsapp, send_telegram, send_matrix, send_slack,
+                "Notification queued for agent '%s' -> WA=%s TG=%s MX=%s SL=%s DC=%s",
+                agent.name, send_whatsapp, send_telegram, send_matrix, send_slack, send_discord,
             )
 
     except Exception as e:

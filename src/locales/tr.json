@@ -237,7 +237,8 @@
     "languageTab": "Dil",
     "matrixPasswordHelp": "Element X hesabınızın şifresi. SSO (Gmail vb.) ile kaydolduysanız, aşağıdaki Erişim Tokenını kullanın.",
     "matrixTokenHelp": "Şifresiz SSO ile kaydolduysanız: Element Web → Settings → Help & About → Erişim Tokenını Kopyala",
-    "voiceApp": "Sesli Uygulama"
+    "voiceApp": "Sesli Uygulama",
+    "discordTokenHelp": "discord.com/developers/applications adresinden Discord Botu oluşturun. Bot bölümünden Bot Token'ı kopyalayın. Message Content Intent'i etkinleştirin."
   },
   "profile": {
     "googleAccount": "Google Hesabı",

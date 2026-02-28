@@ -7,7 +7,7 @@
 <p align="center">
   <b>Your Personal AI Agent for Windows</b><br>
   Chat with 14 LLMs &bull; Automate Browser Tasks &bull; Manage Files &bull; Trade Crypto<br>
-  Connect WhatsApp, Telegram, Slack &bull; Send Emails &bull; Voice Chat from Your Phone
+  Connect WhatsApp, Telegram, Slack, Discord &bull; Send Emails &bull; Voice Chat from Your Phone
 </p>
 
 <p align="center">
@@ -31,7 +31,7 @@
 
 Sancho is a **local AI agent desktop app** that runs entirely on your Windows PC. It connects to 14+ LLM providers and gives you a unified interface to chat, automate tasks, manage files, trade crypto, and control your browser — all through natural language.
 
-**Talk to it from anywhere** — connect your WhatsApp, Telegram, Slack, or phone (voice) and interact with your AI agent on the go.
+**Talk to it from anywhere** — connect your WhatsApp, Telegram, Slack, Discord, or phone (voice) and interact with your AI agent on the go.
 
 > **Windows Only** — Sancho is designed and built exclusively for Windows 10/11.
 
@@ -42,7 +42,7 @@ Sancho is a **local AI agent desktop app** that runs entirely on your Windows PC
 <p align="center">
   <img src="img/screenshots/chat.png" width="800" alt="Chat - WhatsApp & Telegram Integration">
 </p>
-<p align="center"><i>Chat with AI via WhatsApp, Telegram, Slack, or directly in the app</i></p>
+<p align="center"><i>Chat with AI via WhatsApp, Telegram, Slack, Discord, or directly in the app</i></p>
 
 <details>
 <summary><b>More Screenshots</b></summary>
@@ -75,7 +75,7 @@ Sancho is a **local AI agent desktop app** that runs entirely on your Windows PC
 <p align="center">
   <img src="img/screenshots/settings-chatapp.png" width="800" alt="Messenger Settings">
 </p>
-<p align="center"><i>Messenger Integration — WhatsApp, Telegram, Slack, Matrix</i></p>
+<p align="center"><i>Messenger Integration — WhatsApp, Telegram, Slack, Discord, Matrix</i></p>
 
 <p align="center">
   <img src="img/screenshots/settings-voice.png" width="800" alt="Voice App QR Code">
@@ -146,6 +146,7 @@ All messengers share the same **AI persona, long-term memory, and conversation c
 | **WhatsApp** | QR code scan (auto WA Web version detection) |
 | **Telegram** | API key + QR code |
 | **Slack** | Bot Token + App Token (Socket Mode) |
+| **Discord** | Bot Token (responds to DMs and @mentions) |
 | **Matrix / Element X** | Password or Access Token |
 
 ### Email & Calendar
@@ -271,6 +272,7 @@ All messengers share the same **AI persona, long-term memory, and conversation c
 | [Telegram Setup](docs/telegram-setup.md) | Get API keys and connect Telegram |
 | [Element X Setup](docs/elementx-setup.md) | Connect Matrix / Element X |
 | [Slack Setup](docs/slack-setup.md) | Connect Slack bot via Socket Mode |
+| [Discord Setup](docs/discord-setup.md) | Connect Discord bot via Bot Token |
 | [Gmail Setup](docs/gmail-setup.md) | Connect Gmail via Google OAuth 2.0 |
 | [Outlook Setup](docs/outlook-setup.md) | Connect Outlook via Azure AD OAuth 2.0 |
 | [Google Calendar Setup](docs/google-calendar-setup.md) | Connect Google Calendar via OAuth 2.0 |
@@ -296,7 +298,7 @@ Python FastAPI Backend (port 8765)         <- Subprocess managed by Electron
   |-- Browser Agent (@playwright/cli)
   |-- Email (Gmail + Outlook via Graph API)
   |-- Calendar, Tasks & Sheets (Google APIs)
-  |-- Messenger Bots (WhatsApp, Telegram, Slack, Matrix)
+  |-- Messenger Bots (WhatsApp, Telegram, Slack, Discord, Matrix)
   |-- Auto-Trading Engine (Upbit)
   |-- Voice App (Cloudflare Tunnel)
   |-- Task Scheduler (APScheduler)
@@ -312,7 +314,7 @@ Python FastAPI Backend (port 8765)         <- Subprocess managed by Electron
 | State | Zustand |
 | Backend | Python, FastAPI |
 | Browser | @playwright/cli |
-| Messenger | Baileys (WhatsApp), GramJS (Telegram), Slack Bolt, matrix-js-sdk |
+| Messenger | Baileys (WhatsApp), GramJS (Telegram), Slack Bolt, discord.js, matrix-js-sdk |
 | Email | Microsoft Graph API (Outlook), Gmail API |
 | Voice | Cloudflare Tunnel, Web Speech API |
 | Build | PyInstaller, electron-builder (NSIS) |

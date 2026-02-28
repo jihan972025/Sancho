@@ -71,7 +71,7 @@ const defaultForm: FormData = {
   cron_days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
   interval_minutes: 60,
   timezone: 'Asia/Seoul',
-  notify_apps: { whatsapp: false, telegram: false, matrix: false, slack: false },
+  notify_apps: { whatsapp: false, telegram: false, matrix: false, slack: false, discord: false },
 }
 
 export default function SchedulerPanel() {
@@ -89,7 +89,8 @@ export default function SchedulerPanel() {
     telegram: ChatAppStatus
     matrix: ChatAppStatus
     slack: ChatAppStatus
-  }>({ whatsapp: 'disconnected', telegram: 'disconnected', matrix: 'disconnected', slack: 'disconnected' })
+    discord: ChatAppStatus
+  }>({ whatsapp: 'disconnected', telegram: 'disconnected', matrix: 'disconnected', slack: 'disconnected', discord: 'disconnected' })
 
   function formatSchedule(task: ScheduledTask): string {
     if (task.schedule_type === 'interval') {
@@ -119,13 +120,14 @@ export default function SchedulerPanel() {
     async function fetchChatAppStatuses() {
       if (!electronAPI) return
       try {
-        const [wa, tg, mx, sl] = await Promise.all([
+        const [wa, tg, mx, sl, dc] = await Promise.all([
           electronAPI.whatsapp.getStatus(),
           electronAPI.telegram.getStatus(),
           electronAPI.matrix.getStatus(),
           electronAPI.slack.getStatus(),
+          electronAPI.discord?.getStatus().catch(() => 'disconnected') || Promise.resolve('disconnected'),
         ])
-        setChatAppStatus({ whatsapp: wa, telegram: tg, matrix: mx, slack: sl })
+        setChatAppStatus({ whatsapp: wa, telegram: tg, matrix: mx, slack: sl, discord: dc })
       } catch { /* ignore */ }
     }
     fetchChatAppStatuses()
@@ -142,6 +144,9 @@ export default function SchedulerPanel() {
       )
       electronAPI.slack.onStatusUpdate((s: ChatAppStatus) =>
         setChatAppStatus((prev) => ({ ...prev, slack: s }))
+      )
+      electronAPI.discord?.onStatusUpdate((s: ChatAppStatus) =>
+        setChatAppStatus((prev) => ({ ...prev, discord: s }))
       )
     }
   }, [])
@@ -166,7 +171,7 @@ export default function SchedulerPanel() {
       timezone: task.timezone || 'Asia/Seoul',
       notify_apps: task.notify_apps
         ? { ...task.notify_apps }
-        : { whatsapp: false, telegram: false, matrix: false, slack: false },
+        : { whatsapp: false, telegram: false, matrix: false, slack: false, discord: false },
     })
     setShowForm(true)
   }
@@ -352,6 +357,7 @@ export default function SchedulerPanel() {
                   { key: 'telegram' as const, label: 'Telegram', icon: '✈️' },
                   { key: 'matrix' as const, label: 'Matrix', icon: '🔗' },
                   { key: 'slack' as const, label: 'Slack', icon: '#️⃣' },
+                  { key: 'discord' as const, label: 'Discord', icon: '🎮' },
                 ] as const).map((app) => {
                   const connected = chatAppStatus[app.key] === 'connected'
                   const enabled = form.notify_apps[app.key]
@@ -492,13 +498,14 @@ export default function SchedulerPanel() {
                     <Clock size={12} />
                     {formatSchedule(task)}
                   </span>
-                  {task.notify_apps && (task.notify_apps.whatsapp || task.notify_apps.telegram || task.notify_apps.matrix || task.notify_apps.slack) && (
+                  {task.notify_apps && (task.notify_apps.whatsapp || task.notify_apps.telegram || task.notify_apps.matrix || task.notify_apps.slack || task.notify_apps.discord) && (
                     <span className="flex items-center gap-0.5 text-angel-400" title={t('scheduler.sendResults')}>
                       <Send size={11} />
                       {task.notify_apps.whatsapp && <span>WA</span>}
                       {task.notify_apps.telegram && <span>TG</span>}
                       {task.notify_apps.matrix && <span>MX</span>}
                       {task.notify_apps.slack && <span>SL</span>}
+                      {task.notify_apps.discord && <span>DC</span>}
                     </span>
                   )}
                   {task.last_run && (

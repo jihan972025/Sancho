@@ -237,7 +237,8 @@
     "languageTab": "Langue",
     "matrixPasswordHelp": "Mot de passe de votre compte Element X. Si vous vous êtes inscrit via SSO (Gmail, etc.), utilisez le jeton d'accès ci-dessous.",
     "matrixTokenHelp": "Si inscrit via SSO sans mot de passe : Element Web → Settings → Help & About → Copier le jeton d'accès",
-    "voiceApp": "App Vocale"
+    "voiceApp": "App Vocale",
+    "discordTokenHelp": "Créez un bot Discord sur discord.com/developers/applications. Copiez le Bot Token dans la section Bot. Activez Message Content Intent."
   },
   "profile": {
     "googleAccount": "Compte Google",

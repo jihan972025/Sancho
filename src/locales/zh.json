@@ -237,7 +237,8 @@
     "languageTab": "语言",
     "matrixPasswordHelp": "Element X账户的密码。如果使用SSO（Gmail等）注册，请使用下方的访问令牌。",
     "matrixTokenHelp": "如果通过SSO注册且没有密码：Element Web → Settings → Help & About → 复制访问令牌",
-    "voiceApp": "语音应用"
+    "voiceApp": "语音应用",
+    "discordTokenHelp": "在discord.com/developers/applications创建Discord机器人。从Bot部分复制Bot Token。启用Message Content Intent。"
   },
   "profile": {
     "googleAccount": "Google账号",

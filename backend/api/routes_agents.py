@@ -55,6 +55,7 @@ class NotifyAppsRequest(BaseModel):
     telegram: bool = False
     matrix: bool = False
     slack: bool = False
+    discord: bool = False
 
 
 class CreateAgentRequest(BaseModel):

@@ -237,7 +237,8 @@
     "languageTab": "Idioma",
     "matrixPasswordHelp": "Senha da sua conta Element X. Se você se cadastrou com SSO (Gmail, etc.), use o Token de acesso abaixo.",
     "matrixTokenHelp": "Se cadastrado via SSO sem senha: Element Web → Settings → Help & About → Copiar Token de acesso",
-    "voiceApp": "App de Voz"
+    "voiceApp": "App de Voz",
+    "discordTokenHelp": "Crie um bot Discord em discord.com/developers/applications. Copie o Bot Token na seção Bot. Ative o Message Content Intent."
   },
   "profile": {
     "googleAccount": "Conta Google",

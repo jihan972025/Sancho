@@ -237,7 +237,8 @@
     "languageTab": "Bahasa",
     "matrixPasswordHelp": "Kata sandi akun Element X Anda. Jika mendaftar dengan SSO (Gmail, dll.), gunakan Token Akses di bawah.",
     "matrixTokenHelp": "Jika mendaftar melalui SSO tanpa kata sandi: Element Web → Settings → Help & About → Salin Token Akses",
-    "voiceApp": "Aplikasi Suara"
+    "voiceApp": "Aplikasi Suara",
+    "discordTokenHelp": "Buat Discord Bot di discord.com/developers/applications. Salin Bot Token dari bagian Bot. Aktifkan Message Content Intent."
   },
   "profile": {
     "googleAccount": "Akun Google",

@@ -27,7 +27,7 @@ interface SchedulerState {
     cron_days?: string[]
     interval_minutes?: number
     timezone?: string
-    notify_apps?: { whatsapp: boolean; telegram: boolean; matrix: boolean }
+    notify_apps?: { whatsapp: boolean; telegram: boolean; matrix: boolean; slack: boolean; discord: boolean }
   }) => Promise<void>
   editTask: (id: string, data: Record<string, any>) => Promise<void>
   removeTask: (id: string) => Promise<void>

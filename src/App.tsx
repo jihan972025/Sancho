@@ -31,12 +31,14 @@ export default function App() {
     const tg = window.electronAPI?.telegram
     const mx = window.electronAPI?.matrix
     const sl = window.electronAPI?.slack
+    const dc = window.electronAPI?.discord
 
     // Remove previous listeners (prevents duplicates in StrictMode)
     wa?.removeChatListeners()
     tg?.removeChatListeners()
     mx?.removeChatListeners()
     sl?.removeChatListeners()
+    dc?.removeChatListeners()
 
     const handleMsg = (msg: { role: string; content: string; source: string }) => {
       useChatStore.getState().addMessage({
@@ -58,12 +60,15 @@ export default function App() {
     mx?.onTyping(handleTyping)
     sl?.onChatMessage(handleMsg)
     sl?.onTyping(handleTyping)
+    dc?.onChatMessage(handleMsg)
+    dc?.onTyping(handleTyping)
 
     return () => {
       wa?.removeChatListeners()
       tg?.removeChatListeners()
       mx?.removeChatListeners()
       sl?.removeChatListeners()
+      dc?.removeChatListeners()
     }
   }, [])
 

@@ -237,7 +237,8 @@
     "languageTab": "言語",
     "matrixPasswordHelp": "Element Xアカウントのパスワード。SSO（Gmailなど）で登録した場合は、下のアクセストークンを使用してください。",
     "matrixTokenHelp": "パスワードなしでSSOで登録した場合：Element Web → Settings → Help & About → アクセストークンをコピー",
-    "voiceApp": "ボイスアプリ"
+    "voiceApp": "ボイスアプリ",
+    "discordTokenHelp": "discord.com/developers/applicationsでDiscordボットを作成してください。BotセクションからBot Tokenをコピーしてください。Message Content Intentを有効にしてください。"
   },
   "profile": {
     "googleAccount": "Googleアカウント",
