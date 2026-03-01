@@ -157,12 +157,15 @@ Current Price: {cs}{current_price:,.{price_decimals}f}
 {higher_tf_text}
 
 ## Technical Indicators ({candle_interval})
-- RSI(14): {rsi}
+- RSI(14): {rsi}  (Recent: {rsi_history_text})
 - MACD: {macd} | Signal: {macd_signal} | Histogram: {macd_histogram}
+  Histogram Recent: {macd_hist_history_text}
 - Bollinger Bands: Upper={cs}{bb_upper:,.{price_decimals}f}  Mid={cs}{bb_middle:,.{price_decimals}f}  Lower={cs}{bb_lower:,.{price_decimals}f}  Position={bb_position}
+  BB Position Recent: {bb_pos_history_text}
 - SMA(20): {cs}{sma_20:,.{price_decimals}f}  SMA(50): {cs}{sma_50:,.{price_decimals}f}
 - EMA(12): {cs}{ema_12:,.{price_decimals}f}  EMA(26): {cs}{ema_26:,.{price_decimals}f}
 - Volume: {volume:,.2f}  (20-avg: {volume_avg_20:,.2f})
+  Volume Ratio Recent: {vol_ratio_history_text}
 - ATR(14): {cs}{atr:,.{price_decimals}f}
 - ATR-based Stop-Loss: {cs}{atr_stop_loss:,.{price_decimals}f} ({atr_stop_loss_pct:+.2f}%)
 - ATR-based Take-Profit: {cs}{atr_take_profit:,.{price_decimals}f} ({atr_take_profit_pct:+.2f}%)
@@ -183,16 +186,19 @@ Current Price: {cs}{current_price:,.{price_decimals}f}
 3. Factor in {fee_pct} fee per side.
 4. Use ATR-based dynamic stop-loss/take-profit levels. Prefer stop_loss_pct and take_profit_pct derived from ATR rather than fixed values.
 5. Avoid overtrading.
-6. Volume confirmation: prefer BUY/SELL signals backed by above-average volume; be cautious when volume is below the 20-period average.
+6. Volume confirmation: prefer BUY/SELL signals backed by above-average volume (Volume Ratio > 1.0); be cautious when Volume Ratio < 0.5. Analyze the Volume Ratio Recent trend to detect volume surges or dry-ups.
 7. EMA crossover: EMA(12) > EMA(26) = bullish trend, EMA(12) < EMA(26) = bearish trend. Use as trend filter before entering trades.
 8. CRITICAL: Do NOT enter BUY against the higher timeframe trend. If the higher TF trend is BEARISH, only HOLD or SELL.
 9. If recent trades show consecutive losses (3+), be extra conservative — raise confidence threshold mentally and prefer HOLD.
 10. If in position: recommend SELL on ATR stop-loss breach or reversal signal.
 11. ADX filter: if ADX(14) < 20, market is ranging — prefer HOLD unless Bollinger Band bounce setup is confirmed.
-12. RSI divergence: if price makes new high but RSI does not, treat as bearish divergence — avoid new BUY, consider SELL.
-13. Specify indicator parameters explicitly: RSI(14) overbought=70 oversold=30, MACD(12,26,9), Bollinger Bands(20,2), ATR(14), Volume MA(20).
-14. ATR multipliers: stop_loss = 1.5 × ATR(14), take_profit = 2.0 × ATR(14). Risk:Reward ratio minimum 1:1.3.
-15. Cooldown: after a SELL (stop-loss hit), wait at least 3 candles before next BUY signal is valid.
+12. RSI divergence: compare RSI Recent trend with price movement. If price makes new high but RSI Recent shows declining peaks, treat as bearish divergence — avoid new BUY, consider SELL. Conversely, if price makes new low but RSI Recent shows rising troughs, treat as bullish divergence.
+13. RSI trend analysis: use RSI Recent history to determine momentum direction. RSI consistently declining = weakening momentum, RSI consistently rising = strengthening momentum. RSI crossing above 50 from below = bullish shift, crossing below 50 from above = bearish shift.
+14. MACD Histogram trend: analyze Histogram Recent for momentum shifts. Histogram moving from positive to negative = bearish momentum building. Histogram moving from negative to positive = bullish momentum building. Three or more consecutive histogram bars in the same direction confirms the trend.
+15. Bollinger Band position trend: analyze BB Position Recent for mean-reversion or breakout signals. BB Position declining from >0.8 toward 0.5 = price retreating from upper band (bearish pressure). BB Position rising from <0.2 toward 0.5 = price bouncing from lower band (bullish bounce). BB Position staying near extremes (>0.9 or <0.1) for 3+ candles = strong trend, not reversal.
+16. Specify indicator parameters explicitly: RSI(14) overbought=70 oversold=30, MACD(12,26,9), Bollinger Bands(20,2), ATR(14), Volume MA(20).
+17. ATR multipliers: stop_loss = 1.5 × ATR(14), take_profit = 2.0 × ATR(14). Risk:Reward ratio minimum 1:1.3.
+18. Cooldown: after a SELL (stop-loss hit), wait at least 3 candles before next BUY signal is valid.
 
 IMPORTANT: Write the "reasoning" field in {language}. All other field names and values (action, confidence, etc.) must remain in English.
 
@@ -846,7 +852,21 @@ class TradingEngine:
         recent_trades_text = self._build_recent_trades_text()
 
         # Ensure all indicator values are numeric (never None) for prompt formatting
+        # Separate list-type values before numeric coercion
+        rsi_history = ind.pop("rsi_history", [])
+        macd_hist_history = ind.pop("macd_hist_history", [])
+        bb_pos_history = ind.pop("bb_pos_history", [])
+        vol_ratio_history = ind.pop("vol_ratio_history", [])
         safe_ind = {k: (v if v is not None else 0) for k, v in ind.items()}
+
+        # Format histories as arrow-separated strings
+        def _fmt(arr: list, decimals: int = 2) -> str:
+            return " → ".join(f"{v:.{decimals}f}" for v in arr) if arr else "N/A"
+
+        safe_ind["rsi_history_text"] = _fmt(rsi_history)
+        safe_ind["macd_hist_history_text"] = _fmt(macd_hist_history, 4)
+        safe_ind["bb_pos_history_text"] = _fmt(bb_pos_history, 4)
+        safe_ind["vol_ratio_history_text"] = _fmt(vol_ratio_history)
 
         # Exchange-specific prompt variables
         fee_pct_val = self._fee * 100
@@ -904,19 +924,67 @@ class TradingEngine:
                 # Closing brace missing – likely truncated response; append it
                 text = text[start:] + "}"
 
+            # Remove BOM, zero-width and other invisible Unicode characters
+            # that some LLMs insert anywhere in the response
+            text = re.sub(r'[\ufeff\u200b\u200c\u200d\u2060\u00a0\u2028\u2029\ufffe]', '', text)
+
             # LLMs often put literal newlines/tabs inside JSON string values;
-            # replace control characters (except already-escaped ones) so
-            # json.loads doesn't choke on "Invalid control character".
-            text = re.sub(r'[\x00-\x1f\x7f]', lambda m: {
+            # replace UN-escaped control characters so json.loads doesn't choke.
+            # Only replace control chars that are NOT preceded by a backslash.
+            text = re.sub(r'(?<!\\)[\x00-\x1f\x7f]', lambda m: {
                 '\n': '\\n', '\r': '\\r', '\t': '\\t',
             }.get(m.group(), ''), text)
 
-            result = json.loads(text)
+            def _parse_json(s: str) -> dict:
+                """Try json.loads with progressive fallback fixes."""
+                # Attempt 1: direct parse
+                try:
+                    return json.loads(s)
+                except json.JSONDecodeError:
+                    pass
+                # Attempt 2: fix common LLM JSON issues
+                fixed = s
+                fixed = re.sub(r',\s*([}\]])', r'\1', fixed)           # trailing commas
+                fixed = re.sub(r"(?<![\\])\'", '"', fixed)              # single → double quotes
+                fixed = re.sub(r'(?<=[{,])\s*([a-zA-Z_]\w*)\s*:', r' "\1":', fixed)  # unquoted keys
+                try:
+                    return json.loads(fixed)
+                except json.JSONDecodeError:
+                    pass
+                # Attempt 3: extract key-value pairs with regex as last resort
+                result: dict = {}
+                for key in ("action", "confidence", "reasoning",
+                            "expected_move_pct", "stop_loss_pct", "take_profit_pct"):
+                    m = re.search(rf'"{key}"\s*:\s*("(?:[^"\\]|\\.)*?"|-?[\d.]+)', s)
+                    if m:
+                        val = m.group(1)
+                        if val.startswith('"'):
+                            result[key] = val.strip('"')
+                        else:
+                            try:
+                                result[key] = float(val)
+                            except ValueError:
+                                result[key] = val
+                if "action" in result:
+                    # Ensure numeric fields
+                    for nk in ("confidence", "expected_move_pct", "stop_loss_pct", "take_profit_pct"):
+                        if nk in result and isinstance(result[nk], str):
+                            try:
+                                result[nk] = float(result[nk])
+                            except ValueError:
+                                result[nk] = 0
+                    return result
+                # Nothing worked — raise so outer handler catches it
+                raise json.JSONDecodeError("All parse attempts failed", s, 0)
+
+            result = _parse_json(text)
             result["input_prompt"] = prompt
             result["raw_response"] = raw_response
             return result
         except (json.JSONDecodeError, Exception) as e:
-            logger.warning("LLM response parse error: %s", e)
+            # Log first 80 chars with repr to reveal hidden/invisible characters
+            snippet = repr(text[:80]) if 'text' in dir() else 'N/A'
+            logger.warning("LLM response parse error: %s | start: %s", e, snippet)
             return {"action": "HOLD", "confidence": 0, "reasoning": f"Parse error: {e}",
                     "input_prompt": prompt, "raw_response": response if 'response' in dir() else str(e)}
 

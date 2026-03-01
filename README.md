@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Your Personal AI Agent for Windows</b><br>
-  Chat with 14 LLMs &bull; Automate Browser Tasks &bull; Manage Files &bull; Trade Crypto<br>
+  Chat with 14 LLMs &bull; Build Agent Workflows &bull; Automate Browser Tasks &bull; Trade Crypto<br>
   Connect WhatsApp, Telegram, Slack, Discord &bull; Send Emails &bull; Voice Chat from Your Phone
 </p>
 
@@ -179,6 +179,24 @@ All messengers share the same **AI persona, long-term memory, and conversation c
 - **Auto-trading on Upbit** — LLM-based or rule-based strategies with stop-loss and daily loss limits
 - **Natural language trading** — "Buy 100,000 KRW of Bitcoin" or "Check my balance"
 
+### Agent Builder
+Build automated multi-step workflows with a visual drag-and-drop canvas:
+
+- **Node-based editor** — drag services onto a canvas and connect them with edges
+- **20+ service nodes** — web search, weather, stock/crypto data, news, Wikipedia, currency, and more
+- **Chat app output** — send results to WhatsApp, Telegram, Slack, Discord, or Matrix
+- **AI-generated workflows** — describe what you want in natural language and the AI builds the workflow
+- **Scheduling** — run agents on cron (hourly/daily/weekly) or at fixed intervals
+- **Custom prompts** — each node has its own AI prompt for fine-tuned behavior
+
+### P2P Chat
+Real-time multi-user chat rooms for Sancho users:
+
+- **WebSocket-based** — instant messaging with live presence indicators
+- **Multi-room** — browse, create, and switch between chat rooms
+- **Auto-reconnect** — exponential backoff reconnection on disconnect
+- **Message history** — previous messages loaded on room entry
+
 ### Task Scheduler
 - Schedule recurring tasks with cron-like intervals
 - Results delivered via connected messengers
@@ -261,6 +279,7 @@ All messengers share the same **AI persona, long-term memory, and conversation c
 | "Analyze Bitcoin on the daily chart" | Returns RSI, MACD, Bollinger, MA signals |
 | "Remember that I prefer short answers" | Saves preference and applies to all future conversations |
 | "What did we discuss yesterday?" | Uses conversation summaries to recall recent topics |
+| "Build an agent that checks BTC price and sends it to Discord daily" | Creates a workflow in Agent Builder with scheduling |
 
 ---
 
@@ -299,7 +318,9 @@ Python FastAPI Backend (port 8765)         <- Subprocess managed by Electron
   |-- Email (Gmail + Outlook via Graph API)
   |-- Calendar, Tasks & Sheets (Google APIs)
   |-- Messenger Bots (WhatsApp, Telegram, Slack, Discord, Matrix)
+  |-- Agent Builder (visual workflow canvas)
   |-- Auto-Trading Engine (Upbit)
+  |-- P2P Chat (WebSocket rooms)
   |-- Voice App (Cloudflare Tunnel)
   |-- Task Scheduler (APScheduler)
   +-- Security Middleware (Rate Limit, Tunnel Guard, CORS)

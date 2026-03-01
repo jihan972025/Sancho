@@ -54,7 +54,7 @@ def calc_rsi(closes: list[float], period: int = 14) -> list[float | None]:
 def calc_macd(
     closes: list[float], fast: int = 12, slow: int = 26, signal_p: int = 9
 ) -> dict:
-    """Return latest MACD values: {macd, signal, histogram}."""
+    """Return latest MACD values + histogram history."""
     fast_ema = ema(closes, fast)
     slow_ema = ema(closes, slow)
 
@@ -65,7 +65,7 @@ def calc_macd(
 
     macd_values = [v for v in macd_line if v is not None]
     if len(macd_values) < signal_p:
-        return {"macd": 0, "signal": 0, "histogram": 0}
+        return {"macd": 0, "signal": 0, "histogram": 0, "histogram_history": []}
 
     signal_line: list[float | None] = [None] * len(closes)
     start_idx = next(i for i, v in enumerate(macd_line) if v is not None)
@@ -80,9 +80,20 @@ def calc_macd(
             if macd_line[i] is not None and signal_line[i - 1] is not None:
                 signal_line[i] = macd_line[i] * k + signal_line[i - 1] * (1 - k)
 
+    # Histogram history (last 10)
+    hist_history: list[float] = []
+    for i in range(len(closes)):
+        if macd_line[i] is not None and signal_line[i] is not None:
+            hist_history.append(round(macd_line[i] - signal_line[i], 4))
+
     m = macd_line[-1] or 0
     s = signal_line[-1] or 0
-    return {"macd": round(m, 4), "signal": round(s, 4), "histogram": round(m - s, 4)}
+    return {
+        "macd": round(m, 4),
+        "signal": round(s, 4),
+        "histogram": round(m - s, 4),
+        "histogram_history": hist_history[-10:],
+    }
 
 
 def calc_bollinger(
@@ -160,23 +171,53 @@ def calculate_all(candles: list) -> dict:
     current = closes[-1]
     prev = closes[-2] if len(closes) >= 2 else current
 
+    # ── History calculations (last 10) ──
+
+    # BB position history: compute per-candle position over rolling window
+    bb_period = 20
+    bb_std_dev = 2.0
+    bb_pos_history: list[float] = []
+    for i in range(max(bb_period, len(closes) - 10), len(closes)):
+        window = closes[i - bb_period + 1 : i + 1]
+        mid = sum(window) / bb_period
+        variance = sum((x - mid) ** 2 for x in window) / bb_period
+        sd = math.sqrt(variance)
+        upper = mid + bb_std_dev * sd
+        lower = mid - bb_std_dev * sd
+        band_w = upper - lower
+        pos = (closes[i] - lower) / band_w if band_w > 0 else 0.5
+        bb_pos_history.append(round(pos, 4))
+
+    # Volume ratio history: volume / 20-period avg
+    vol_ratio_history: list[float] = []
+    for i in range(max(0, len(volumes) - 10), len(volumes)):
+        avg = vol_sma[i]
+        if avg and avg > 0:
+            vol_ratio_history.append(round(volumes[i] / avg, 2))
+        else:
+            vol_ratio_history.append(0)
+
     return {
         "current_price": current,
         "price_change_pct": round((current - prev) / prev * 100, 4) if prev else 0,
         "rsi": round(rsi_arr[-1], 2) if rsi_arr[-1] is not None else 50,
+        "rsi_history": [round(v, 2) for v in rsi_arr[-10:] if v is not None],
         "macd": macd_data["macd"],
         "macd_signal": macd_data["signal"],
         "macd_histogram": macd_data["histogram"],
+        "macd_hist_history": macd_data["histogram_history"],
         "bb_upper": bb["upper"],
         "bb_middle": bb["middle"],
         "bb_lower": bb["lower"],
         "bb_position": bb["position"],
+        "bb_pos_history": bb_pos_history,
         "sma_20": round(sma20[-1], 2) if sma20[-1] is not None else current,
         "sma_50": round(sma50[-1], 2) if sma50[-1] is not None else current,
         "ema_12": round(ema12[-1], 2) if ema12[-1] is not None else current,
         "ema_26": round(ema26[-1], 2) if ema26[-1] is not None else current,
         "volume": volumes[-1] if volumes else 0,
         "volume_avg_20": round(vol_sma[-1], 2) if vol_sma[-1] is not None else 0,
+        "vol_ratio_history": vol_ratio_history,
         "atr": round(atr, 2),
     }
 

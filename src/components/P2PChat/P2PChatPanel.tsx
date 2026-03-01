@@ -23,9 +23,14 @@ export default function P2PChatPanel() {
       try {
         const profile = await getUserProfile()
         if (profile.exists && profile.content) {
-          const parsed = JSON.parse(profile.content)
-          if (parsed.name) {
-            setUsername(parsed.name)
+          // Profile is stored as Markdown (e.g. "- Name: John")
+          let name = ''
+          for (const line of profile.content.split('\n')) {
+            const match = line.match(/^- Name: (.+)$/)
+            if (match) { name = match[1].trim(); break }
+          }
+          if (name) {
+            setUsername(name)
             return
           }
         }

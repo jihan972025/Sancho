@@ -1,19 +1,25 @@
 {
-    "requires_full_update":  true,
+    "requires_full_update":  false,
     "channels":  {
-                     "electron":  {
-                                      "target":  "app.asar.unpacked/dist-electron",
-                                      "sha256":  "96d1d022cf14dd6da40a7d3f59094ec8d8b77dc157eeb173a2a52515ec213ae3",
-                                      "asset":  "patch-electron-1.1.2.zip",
-                                      "size":  6763
-                                  },
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "616527c4be9f17eeb62a29924566c33fa9b63bbbdac783a08b3d7e1d407531ae",
-                                     "asset":  "patch-backend-1.1.2.zip",
-                                     "size":  64409866
-                                 }
+                                     "sha256":  "be4a5c40d387980c1053ca1a30e18ace3a09ed60695cafa164c6c474d72583bd",
+                                     "asset":  "patch-backend-1.1.3.zip",
+                                     "size":  25752409
+                                 },
+                     "frontend":  {
+                                      "target":  "app.asar.unpacked/dist",
+                                      "sha256":  "96f8eace6ad34f63ffebb661e94764b63357166cca76facac4192103563abb6d",
+                                      "asset":  "patch-frontend-1.1.3.zip",
+                                      "size":  253432
+                                  },
+                     "electron":  {
+                                      "target":  "app.asar.unpacked/dist-electron",
+                                      "sha256":  "dc262a8d46e53f254e5c1315f6a0fe29309e3e6f66c355e1a3d704dd6d5138cf",
+                                      "asset":  "patch-electron-1.1.3.zip",
+                                      "size":  6765
+                                  }
                  },
     "min_version":  "1.1.2",
-    "version":  "1.1.2"
+    "version":  "1.1.3"
 }
