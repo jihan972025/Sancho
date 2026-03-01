@@ -23,32 +23,31 @@ def ema(values: list[float], period: int) -> list[float | None]:
     return out
 
 
-def calc_rsi(closes: list[float], period: int = 14) -> list[float | None]:
-    out: list[float | None] = [None] * len(closes)
-    if len(closes) < period + 1:
-        return out
-    gains, losses = 0.0, 0.0
-    for i in range(1, period + 1):
-        diff = closes[i] - closes[i - 1]
-        if diff > 0:
-            gains += diff
-        else:
-            losses -= diff
-    avg_gain = gains / period
-    avg_loss = losses / period
-    if avg_loss == 0:
-        out[period] = 100.0
-    else:
-        out[period] = 100 - 100 / (1 + avg_gain / avg_loss)
-    for i in range(period + 1, len(closes)):
-        diff = closes[i] - closes[i - 1]
-        avg_gain = (avg_gain * (period - 1) + max(diff, 0)) / period
-        avg_loss = (avg_loss * (period - 1) + max(-diff, 0)) / period
-        if avg_loss == 0:
-            out[i] = 100.0
-        else:
-            out[i] = 100 - 100 / (1 + avg_gain / avg_loss)
-    return out
+def calc_stochastic(
+    highs: list[float], lows: list[float], closes: list[float],
+    k_period: int = 14, d_period: int = 3,
+) -> dict:
+    """Stochastic Oscillator (%K, %D) with full history arrays.
+
+    %K = (Close - Lowest Low) / (Highest High - Lowest Low) * 100
+    %D = SMA(%K, d_period)
+    """
+    n = len(closes)
+    k_arr: list[float | None] = [None] * n
+    for i in range(k_period - 1, n):
+        highest = max(highs[i - k_period + 1 : i + 1])
+        lowest = min(lows[i - k_period + 1 : i + 1])
+        rng = highest - lowest
+        k_arr[i] = ((closes[i] - lowest) / rng * 100) if rng > 0 else 50.0
+
+    # %D = SMA of %K
+    d_arr: list[float | None] = [None] * n
+    for i in range(k_period - 1 + d_period - 1, n):
+        window = [k_arr[j] for j in range(i - d_period + 1, i + 1) if k_arr[j] is not None]
+        if len(window) == d_period:
+            d_arr[i] = sum(window) / d_period
+
+    return {"k_arr": k_arr, "d_arr": d_arr}
 
 
 def calc_macd(
@@ -158,7 +157,7 @@ def calculate_all(candles: list) -> dict:
     lows = _sanitize([c[3] for c in candles])
     volumes = _sanitize([c[5] for c in candles])
 
-    rsi_arr = calc_rsi(closes)
+    stoch = calc_stochastic(highs, lows, closes)
     macd_data = calc_macd(closes)
     bb = calc_bollinger(closes)
     sma20 = sma(closes, 20)
@@ -200,8 +199,9 @@ def calculate_all(candles: list) -> dict:
     return {
         "current_price": current,
         "price_change_pct": round((current - prev) / prev * 100, 4) if prev else 0,
-        "rsi": round(rsi_arr[-1], 2) if rsi_arr[-1] is not None else 50,
-        "rsi_history": [round(v, 2) for v in rsi_arr[-10:] if v is not None],
+        "stoch_k": round(stoch["k_arr"][-1], 2) if stoch["k_arr"][-1] is not None else 50,
+        "stoch_d": round(stoch["d_arr"][-1], 2) if stoch["d_arr"][-1] is not None else 50,
+        "stoch_k_history": [round(v, 2) for v in stoch["k_arr"][-10:] if v is not None],
         "macd": macd_data["macd"],
         "macd_signal": macd_data["signal"],
         "macd_histogram": macd_data["histogram"],

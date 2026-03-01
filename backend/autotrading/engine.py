@@ -157,7 +157,7 @@ Current Price: {cs}{current_price:,.{price_decimals}f}
 {higher_tf_text}
 
 ## Technical Indicators ({candle_interval})
-- RSI(14): {rsi}  (Recent: {rsi_history_text})
+- Stochastic(14,3): %K={stoch_k}  %D={stoch_d}  (K Recent: {stoch_k_history_text})
 - MACD: {macd} | Signal: {macd_signal} | Histogram: {macd_histogram}
   Histogram Recent: {macd_hist_history_text}
 - Bollinger Bands: Upper={cs}{bb_upper:,.{price_decimals}f}  Mid={cs}{bb_middle:,.{price_decimals}f}  Lower={cs}{bb_lower:,.{price_decimals}f}  Position={bb_position}
@@ -192,11 +192,11 @@ Current Price: {cs}{current_price:,.{price_decimals}f}
 9. If recent trades show consecutive losses (3+), be extra conservative — raise confidence threshold mentally and prefer HOLD.
 10. If in position: recommend SELL on ATR stop-loss breach or reversal signal.
 11. ADX filter: if ADX(14) < 20, market is ranging — prefer HOLD unless Bollinger Band bounce setup is confirmed.
-12. RSI divergence: compare RSI Recent trend with price movement. If price makes new high but RSI Recent shows declining peaks, treat as bearish divergence — avoid new BUY, consider SELL. Conversely, if price makes new low but RSI Recent shows rising troughs, treat as bullish divergence.
-13. RSI trend analysis: use RSI Recent history to determine momentum direction. RSI consistently declining = weakening momentum, RSI consistently rising = strengthening momentum. RSI crossing above 50 from below = bullish shift, crossing below 50 from above = bearish shift.
+12. Stochastic divergence: compare %K Recent trend with price movement. If price makes new high but %K Recent shows declining peaks, treat as bearish divergence — avoid new BUY, consider SELL. Conversely, if price makes new low but %K Recent shows rising troughs, treat as bullish divergence.
+13. Stochastic trend analysis: use %K Recent history to determine momentum direction. %K consistently declining = weakening momentum, %K consistently rising = strengthening momentum. %K crossing above %D from below = bullish signal, %K crossing below %D from above = bearish signal. Overbought: %K > 80, Oversold: %K < 20.
 14. MACD Histogram trend: analyze Histogram Recent for momentum shifts. Histogram moving from positive to negative = bearish momentum building. Histogram moving from negative to positive = bullish momentum building. Three or more consecutive histogram bars in the same direction confirms the trend.
 15. Bollinger Band position trend: analyze BB Position Recent for mean-reversion or breakout signals. BB Position declining from >0.8 toward 0.5 = price retreating from upper band (bearish pressure). BB Position rising from <0.2 toward 0.5 = price bouncing from lower band (bullish bounce). BB Position staying near extremes (>0.9 or <0.1) for 3+ candles = strong trend, not reversal.
-16. Specify indicator parameters explicitly: RSI(14) overbought=70 oversold=30, MACD(12,26,9), Bollinger Bands(20,2), ATR(14), Volume MA(20).
+16. Specify indicator parameters explicitly: Stochastic(14,3) overbought=80 oversold=20, MACD(12,26,9), Bollinger Bands(20,2), ATR(14), Volume MA(20).
 17. ATR multipliers: stop_loss = 1.5 × ATR(14), take_profit = 2.0 × ATR(14). Risk:Reward ratio minimum 1:1.3.
 18. Cooldown: after a SELL (stop-loss hit), wait at least 3 candles before next BUY signal is valid.
 
@@ -300,6 +300,9 @@ class TradingEngine:
 
         # Load recent trade history for feedback (improvement #4)
         self._load_recent_trades()
+
+        # Restore open position from storage (survives engine restart)
+        self._restore_open_position()
 
         while self.is_running:
             try:
@@ -645,7 +648,8 @@ class TradingEngine:
 
     def _rule_based_decision(self, ind: dict) -> dict:
         """Pure technical-indicator decision without LLM."""
-        rsi = ind.get("rsi", 50)
+        stoch_k = ind.get("stoch_k", 50)
+        stoch_d = ind.get("stoch_d", 50)
         macd_hist = ind.get("macd_histogram", 0)
         bb_pos = ind.get("bb_position", 0.5)
         price = ind.get("current_price", 0)
@@ -661,7 +665,7 @@ class TradingEngine:
             f"[Rule-Based Input]\n"
             f"Coin: {self.coin}/{self._quote} | Candle: {self.candle_interval} | Analysis: {self.timeframe}\n"
             f"Price: {self._cs}{price:,.2f}\n"
-            f"RSI(14): {rsi:.1f}\n"
+            f"Stochastic(14,3): %K={stoch_k:.1f}  %D={stoch_d:.1f}\n"
             f"MACD Histogram: {macd_hist:.4f}\n"
             f"BB Position: {bb_pos:.2f}\n"
             f"SMA(20): {self._cs}{sma20:,.2f} | SMA(50): {self._cs}{ind.get('sma_50', 0):,.2f}\n"
@@ -683,8 +687,8 @@ class TradingEngine:
         if self.in_position:
             # Sell signals
             sell_signals: list[str] = []
-            if rsi > 70:
-                sell_signals.append(f"RSI({rsi:.1f})>70")
+            if stoch_k > 80:
+                sell_signals.append(f"Stoch %K({stoch_k:.1f})>80")
             if macd_hist < 0:
                 sell_signals.append(f"MACD hist({macd_hist:.4f})<0")
             if bb_pos > 0.8:
@@ -732,8 +736,8 @@ class TradingEngine:
 
             # Buy signals
             buy_signals: list[str] = []
-            if rsi < 30:
-                buy_signals.append(f"RSI({rsi:.1f})<30")
+            if stoch_k < 20:
+                buy_signals.append(f"Stoch %K({stoch_k:.1f})<20")
             if macd_hist > 0:
                 buy_signals.append(f"MACD hist({macd_hist:.4f})>0")
             if bb_pos < 0.2:
@@ -853,7 +857,7 @@ class TradingEngine:
 
         # Ensure all indicator values are numeric (never None) for prompt formatting
         # Separate list-type values before numeric coercion
-        rsi_history = ind.pop("rsi_history", [])
+        stoch_k_history = ind.pop("stoch_k_history", [])
         macd_hist_history = ind.pop("macd_hist_history", [])
         bb_pos_history = ind.pop("bb_pos_history", [])
         vol_ratio_history = ind.pop("vol_ratio_history", [])
@@ -863,7 +867,7 @@ class TradingEngine:
         def _fmt(arr: list, decimals: int = 2) -> str:
             return " → ".join(f"{v:.{decimals}f}" for v in arr) if arr else "N/A"
 
-        safe_ind["rsi_history_text"] = _fmt(rsi_history)
+        safe_ind["stoch_k_history_text"] = _fmt(stoch_k_history)
         safe_ind["macd_hist_history_text"] = _fmt(macd_hist_history, 4)
         safe_ind["bb_pos_history_text"] = _fmt(bb_pos_history, 4)
         safe_ind["vol_ratio_history_text"] = _fmt(vol_ratio_history)
@@ -1051,7 +1055,7 @@ class TradingEngine:
         return (
             f"Timeframe: {self._higher_tf_label} | Trend: {self._higher_tf_trend}\n"
             f"  EMA(12): {self._cs}{h.get('ema_12', 0):,.2f}  EMA(26): {self._cs}{h.get('ema_26', 0):,.2f}\n"
-            f"  SMA(50): {self._cs}{h.get('sma_50', 0):,.2f}  RSI: {h.get('rsi', 0):.1f}\n"
+            f"  SMA(50): {self._cs}{h.get('sma_50', 0):,.2f}  Stoch %K: {h.get('stoch_k', 50):.1f}  %D: {h.get('stoch_d', 50):.1f}\n"
             f"  MACD Hist: {h.get('macd_histogram', 0):.4f}"
         )
 
@@ -1077,6 +1081,30 @@ class TradingEngine:
             lines.append(f"  {'✓' if pnl >= 0 else '✗'} ₩{entry:,.0f}→₩{exit_p:,.0f} ({pnl:+.2f}%)")
 
         return "\n".join(lines)
+
+    def _restore_open_position(self) -> None:
+        """Restore open position from storage so it survives engine restart."""
+        try:
+            trades = storage.get_trades(limit=50)
+            for t in trades:
+                if t.get("coin") == self.coin and t.get("status") == "open":
+                    self.in_position = True
+                    self.entry_price = t.get("entry_price", 0)
+                    self.quantity = t.get("quantity", 0)
+                    self.entry_time = t.get("entry_time", "")
+                    self.entry_reasoning = t.get("buy_reasoning") or t.get("reasoning", "")
+                    self._open_trade_id = t.get("id", "")
+                    logger.info(
+                        "Restored open position: %s @ %s qty=%s id=%s",
+                        self.coin, self.entry_price, self.quantity, self._open_trade_id,
+                    )
+                    self._emit({
+                        "type": "info",
+                        "content": f"Restored open position: {self.coin} @ {self._cs}{self.entry_price:,.2f}",
+                    })
+                    return
+        except Exception as e:
+            logger.warning("Failed to restore open position: %s", e)
 
     def _load_recent_trades(self) -> None:
         """Load recent trade history from storage on startup (improvement #4)."""

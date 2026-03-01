@@ -268,7 +268,7 @@ export default function AutoTradingPanel() {
   // Load initial status + history
   useEffect(() => {
     fetchStatus()
-    fetchHistory(yesterdayStr(), todayStr())
+    fetchHistory()
   }, [])
 
   const fetchStatus = async () => {
