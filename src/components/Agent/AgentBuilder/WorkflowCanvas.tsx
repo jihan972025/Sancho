@@ -92,6 +92,7 @@ export default function WorkflowCanvas() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const defaultModel = useChatStore((s) => s.selectedModel)
+  const aiTextareaRef = useRef<HTMLTextAreaElement>(null)
 
   const canvasRef = useRef<HTMLDivElement>(null)
 
@@ -273,6 +274,14 @@ export default function WorkflowCanvas() {
     })
   }
 
+  // ── Auto-resize AI textarea ──
+  const autoResizeAiTextarea = useCallback(() => {
+    const el = aiTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+  }, [])
+
   // ── AI build ──
   const handleAiBuild = async () => {
     const prompt = aiPrompt.trim()
@@ -284,6 +293,12 @@ export default function WorkflowCanvas() {
       const result = await aiAgentBuild(prompt, model)
       applyAiBuild(result)
       setAiPrompt('')
+      // Reset textarea height after clearing
+      requestAnimationFrame(() => {
+        if (aiTextareaRef.current) {
+          aiTextareaRef.current.style.height = 'auto'
+        }
+      })
     } catch (err: any) {
       setAiError(err.message || t('agent.aiBuildError'))
     } finally {
@@ -393,18 +408,25 @@ export default function WorkflowCanvas() {
       {/* AI Chat Input Bar */}
       <div className="border-t border-slate-700 bg-slate-900/80 backdrop-blur-sm px-3 py-2.5">
         {aiError && <div className="text-[11px] text-red-400 mb-1.5 px-1">{aiError}</div>}
-        <div className="flex items-center gap-2">
-          <Sparkles size={16} className={`shrink-0 ${aiLoading ? 'text-angel-400 animate-pulse' : 'text-angel-500/60'}`} />
-          <input
-            type="text"
+        <div className="flex items-end gap-2">
+          <Sparkles size={16} className={`shrink-0 mb-1.5 ${aiLoading ? 'text-angel-400 animate-pulse' : 'text-angel-500/60'}`} />
+          <textarea
+            ref={aiTextareaRef}
             value={aiLoading ? t('agent.aiBuilding') : aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); handleAiBuild() } }}
+            onChange={(e) => { setAiPrompt(e.target.value); autoResizeAiTextarea() }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                handleAiBuild()
+              }
+            }}
             disabled={aiLoading}
             placeholder={t('agent.aiPlaceholder')}
-            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            rows={1}
+            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-angel-500 placeholder-slate-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none overflow-y-auto leading-5"
+            style={{ maxHeight: 200 }}
           />
-          <button onClick={handleAiBuild} disabled={aiLoading || !aiPrompt.trim()} className="shrink-0 p-1.5 rounded-lg bg-angel-600 hover:bg-angel-700 disabled:bg-slate-700 disabled:text-slate-500 text-white transition-colors" title="Enter">
+          <button onClick={handleAiBuild} disabled={aiLoading || !aiPrompt.trim()} className="shrink-0 p-1.5 mb-0.5 rounded-lg bg-angel-600 hover:bg-angel-700 disabled:bg-slate-700 disabled:text-slate-500 text-white transition-colors" title="Enter">
             {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <CornerDownLeft size={14} />}
           </button>
         </div>
