@@ -3,6 +3,7 @@ import {
   Search, Globe, Mail, ClipboardList, FileText, Hash, CloudSun, TrendingUp, BarChart3,
   BookOpen, Newspaper, Coins, Wallet, MapPin, Activity, Calendar, Wifi, Clock,
   Lightbulb, Link, Flag, Sparkles, Table, Rss, MessageCircle, FolderOpen,
+  GitBranch, GitFork, GitMerge, Repeat, Timer, UserCheck, Workflow,
 } from 'lucide-react'
 
 export interface DraggableServiceDef {
@@ -11,10 +12,19 @@ export interface DraggableServiceDef {
   icon: LucideIcon
   color: string
   bgColor: string
-  category: 'free' | 'paid' | 'exchange' | 'chatapp'
+  category: 'control' | 'free' | 'paid' | 'exchange' | 'chatapp'
 }
 
 export const allServices: DraggableServiceDef[] = [
+  // ---- Flow Control Nodes (7) ----
+  { id: 'condition', name: 'If/Else', icon: GitBranch, color: 'text-amber-400', bgColor: 'bg-amber-500/10 border-amber-500/20', category: 'control' },
+  { id: 'fork', name: 'Fork', icon: GitFork, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10 border-cyan-500/20', category: 'control' },
+  { id: 'join', name: 'Join', icon: GitMerge, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10 border-cyan-500/20', category: 'control' },
+  { id: 'loop', name: 'Loop', icon: Repeat, color: 'text-purple-400', bgColor: 'bg-purple-500/10 border-purple-500/20', category: 'control' },
+  { id: 'delay', name: 'Delay', icon: Timer, color: 'text-slate-400', bgColor: 'bg-slate-500/10 border-slate-500/20', category: 'control' },
+  { id: 'approval', name: 'Approval', icon: UserCheck, color: 'text-amber-400', bgColor: 'bg-amber-500/10 border-amber-500/20', category: 'control' },
+  { id: 'subroute', name: 'Sub Agent', icon: Workflow, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10 border-indigo-500/20', category: 'control' },
+
   // ---- Free API Services (18) ----
   { id: 'duckduckgo', name: 'DuckDuckGo', icon: Search, color: 'text-orange-400', bgColor: 'bg-orange-500/10 border-orange-500/20', category: 'free' },
   { id: 'wttr', name: 'wttr.in', icon: CloudSun, color: 'text-sky-400', bgColor: 'bg-sky-500/10 border-sky-500/20', category: 'free' },
@@ -59,11 +69,12 @@ export const allServices: DraggableServiceDef[] = [
   { id: 'bitget', name: 'Bitget', icon: BarChart3, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10 border-cyan-500/20', category: 'exchange' },
   { id: 'htx', name: 'HTX', icon: Activity, color: 'text-blue-400', bgColor: 'bg-blue-500/10 border-blue-500/20', category: 'exchange' },
 
-  // ---- Chat Apps (4) ----
+  // ---- Chat Apps (5) ----
   { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, color: 'text-green-400', bgColor: 'bg-green-500/10 border-green-500/20', category: 'chatapp' },
   { id: 'telegram', name: 'Telegram', icon: MessageCircle, color: 'text-blue-400', bgColor: 'bg-blue-500/10 border-blue-500/20', category: 'chatapp' },
   { id: 'matrix', name: 'Matrix', icon: MessageCircle, color: 'text-emerald-400', bgColor: 'bg-emerald-500/10 border-emerald-500/20', category: 'chatapp' },
   { id: 'slack_app', name: 'Slack', icon: Hash, color: 'text-purple-400', bgColor: 'bg-purple-500/10 border-purple-500/20', category: 'chatapp' },
+  { id: 'discord', name: 'Discord', icon: MessageCircle, color: 'text-indigo-400', bgColor: 'bg-indigo-500/10 border-indigo-500/20', category: 'chatapp' },
 ]
 
 export function getServiceDef(serviceId: string): DraggableServiceDef | undefined {
@@ -71,6 +82,7 @@ export function getServiceDef(serviceId: string): DraggableServiceDef | undefine
 }
 
 export const categoryLabels: Record<string, { en: string; ko: string }> = {
+  control: { en: 'Flow Control', ko: '흐름 제어' },
   free: { en: 'Free Services', ko: '무료 서비스' },
   paid: { en: 'Paid Services', ko: '유료 서비스' },
   exchange: { en: 'Crypto Exchanges', ko: '암호화폐 거래소' },
@@ -125,4 +137,5 @@ export const serviceSampleKeys: Record<string, [string, string, string]> = {
   telegram: ['agent.samples.telegram1', 'agent.samples.telegram2', 'agent.samples.telegram3'],
   matrix: ['agent.samples.matrix1', 'agent.samples.matrix2', 'agent.samples.matrix3'],
   slack_app: ['agent.samples.slackApp1', 'agent.samples.slackApp2', 'agent.samples.slackApp3'],
+  discord: ['agent.samples.discord1', 'agent.samples.discord2', 'agent.samples.discord3'],
 }

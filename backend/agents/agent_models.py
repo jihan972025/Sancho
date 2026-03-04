@@ -3,12 +3,16 @@ from pydantic import BaseModel
 
 class AgentNodeDef(BaseModel):
     id: str
-    serviceId: str
+    serviceId: str = ""
     serviceType: str = "api"  # "api" | "chatapp"
     prompt: str = ""
     order: int = 0
     x: float = 0.0
     y: float = 0.0
+    # Flow-control extensions
+    nodeType: str = "service"  # "service"|"condition"|"fork"|"join"|"loop"|"delay"|"approval"|"subroute"
+    config: dict = {}  # nodeType-specific settings (retryCount, condition, loopType, etc.)
+    outputVariable: str = ""  # variable name to store this node's result
 
 
 class AgentEdge(BaseModel):
@@ -17,6 +21,7 @@ class AgentEdge(BaseModel):
     target: str
     sourcePort: str = "bottom"  # "top" | "bottom" | "left" | "right"
     targetPort: str = "top"     # "top" | "bottom" | "left" | "right"
+    edgeType: str = ""  # ""|"yes"|"no"|"error"|"loop"
 
 
 class NotifyApps(BaseModel):

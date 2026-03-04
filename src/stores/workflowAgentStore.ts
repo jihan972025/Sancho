@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AgentWorkflow, AgentLog, AgentSchedule, AgentNodeDef, AgentEdge, PortSide } from '../types'
+import type { AgentWorkflow, AgentLog, AgentSchedule, AgentNodeDef, AgentEdge, PortSide, NodeType } from '../types'
 import {
   getAgents,
   createAgent,
@@ -41,6 +41,16 @@ function newAgent(): AgentWorkflow {
 }
 
 let nodeCounter = 0
+
+// ── Control node type detection ──
+
+const CONTROL_NODE_IDS = new Set(['condition', 'fork', 'join', 'loop', 'delay', 'approval', 'subroute'])
+
+function resolveNodeType(serviceId: string, explicitType?: string): NodeType {
+  if (explicitType && explicitType !== 'service') return explicitType as NodeType
+  if (CONTROL_NODE_IDS.has(serviceId)) return serviceId as NodeType
+  return 'service'
+}
 
 // ── Topological sort utility ──
 
@@ -95,7 +105,7 @@ function autoLayoutNodes(nodes: AgentNodeDef[], startX = 300, startY = 80, spaci
 function autoCreateLinearEdges(nodes: AgentNodeDef[]): AgentEdge[] {
   const edges: AgentEdge[] = []
   for (let i = 0; i < nodes.length - 1; i++) {
-    edges.push({ id: `auto-edge-${i}`, source: nodes[i].id, target: nodes[i + 1].id, sourcePort: 'bottom', targetPort: 'top' })
+    edges.push({ id: `auto-edge-${i}`, source: nodes[i].id, target: nodes[i + 1].id, sourcePort: 'bottom', targetPort: 'top', edgeType: '' })
   }
   return edges
 }
@@ -113,6 +123,14 @@ interface WorkflowAgentState {
   editingAgent: AgentWorkflow
   isDirty: boolean
 
+  // AI Build streaming
+  aiBuildStreaming: boolean
+  aiBuildStreamContent: string
+  aiBuildError: string
+
+  // Execution debug state
+  executionStates: Record<string, 'pending' | 'running' | 'completed' | 'error'>
+
   // List actions
   fetchAgents: () => Promise<void>
   fetchLogs: (agentId?: string) => Promise<void>
@@ -127,20 +145,34 @@ interface WorkflowAgentState {
   setAgentModel: (model: string) => void
   setSchedule: (schedule: Partial<AgentSchedule>) => void
   setNotifyApps: (apps: Partial<{ whatsapp: boolean; telegram: boolean; matrix: boolean; slack: boolean }>) => void
-  addNode: (serviceId: string, serviceType: 'api' | 'chatapp', x?: number, y?: number) => void
+  addNode: (serviceId: string, serviceType: 'api' | 'chatapp', x?: number, y?: number, nodeType?: string) => void
   removeNode: (nodeId: string) => void
   updateNodePrompt: (nodeId: string, prompt: string) => void
   updateNodePosition: (nodeId: string, x: number, y: number) => void
+  updateNodeConfig: (nodeId: string, config: Record<string, any>) => void
+  updateNodeOutputVariable: (nodeId: string, name: string) => void
   reorderNodes: (fromIndex: number, toIndex: number) => void
   addEdge: (source: string, target: string, sourcePort?: PortSide, targetPort?: PortSide) => void
   removeEdge: (edgeId: string) => void
+  updateEdgeType: (edgeId: string, edgeType: string) => void
   applyAiBuild: (result: {
     name: string
-    nodes: { serviceId: string; serviceType: string; prompt: string; order: number }[]
+    nodes: { serviceId: string; serviceType: string; prompt: string; order: number; nodeType?: string; config?: Record<string, any> }[]
+    edges?: { source: string; target: string; edgeType?: string }[]
     schedule: Record<string, any>
   }) => void
   saveAgent: () => Promise<void>
   clearEditing: () => void
+
+  // AI Build streaming actions
+  setAiBuildStreaming: (v: boolean) => void
+  appendAiBuildContent: (text: string) => void
+  setAiBuildError: (err: string) => void
+  resetAiBuildStream: () => void
+
+  // Execution debug actions
+  setExecutionState: (nodeId: string, state: 'pending' | 'running' | 'completed' | 'error') => void
+  clearExecutionStates: () => void
 }
 
 export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
@@ -151,6 +183,12 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
 
   editingAgent: newAgent(),
   isDirty: false,
+
+  aiBuildStreaming: false,
+  aiBuildStreamContent: '',
+  aiBuildError: '',
+
+  executionStates: {},
 
   // ---- List actions ----
 
@@ -213,6 +251,18 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
     // Ensure edges array exists (backward compat)
     if (!clone.edges) clone.edges = []
 
+    // Ensure new fields have defaults (backward compat)
+    clone.nodes = clone.nodes.map((n) => ({
+      ...n,
+      nodeType: n.nodeType || resolveNodeType(n.serviceId),
+      config: n.config || {},
+      outputVariable: n.outputVariable || '',
+    }))
+    clone.edges = clone.edges.map((e) => ({
+      ...e,
+      edgeType: e.edgeType || '',
+    }))
+
     // Auto-layout if all positions are 0 (legacy agent)
     const allZero = clone.nodes.length > 0 && clone.nodes.every((n) => (n.x ?? 0) === 0 && (n.y ?? 0) === 0)
     if (allZero) {
@@ -253,9 +303,10 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
     }))
   },
 
-  addNode: (serviceId, serviceType, x?, y?) => {
+  addNode: (serviceId, serviceType, x?, y?, nodeType?) => {
     nodeCounter++
     const nodes = get().editingAgent.nodes
+    const nt = resolveNodeType(serviceId, nodeType)
     const node: AgentNodeDef = {
       id: `node-${Date.now()}-${nodeCounter}`,
       serviceId,
@@ -264,6 +315,9 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
       order: nodes.length,
       x: x ?? 300,
       y: y ?? (nodes.length * 160 + 80),
+      nodeType: nt,
+      config: {},
+      outputVariable: '',
     }
     set((s) => ({
       editingAgent: {
@@ -313,6 +367,30 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
     }))
   },
 
+  updateNodeConfig: (nodeId, config) => {
+    set((s) => ({
+      editingAgent: {
+        ...s.editingAgent,
+        nodes: s.editingAgent.nodes.map((n) =>
+          n.id === nodeId ? { ...n, config: { ...n.config, ...config } } : n
+        ),
+      },
+      isDirty: true,
+    }))
+  },
+
+  updateNodeOutputVariable: (nodeId, name) => {
+    set((s) => ({
+      editingAgent: {
+        ...s.editingAgent,
+        nodes: s.editingAgent.nodes.map((n) =>
+          n.id === nodeId ? { ...n, outputVariable: name } : n
+        ),
+      },
+      isDirty: true,
+    }))
+  },
+
   reorderNodes: (fromIndex, toIndex) => {
     set((s) => {
       const nodes = [...s.editingAgent.nodes]
@@ -341,6 +419,7 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
       target,
       sourcePort: sourcePort ?? 'bottom',
       targetPort: targetPort ?? 'top',
+      edgeType: '',
     }
     set((s) => ({
       editingAgent: {
@@ -361,9 +440,22 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
     }))
   },
 
+  updateEdgeType: (edgeId, edgeType) => {
+    set((s) => ({
+      editingAgent: {
+        ...s.editingAgent,
+        edges: s.editingAgent.edges.map((e) =>
+          e.id === edgeId ? { ...e, edgeType } : e
+        ),
+      },
+      isDirty: true,
+    }))
+  },
+
   applyAiBuild: (result) => {
     let nodes: AgentNodeDef[] = result.nodes.map((n, i) => {
       nodeCounter++
+      const nt = resolveNodeType(n.serviceId, n.nodeType)
       return {
         id: `node-${Date.now()}-${nodeCounter}`,
         serviceId: n.serviceId,
@@ -372,12 +464,33 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
         order: i,
         x: 0,
         y: 0,
+        nodeType: nt,
+        config: n.config || {},
+        outputVariable: '',
       }
     })
 
     // Auto-layout + auto-edges for AI-built linear chain
     nodes = autoLayoutNodes(nodes)
-    const edges = autoCreateLinearEdges(nodes)
+
+    // If AI provided edges, use them; otherwise auto-create linear edges
+    let edges: AgentEdge[]
+    if (result.edges && result.edges.length > 0) {
+      // Map AI edge source/target (by index or name) to actual node IDs
+      edges = result.edges.map((e, i) => {
+        nodeCounter++
+        return {
+          id: `edge-${Date.now()}-${nodeCounter}`,
+          source: e.source,
+          target: e.target,
+          sourcePort: 'bottom' as PortSide,
+          targetPort: 'top' as PortSide,
+          edgeType: e.edgeType || '',
+        }
+      })
+    } else {
+      edges = autoCreateLinearEdges(nodes)
+    }
 
     const schedule: AgentSchedule = {
       ...defaultSchedule,
@@ -416,6 +529,7 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
       telegram: chatappIds.includes('telegram'),
       matrix: chatappIds.includes('matrix'),
       slack: chatappIds.includes('slack_app') || chatappIds.includes('slack'),
+      discord: chatappIds.includes('discord'),
     }
     const data = {
       name: agent.name,
@@ -439,4 +553,16 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
   clearEditing: () => {
     set({ editingAgent: newAgent(), isDirty: false })
   },
+
+  // ---- AI Build streaming ----
+  setAiBuildStreaming: (v) => set({ aiBuildStreaming: v }),
+  appendAiBuildContent: (text) => set((s) => ({ aiBuildStreamContent: s.aiBuildStreamContent + text })),
+  setAiBuildError: (err) => set({ aiBuildError: err }),
+  resetAiBuildStream: () => set({ aiBuildStreaming: false, aiBuildStreamContent: '', aiBuildError: '' }),
+
+  // ---- Execution debug ----
+  setExecutionState: (nodeId, state) => set((s) => ({
+    executionStates: { ...s.executionStates, [nodeId]: state },
+  })),
+  clearExecutionStates: () => set({ executionStates: {} }),
 }))

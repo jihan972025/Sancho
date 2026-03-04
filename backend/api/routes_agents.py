@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -5,6 +6,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from ..agents.agent_models import AgentWorkflow, AgentNodeDef, AgentEdge, AgentSchedule, NotifyApps
@@ -22,12 +24,15 @@ router = APIRouter(prefix="/api/agents", tags=["agents"])
 
 class NodeDefRequest(BaseModel):
     id: str = ""
-    serviceId: str
+    serviceId: str = ""
     serviceType: str = "api"
     prompt: str = ""
     order: int = 0
     x: float = 0.0
     y: float = 0.0
+    nodeType: str = "service"
+    config: dict = {}
+    outputVariable: str = ""
 
 
 class EdgeDefRequest(BaseModel):
@@ -36,6 +41,7 @@ class EdgeDefRequest(BaseModel):
     target: str
     sourcePort: str = "bottom"
     targetPort: str = "top"
+    edgeType: str = ""
 
 
 class ScheduleRequest(BaseModel):
@@ -83,6 +89,10 @@ class AiBuildRequest(BaseModel):
     model: str = ""
 
 
+class ApproveRequest(BaseModel):
+    approved: bool = True
+
+
 # ── AI Build system prompt ──
 
 _AI_BUILD_SYSTEM_PROMPT = """\
@@ -127,11 +137,30 @@ Available ChatApp services (for delivering results to the user):
 Available crypto exchanges (for exchange-specific trading data):
 - upbit, binance, coinbase, bybit, okx, kraken, mexc, gateio, kucoin, bitget, htx
 
+Available flow control nodes (for complex workflows):
+- condition: If/Else branching. Set nodeType="condition", config={"condition":"your condition text"}. Outgoing edges must have edgeType "yes" or "no".
+- fork: Split into parallel branches. Set nodeType="fork". Multiple outgoing edges run simultaneously.
+- join: Merge parallel branches. Set nodeType="join". Waits for all incoming branches.
+- loop: Repeat a sequence. Set nodeType="loop", config={"loopType":"count","maxIterations":3}. Use edgeType "loop" for the body edge.
+- delay: Wait/pause. Set nodeType="delay", config={"delaySeconds":10}.
+- approval: Human approval gate. Set nodeType="approval", config={"timeoutMinutes":60}.
+- subroute: Run another agent. Set nodeType="subroute", config={"agentId":"..."}.
+
 Output ONLY valid JSON (no markdown fences, no explanation) with this schema:
 {
   "name": "short descriptive agent name",
   "nodes": [
-    { "serviceId": "...", "serviceType": "api" or "chatapp", "prompt": "detailed instruction for this step" }
+    {
+      "serviceId": "...",
+      "serviceType": "api" or "chatapp",
+      "nodeType": "service" or "condition" or "fork" or "join" or "loop" or "delay" or "approval" or "subroute",
+      "prompt": "detailed instruction for this step",
+      "config": {},
+      "order": 0
+    }
+  ],
+  "edges": [
+    { "source": "node-id-1", "target": "node-id-2", "edgeType": "" or "yes" or "no" or "error" or "loop" }
   ],
   "schedule": {
     "execution_type": "recurring" or "onetime",
@@ -154,6 +183,9 @@ Rules:
 7. The agent name should be concise and descriptive (e.g. "Daily KOSPI Report").
 8. If the user mentions multiple data sources, create multiple API nodes in sequence.
 9. CRITICAL — LANGUAGE MATCHING: The "name" and each node's "prompt" MUST be written in the SAME language as the user's input. If the user writes in Korean, write name and prompts in Korean. If in Chinese, write in Chinese. If in German, write in German. Always match the user's language exactly. Only serviceId values stay in English (they are identifiers).
+10. For simple linear workflows, you can omit the "edges" field — edges will be auto-created.
+11. For complex workflows with branching, use the "edges" field with proper edgeType values.
+12. Flow control nodes (condition, fork, join, loop, delay, approval, subroute) must have serviceId matching their nodeType.
 """
 
 
@@ -187,8 +219,55 @@ def _extract_json(text: str) -> dict | None:
     return None
 
 
+def _normalize_ai_result(result: dict) -> dict:
+    """Normalize and validate AI-generated workflow definition."""
+    name = result.get("name", "AI Agent")
+    nodes_raw = result.get("nodes", [])
+    edges_raw = result.get("edges", [])
+    schedule_raw = result.get("schedule", {})
+
+    # Build normalized nodes
+    nodes = []
+    for i, n in enumerate(nodes_raw):
+        service_id = n.get("serviceId", "")
+        service_type = n.get("serviceType", "api")
+        if service_type not in ("api", "chatapp"):
+            service_type = "api"
+        node_type = n.get("nodeType", "service")
+        nodes.append({
+            "serviceId": service_id,
+            "serviceType": service_type,
+            "prompt": n.get("prompt", ""),
+            "order": i,
+            "nodeType": node_type,
+            "config": n.get("config", {}),
+        })
+
+    # Build normalized edges
+    edges = []
+    for e in edges_raw:
+        edges.append({
+            "source": e.get("source", ""),
+            "target": e.get("target", ""),
+            "edgeType": e.get("edgeType", ""),
+        })
+
+    # Build normalized schedule
+    schedule = {
+        "execution_type": schedule_raw.get("execution_type", "recurring"),
+        "schedule_type": schedule_raw.get("schedule_type", "cron"),
+        "cron_hour": int(schedule_raw.get("cron_hour", 9)),
+        "cron_minute": int(schedule_raw.get("cron_minute", 0)),
+        "cron_days": schedule_raw.get("cron_days", ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
+        "interval_minutes": int(schedule_raw.get("interval_minutes", 60)),
+        "execute_immediately": bool(schedule_raw.get("execute_immediately", False)),
+    }
+
+    return {"name": name, "nodes": nodes, "edges": edges, "schedule": schedule}
+
+
 # ── Routes ──
-# IMPORTANT: /logs and /ai-build must come BEFORE /{agent_id} to avoid FastAPI treating them as an agent_id
+# IMPORTANT: /logs, /ai-build, /ai-build-stream must come BEFORE /{agent_id}
 
 @router.get("/logs")
 async def list_logs(agent_id: str | None = None):
@@ -230,37 +309,51 @@ async def ai_build_agent(req: AiBuildRequest):
             detail="Failed to parse AI response. Please try again.",
         )
 
-    # Validate and normalize the result
-    name = result.get("name", "AI Agent")
-    nodes_raw = result.get("nodes", [])
-    schedule_raw = result.get("schedule", {})
+    return _normalize_ai_result(result)
 
-    # Build normalized nodes
-    nodes = []
-    for i, n in enumerate(nodes_raw):
-        service_id = n.get("serviceId", "")
-        service_type = n.get("serviceType", "api")
-        if service_type not in ("api", "chatapp"):
-            service_type = "api"
-        nodes.append({
-            "serviceId": service_id,
-            "serviceType": service_type,
-            "prompt": n.get("prompt", ""),
-            "order": i,
-        })
 
-    # Build normalized schedule
-    schedule = {
-        "execution_type": schedule_raw.get("execution_type", "recurring"),
-        "schedule_type": schedule_raw.get("schedule_type", "cron"),
-        "cron_hour": int(schedule_raw.get("cron_hour", 9)),
-        "cron_minute": int(schedule_raw.get("cron_minute", 0)),
-        "cron_days": schedule_raw.get("cron_days", ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]),
-        "interval_minutes": int(schedule_raw.get("interval_minutes", 60)),
-        "execute_immediately": bool(schedule_raw.get("execute_immediately", False)),
-    }
+@router.post("/ai-build-stream")
+async def ai_build_agent_stream(req: AiBuildRequest):
+    """Streaming version of AI build — returns SSE events."""
+    config = get_config()
+    model = req.model or config.llm.default_model
+    if not model:
+        raise HTTPException(status_code=400, detail="No model configured")
 
-    return {"name": name, "nodes": nodes, "schedule": schedule}
+    provider = get_provider_for_model(model)
+    if not provider:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Model '{model}' is not available. Check your API key settings.",
+        )
+
+    messages = [
+        {"role": "system", "content": _AI_BUILD_SYSTEM_PROMPT},
+        {"role": "user", "content": req.prompt},
+    ]
+
+    async def event_stream():
+        full_text = ""
+        try:
+            async for token in provider.stream(messages, model):
+                full_text += token
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+            # Parse the completed response
+            result = _extract_json(full_text)
+            if result:
+                normalized = _normalize_ai_result(result)
+                yield f"data: {json.dumps({'type': 'result', 'data': normalized})}\n\n"
+            else:
+                yield f"data: {json.dumps({'type': 'error', 'message': 'Failed to parse AI response'})}\n\n"
+
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+        except Exception as e:
+            logger.error("AI build stream error: %s", e)
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @router.get("")
@@ -345,3 +438,21 @@ async def run_agent_now(agent_id: str):
     await execute_agent(agent_id)
     updated = storage.get_agent(agent_id)
     return {"agent": updated.model_dump() if updated else agent.model_dump()}
+
+
+@router.post("/{agent_id}/approve")
+async def approve_agent(agent_id: str, req: ApproveRequest):
+    """Approve or reject a pending approval node."""
+    agent = storage.get_agent(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    # Clear pending approval
+    storage.update_agent_field(agent_id, "pending_approval", None)
+
+    if req.approved:
+        return {"status": "approved", "agent_id": agent_id}
+    else:
+        agent.status = "idle"
+        storage.update_agent(agent)
+        return {"status": "rejected", "agent_id": agent_id}

@@ -445,6 +445,63 @@ export function aiAgentBuild(prompt: string, model: string) {
   })
 }
 
+export async function aiAgentBuildStream(
+  prompt: string,
+  model: string,
+  onToken: (token: string) => void,
+  onResult: (result: {
+    name: string
+    nodes: { serviceId: string; serviceType: string; prompt: string; order: number; nodeType?: string; config?: Record<string, any> }[]
+    edges?: { source: string; target: string; edgeType?: string }[]
+    schedule: Record<string, any>
+  }) => void,
+  onError: (error: string) => void,
+): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/agents/ai-build-stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, model }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    onError(err.detail || `HTTP ${res.status}`)
+    return
+  }
+
+  const reader = res.body?.getReader()
+  if (!reader) return
+
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue
+      const payload = line.slice(6)
+      try {
+        const evt = JSON.parse(payload)
+        if (evt.type === 'token') {
+          onToken(evt.content || '')
+        } else if (evt.type === 'result') {
+          onResult(evt.data)
+        } else if (evt.type === 'error') {
+          onError(evt.message || 'Unknown error')
+        }
+      } catch {
+        // ignore malformed SSE
+      }
+    }
+  }
+}
+
 // Health check
 export function healthCheck() {
   return request<{ status: string }>('/api/health')

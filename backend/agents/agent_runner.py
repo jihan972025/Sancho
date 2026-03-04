@@ -1,6 +1,9 @@
+import asyncio
 import logging
+import re
 import uuid
 from datetime import datetime, timezone
+from typing import Callable, Optional
 
 from ..config import get_config
 from ..llm.registry import get_provider_for_model
@@ -13,49 +16,421 @@ from . import agent_storage as storage
 
 logger = logging.getLogger(__name__)
 
+MAX_RECURSION_DEPTH = 5
+CHATAPP_IDS = {"whatsapp", "telegram", "matrix", "slack_app", "slack"}
 
-def _topological_sort(nodes: list[AgentNodeDef], edges: list[AgentEdge]) -> list[AgentNodeDef]:
-    """Compute execution order from edge graph. Falls back to order field if no edges."""
-    if not edges:
-        return sorted(nodes, key=lambda n: n.order)
 
-    node_map = {n.id: n for n in nodes}
-    in_degree = {n.id: 0 for n in nodes}
-    adjacency: dict[str, list[str]] = {n.id: [] for n in nodes}
+class AgentExecutor:
+    """Graph-based agent execution engine supporting branching, loops, fork/join, etc."""
 
-    for edge in edges:
-        if edge.source in adjacency and edge.target in in_degree:
-            adjacency[edge.source].append(edge.target)
-            in_degree[edge.target] += 1
+    def __init__(self, agent: AgentWorkflow, provider, model: str, depth: int = 0):
+        self.agent = agent
+        self.provider = provider
+        self.model = model
+        self.depth = depth
+        self.node_map = {n.id: n for n in agent.nodes}
+        self.adj: dict[str, list[tuple[AgentEdge, str]]] = {}
+        self.results: dict[str, str] = {}
+        self.variables: dict[str, str] = {}
+        self.executed: set[str] = set()
+        self.status_callback: Optional[Callable] = None
 
-    # Kahn's algorithm
-    queue = sorted(
-        [nid for nid, deg in in_degree.items() if deg == 0],
-        key=lambda nid: node_map[nid].order,
-    )
-    result: list[AgentNodeDef] = []
+        # Build adjacency list
+        for n in agent.nodes:
+            self.adj[n.id] = []
+        for e in agent.edges:
+            if e.source in self.adj:
+                self.adj[e.source].append((e, e.target))
 
-    while queue:
-        nid = queue.pop(0)
-        result.append(node_map[nid])
-        for neighbor in sorted(adjacency[nid], key=lambda x: node_map[x].order):
-            in_degree[neighbor] -= 1
-            if in_degree[neighbor] == 0:
-                queue.append(neighbor)
+    async def execute(self) -> str:
+        """Find start nodes and execute the graph."""
+        start_ids = self._find_start_nodes()
+        await self._run_nodes(start_ids)
+        return self._get_final_result()
 
-    # Disconnected nodes appended by order
-    visited = {n.id for n in result}
-    remaining = sorted(
-        [n for n in nodes if n.id not in visited],
-        key=lambda n: n.order,
-    )
-    result.extend(remaining)
+    def _find_start_nodes(self) -> list[str]:
+        """Nodes with no incoming edges (roots of the DAG)."""
+        targets = {e.target for e in self.agent.edges}
+        roots = [n.id for n in self.agent.nodes
+                 if n.id not in targets
+                 and n.serviceId not in CHATAPP_IDS
+                 and n.serviceType != "chatapp"]
+        if not roots:
+            # Fallback: use order
+            api_nodes = [n for n in self.agent.nodes
+                         if n.serviceId not in CHATAPP_IDS and n.serviceType != "chatapp"]
+            roots = [api_nodes[0].id] if api_nodes else []
+        return sorted(roots, key=lambda nid: self.node_map[nid].order)
 
-    return result
+    def _get_final_result(self) -> str:
+        """Collect all results for output."""
+        if not self.results:
+            return ""
+        # Return last executed node's result
+        ordered = sorted(self.results.keys(),
+                         key=lambda k: self.node_map[k].order if k in self.node_map else 0)
+        return self.results.get(ordered[-1], "") if ordered else ""
 
+    def _get_next(self, node_id: str, edge_filter: Optional[str] = None) -> list[str]:
+        """Get next node IDs following edges. Filter by edgeType if specified."""
+        result = []
+        for edge, target_id in self.adj.get(node_id, []):
+            if target_id in CHATAPP_IDS or self.node_map.get(target_id, None) and self.node_map[target_id].serviceType == "chatapp":
+                continue  # Skip chatapp nodes during execution
+            et = edge.edgeType or ""
+            if edge_filter is None:
+                # No filter: return all non-error, non-loop edges
+                if et not in ("error",):
+                    result.append(target_id)
+            elif edge_filter == "":
+                # Default edges only (empty edgeType)
+                if et == "":
+                    result.append(target_id)
+            else:
+                # Specific filter
+                if et == edge_filter:
+                    result.append(target_id)
+        return result
+
+    def _get_predecessors(self, node_id: str) -> list[str]:
+        """Get all source node IDs that have edges into this node."""
+        return [e.source for e in self.agent.edges if e.target == node_id]
+
+    def _build_context(self, node: AgentNodeDef) -> str:
+        """Build context from predecessor results."""
+        preds = self._get_predecessors(node.id)
+        parts = []
+        for pid in preds:
+            if pid in self.results:
+                pred_node = self.node_map.get(pid)
+                label = pred_node.serviceId if pred_node else pid
+                parts.append(f"[{label}]\n{self.results[pid]}")
+        return "\n\n".join(parts)
+
+    def _resolve_variables(self, text: str) -> str:
+        """Replace {{varName}} placeholders with variable values."""
+        def replacer(match):
+            var_name = match.group(1)
+            return self.variables.get(var_name, match.group(0))
+        return re.sub(r'\{\{(\w+)\}\}', replacer, text)
+
+    async def _notify_status(self, node_id: str, status: str, result: str = ""):
+        if self.status_callback:
+            try:
+                self.status_callback(node_id, status, result)
+            except Exception:
+                pass
+
+    # ── Node execution ──
+
+    async def _run_nodes(self, node_ids: list[str]):
+        """Execute a list of nodes sequentially, skipping already-executed ones."""
+        for nid in node_ids:
+            if nid in self.executed:
+                continue
+            node = self.node_map.get(nid)
+            if not node:
+                continue
+
+            await self._notify_status(nid, "running")
+            nt = node.nodeType or "service"
+
+            try:
+                if nt == "service":
+                    await self._exec_service(node)
+                elif nt == "condition":
+                    await self._exec_condition(node)
+                elif nt == "fork":
+                    await self._exec_fork(node)
+                elif nt == "join":
+                    await self._exec_join(node)
+                elif nt == "loop":
+                    await self._exec_loop(node)
+                elif nt == "delay":
+                    await self._exec_delay(node)
+                elif nt == "approval":
+                    await self._exec_approval(node)
+                elif nt == "subroute":
+                    await self._exec_subroute(node)
+                else:
+                    await self._exec_service(node)  # fallback
+
+                self.executed.add(nid)
+                await self._notify_status(nid, "completed", self.results.get(nid, ""))
+            except Exception as e:
+                self.results[nid] = f"Error: {e}"
+                self.executed.add(nid)
+                await self._notify_status(nid, "error", str(e))
+                # Try error edge
+                error_next = self._get_next(nid, edge_filter="error")
+                if error_next:
+                    await self._run_nodes(error_next)
+                else:
+                    raise
+
+    async def _exec_service(self, node: AgentNodeDef):
+        """Execute a service node (LLM call with skill detection)."""
+        prompt = self._resolve_variables(node.prompt or f"Use the {node.serviceId} service.")
+        context = self._build_context(node)
+        if context:
+            prompt = f"Previous results:\n{context}\n\n{prompt}"
+
+        result = await self._call_with_retry(node, prompt)
+        self.results[node.id] = result
+        if node.outputVariable:
+            self.variables[node.outputVariable] = result
+
+        # Follow default (non-error) edges
+        next_ids = self._get_next(node.id)
+        await self._run_nodes(next_ids)
+
+    async def _exec_condition(self, node: AgentNodeDef):
+        """Evaluate a condition and follow 'yes' or 'no' edge."""
+        condition = self._resolve_variables(node.config.get("condition", node.prompt or ""))
+        context = self._build_context(node)
+
+        messages = [
+            {"role": "system", "content": "Evaluate the condition and respond ONLY 'yes' or 'no'."},
+            {"role": "user", "content": f"Context:\n{context}\n\nCondition: {condition}"},
+        ]
+        answer = (await self.provider.complete(messages, self.model)).strip().lower()
+        result = "yes" if "yes" in answer else "no"
+        self.results[node.id] = f"Condition: {condition} → {result}"
+        if node.outputVariable:
+            self.variables[node.outputVariable] = result
+
+        next_ids = self._get_next(node.id, edge_filter=result)
+        if not next_ids:
+            # Fallback: try default edges
+            next_ids = self._get_next(node.id, edge_filter="")
+        await self._run_nodes(next_ids)
+
+    async def _exec_fork(self, node: AgentNodeDef):
+        """Execute all outgoing branches in parallel."""
+        next_ids = self._get_next(node.id)
+        self.results[node.id] = "Fork"
+        if node.outputVariable:
+            self.variables[node.outputVariable] = "Fork"
+
+        # Run branches concurrently
+        async def run_branch(nid: str):
+            await self._run_nodes([nid])
+
+        tasks = [run_branch(nid) for nid in next_ids]
+        await asyncio.gather(*tasks)
+
+    async def _exec_join(self, node: AgentNodeDef):
+        """Merge results from all incoming nodes."""
+        incoming = self._get_predecessors(node.id)
+        merged = "\n\n".join(
+            f"[{self.node_map[sid].serviceId if sid in self.node_map else sid}]\n{self.results.get(sid, '')}"
+            for sid in incoming if sid in self.results
+        )
+        self.results[node.id] = merged
+        if node.outputVariable:
+            self.variables[node.outputVariable] = merged
+
+        next_ids = self._get_next(node.id)
+        await self._run_nodes(next_ids)
+
+    async def _exec_loop(self, node: AgentNodeDef):
+        """Execute loop body nodes repeatedly."""
+        loop_type = node.config.get("loopType", "count")
+        max_iter = int(node.config.get("maxIterations", 5))
+        loop_body_ids = self._get_next(node.id, edge_filter="loop")
+        exit_ids = self._get_next(node.id, edge_filter="")
+
+        if not loop_body_ids:
+            # If no "loop" edges, use all outgoing except "" for exit
+            loop_body_ids = self._get_next(node.id)
+            exit_ids = []
+
+        iteration_results = []
+        for i in range(max_iter):
+            self.variables["__loop_index"] = str(i)
+
+            # Allow re-execution of loop body nodes
+            for nid in loop_body_ids:
+                self.executed.discard(nid)
+
+            await self._run_nodes(loop_body_ids)
+
+            body_result = "\n".join(self.results.get(nid, "") for nid in loop_body_ids if nid in self.results)
+            iteration_results.append(f"[Iteration {i + 1}]\n{body_result}")
+
+            # Check while condition
+            if loop_type == "while":
+                condition = self._resolve_variables(node.config.get("condition", ""))
+                if not await self._evaluate_condition(condition):
+                    break
+
+        self.results[node.id] = "\n\n".join(iteration_results)
+        if node.outputVariable:
+            self.variables[node.outputVariable] = self.results[node.id]
+
+        await self._run_nodes(exit_ids)
+
+    async def _exec_delay(self, node: AgentNodeDef):
+        """Wait for a specified number of seconds."""
+        delay_seconds = int(node.config.get("delaySeconds", 5))
+        await asyncio.sleep(delay_seconds)
+        self.results[node.id] = f"Delayed {delay_seconds}s"
+        if node.outputVariable:
+            self.variables[node.outputVariable] = self.results[node.id]
+
+        next_ids = self._get_next(node.id)
+        await self._run_nodes(next_ids)
+
+    async def _exec_approval(self, node: AgentNodeDef):
+        """Pause for human approval. Save state and wait."""
+        context = self._build_context(node)
+        timeout_minutes = int(node.config.get("timeoutMinutes", 60))
+        auto_action = node.config.get("autoAction", "skip")  # "approve"|"skip"|"abort"
+
+        self.results[node.id] = f"Approval requested (timeout: {timeout_minutes}m)"
+
+        # Save pending approval state
+        storage.update_agent_field(self.agent.id, "pending_approval", {
+            "nodeId": node.id,
+            "context": context[:500],
+            "requested_at": datetime.now(timezone.utc).isoformat(),
+            "timeout_minutes": timeout_minutes,
+            "auto_action": auto_action,
+        })
+
+        if node.outputVariable:
+            self.variables[node.outputVariable] = "pending_approval"
+
+        # For now, auto-approve and continue (full implementation needs SSE/polling)
+        storage.update_agent_field(self.agent.id, "pending_approval", None)
+
+        next_ids = self._get_next(node.id)
+        await self._run_nodes(next_ids)
+
+    async def _exec_subroute(self, node: AgentNodeDef):
+        """Execute another agent as a sub-agent."""
+        sub_agent_id = node.config.get("agentId", "")
+        if not sub_agent_id:
+            self.results[node.id] = "No sub-agent configured"
+            next_ids = self._get_next(node.id)
+            await self._run_nodes(next_ids)
+            return
+
+        if self.depth >= MAX_RECURSION_DEPTH:
+            self.results[node.id] = f"Max recursion depth ({MAX_RECURSION_DEPTH}) reached"
+            next_ids = self._get_next(node.id)
+            await self._run_nodes(next_ids)
+            return
+
+        sub_agent = storage.get_agent(sub_agent_id)
+        if not sub_agent:
+            self.results[node.id] = f"Sub-agent {sub_agent_id} not found"
+            next_ids = self._get_next(node.id)
+            await self._run_nodes(next_ids)
+            return
+
+        sub_executor = AgentExecutor(sub_agent, self.provider, self.model, depth=self.depth + 1)
+        sub_executor.variables = {**self.variables}
+        result = await sub_executor.execute()
+
+        self.results[node.id] = result
+        if node.outputVariable:
+            self.variables[node.outputVariable] = result
+
+        next_ids = self._get_next(node.id)
+        await self._run_nodes(next_ids)
+
+    # ── Helper methods ──
+
+    async def _evaluate_condition(self, condition: str) -> bool:
+        """Ask LLM to evaluate a condition to yes/no."""
+        if not condition:
+            return False
+        context_parts = [f"{k}={v}" for k, v in self.variables.items() if not k.startswith("__")]
+        ctx = ", ".join(context_parts) if context_parts else "none"
+        messages = [
+            {"role": "system", "content": "Evaluate the condition. Respond ONLY 'yes' or 'no'."},
+            {"role": "user", "content": f"Variables: {ctx}\nCondition: {condition}"},
+        ]
+        answer = (await self.provider.complete(messages, self.model)).strip().lower()
+        return "yes" in answer
+
+    async def _call_with_retry(self, node: AgentNodeDef, prompt: str) -> str:
+        """Execute LLM call with retry logic and error edge fallback."""
+        retry_count = int(node.config.get("retryCount", 0))
+        retry_delay = int(node.config.get("retryDelay", 3))
+        last_error = None
+
+        for attempt in range(retry_count + 1):
+            try:
+                return await self._execute_llm(node, prompt)
+            except Exception as e:
+                last_error = e
+                logger.warning("Node '%s' attempt %d/%d failed: %s",
+                               node.serviceId, attempt + 1, retry_count + 1, e)
+                if attempt < retry_count:
+                    await asyncio.sleep(retry_delay)
+
+        # All retries failed — check for error edge
+        error_next = self._get_next(node.id, edge_filter="error")
+        if error_next:
+            self.results[node.id] = f"Error after {retry_count + 1} attempts: {last_error}"
+            if node.outputVariable:
+                self.variables[node.outputVariable] = self.results[node.id]
+            self.executed.add(node.id)
+            await self._run_nodes(error_next)
+            return self.results[node.id]
+        raise last_error  # type: ignore
+
+    async def _execute_llm(self, node: AgentNodeDef, prompt: str) -> str:
+        """Single LLM call with skill detection."""
+        messages = [{"role": "user", "content": prompt}]
+
+        skill_prompt = build_skill_system_prompt()
+        if skill_prompt:
+            skill_messages = [
+                {"role": "system", "content": skill_prompt},
+                *messages,
+            ]
+            phase1_response = await self.provider.complete(skill_messages, self.model)
+            skill_call = parse_skill_call(phase1_response)
+
+            if skill_call:
+                skill_result = await execute_skill_call(skill_call)
+                phase2_messages = [
+                    {"role": "system", "content": (
+                        "You are an automated report generator for an agent workflow. "
+                        "A real-time search was just performed and the results are provided below. "
+                        "RULES:\n"
+                        "1. The search results ARE the latest available data. Trust them completely.\n"
+                        "2. Extract every available number, date, percentage, and fact from the results.\n"
+                        "3. If exact data for today is not in the results, use the MOST RECENT data available and clearly state which date it is from.\n"
+                        "4. NEVER say 'I cannot provide' or 'information is unavailable'. Always produce a complete report using the best available data.\n"
+                        "5. Format the output cleanly with headers, tables, and bullet points.\n"
+                        "6. Answer in the same language as the user's question."
+                    )},
+                    *messages,
+                    {
+                        "role": "user",
+                        "content": (
+                            f"[SEARCH_RESULT]\n{skill_result}\n[/SEARCH_RESULT]\n\n"
+                            "Based on the search results above, produce a complete and detailed answer to the original question. "
+                            "Use ALL relevant data points from the search results. "
+                            "If today's exact data is unavailable, use the most recent available data and note the date."
+                        ),
+                    },
+                ]
+                return await self.provider.complete(phase2_messages, self.model)
+            else:
+                return phase1_response
+        else:
+            return await self.provider.complete(messages, self.model)
+
+
+# ── Public API (backward compatible) ──
 
 async def execute_agent(agent_id: str) -> None:
-    """Run an agent workflow: execute each node in order, chaining results."""
+    """Run an agent workflow using the graph-based executor."""
     agent = storage.get_agent(agent_id)
     if not agent:
         return
@@ -87,81 +462,26 @@ async def execute_agent(agent_id: str) -> None:
     agent.status = "running"
     storage.update_agent(agent)
 
-    sorted_nodes = _topological_sort(agent.nodes, agent.edges)
-    accumulated_context = ""
-    final_result = ""
-
-    # Separate chatapp nodes (notification targets) from api nodes (execution steps)
-    CHATAPP_IDS = {"whatsapp", "telegram", "matrix", "slack_app", "slack"}
-    api_nodes = [n for n in sorted_nodes if n.serviceType != "chatapp" and n.serviceId not in CHATAPP_IDS]
-    chatapp_nodes = [n for n in sorted_nodes if n.serviceType == "chatapp" or n.serviceId in CHATAPP_IDS]
-
     try:
-        for i, node in enumerate(api_nodes):
-            step_label = f"[Step {i + 1}/{len(api_nodes)}: {node.serviceId}]"
-            logger.info("Agent '%s' %s", agent.name, step_label)
+        executor = AgentExecutor(agent, provider, model)
+        final_result = await executor.execute()
+        accumulated_context = "\n\n".join(
+            f"[{executor.node_map[nid].serviceId}]\n{res}"
+            for nid, res in executor.results.items()
+            if nid in executor.node_map
+        )
 
-            # Build prompt for this node
-            user_prompt = node.prompt or f"Use the {node.serviceId} service."
-            if accumulated_context:
-                user_prompt = f"Previous results:\n{accumulated_context}\n\n{user_prompt}"
-
-            messages = [{"role": "user", "content": user_prompt}]
-
-            # Try skill-based execution
-            skill_prompt = build_skill_system_prompt()
-            if skill_prompt:
-                skill_messages = [
-                    {"role": "system", "content": skill_prompt},
-                    *messages,
-                ]
-                phase1_response = await provider.complete(skill_messages, model)
-                skill_call = parse_skill_call(phase1_response)
-
-                if skill_call:
-                    skill_result = await execute_skill_call(skill_call)
-                    # Phase 2: final answer with skill result
-                    phase2_messages = [
-                        {"role": "system", "content": (
-                            "You are an automated report generator for an agent workflow. "
-                            "A real-time search was just performed and the results are provided below. "
-                            "RULES:\n"
-                            "1. The search results ARE the latest available data. Trust them completely.\n"
-                            "2. Extract every available number, date, percentage, and fact from the results.\n"
-                            "3. If exact data for today is not in the results, use the MOST RECENT data available and clearly state which date it is from.\n"
-                            "4. NEVER say 'I cannot provide' or 'information is unavailable'. Always produce a complete report using the best available data.\n"
-                            "5. Format the output cleanly with headers, tables, and bullet points.\n"
-                            "6. Answer in the same language as the user's question."
-                        )},
-                        *messages,
-                        {
-                            "role": "user",
-                            "content": (
-                                f"[SEARCH_RESULT]\n{skill_result}\n[/SEARCH_RESULT]\n\n"
-                                "Based on the search results above, produce a complete and detailed answer to the original question. "
-                                "Use ALL relevant data points from the search results. "
-                                "If today's exact data is unavailable, use the most recent available data and note the date."
-                            ),
-                        },
-                    ]
-                    step_result = await provider.complete(phase2_messages, model)
-                else:
-                    step_result = phase1_response
-            else:
-                step_result = await provider.complete(messages, model)
-
-            accumulated_context += f"\n\n{step_label}\n{step_result}"
-            final_result = step_result
-
-        # All API nodes completed successfully
+        # Update agent status
         now = datetime.now(timezone.utc).isoformat()
         agent.status = "completed"
         agent.last_run = now
         agent.last_result = final_result[:500] if final_result else ""
         storage.update_agent(agent)
-        _save_log(agent, accumulated_context.strip(), "success")
+        _save_log(agent, accumulated_context.strip() or final_result, "success")
 
-        # Derive notify_apps from chatapp nodes on the canvas
+        # Send notifications via chatapp nodes
+        chatapp_nodes = [n for n in agent.nodes
+                         if n.serviceType == "chatapp" or n.serviceId in CHATAPP_IDS]
         chatapp_service_ids = {n.serviceId for n in chatapp_nodes}
         send_whatsapp = "whatsapp" in chatapp_service_ids
         send_telegram = "telegram" in chatapp_service_ids
@@ -174,7 +494,7 @@ async def execute_agent(agent_id: str) -> None:
                 id=str(uuid.uuid4()),
                 task_id=agent.id,
                 task_name=agent.name or "Agent",
-                result=accumulated_context.strip(),
+                result=accumulated_context.strip() or final_result,
                 notify_apps=SchedulerNotifyApps(
                     whatsapp=send_whatsapp,
                     telegram=send_telegram,

@@ -286,6 +286,8 @@ export interface ConversationDetail {
 
 export type AgentExecutionType = 'recurring' | 'onetime'
 
+export type NodeType = 'service' | 'condition' | 'fork' | 'join' | 'loop' | 'delay' | 'approval' | 'subroute'
+
 export interface AgentNodeDef {
   id: string
   serviceId: string
@@ -294,6 +296,10 @@ export interface AgentNodeDef {
   order: number
   x: number
   y: number
+  // Flow-control extensions
+  nodeType: NodeType
+  config: Record<string, any>
+  outputVariable: string
 }
 
 export type PortSide = 'top' | 'bottom' | 'left' | 'right'
@@ -304,6 +310,7 @@ export interface AgentEdge {
   target: string
   sourcePort: PortSide
   targetPort: PortSide
+  edgeType: string  // ""|"yes"|"no"|"error"|"loop"
 }
 
 export interface AgentSchedule {
