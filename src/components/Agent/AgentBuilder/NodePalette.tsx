@@ -4,7 +4,7 @@ import { allServices, categoryLabels } from '../agentServiceDefs'
 import type { DraggableServiceDef } from '../agentServiceDefs'
 import { useTranslation } from 'react-i18next'
 
-const categories = ['free', 'paid', 'exchange', 'chatapp'] as const
+const categories = ['control', 'free', 'paid', 'exchange', 'chatapp'] as const
 
 interface PaletteProps {
   onClose: () => void
@@ -23,7 +23,11 @@ export default function NodePalette({ onClose }: PaletteProps) {
   const handleDragStart = (e: React.DragEvent, svc: DraggableServiceDef) => {
     e.dataTransfer.setData(
       'application/sancho-service',
-      JSON.stringify({ serviceId: svc.id, serviceType: svc.category === 'chatapp' ? 'chatapp' : 'api' })
+      JSON.stringify({
+        serviceId: svc.id,
+        serviceType: svc.category === 'chatapp' ? 'chatapp' : 'api',
+        nodeType: svc.category === 'control' ? svc.id : 'service',
+      })
     )
     e.dataTransfer.effectAllowed = 'copy'
   }
