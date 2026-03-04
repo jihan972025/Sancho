@@ -13,7 +13,9 @@ interface PaletteProps {
 export default function NodePalette({ onClose }: PaletteProps) {
   const { i18n } = useTranslation()
   const lang = i18n.language === 'ko' ? 'ko' : 'en'
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
+    Object.fromEntries(categories.map((cat) => [cat, true]))
+  )
   const [searchTerm, setSearchTerm] = useState('')
 
   const toggle = (cat: string) => {

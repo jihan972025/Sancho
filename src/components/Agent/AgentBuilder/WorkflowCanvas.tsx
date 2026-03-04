@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Plus, Send, HelpCircle, Sparkles, Loader2, CornerDownLeft, ZoomIn, ZoomOut, Maximize2, Code2, Copy, Check } from 'lucide-react'
-import { useWorkflowAgentStore } from '../../../stores/workflowAgentStore'
+import { useWorkflowAgentStore, autoLayoutNodes, autoLayoutGraph, autoCreateLinearEdges } from '../../../stores/workflowAgentStore'
 import { useChatStore } from '../../../stores/chatStore'
 import { getServiceDef, serviceSampleKeys } from '../agentServiceDefs'
 import { aiAgentBuildStream } from '../../../api/client'
@@ -158,6 +158,13 @@ export default function WorkflowCanvas() {
   // JSON viewer
   const [showJson, setShowJson] = useState(false)
   const [jsonCopied, setJsonCopied] = useState(false)
+
+  // Streaming auto-scroll ref
+  const streamRef = useRef<HTMLDivElement>(null)
+
+  // Animation state for AI build
+  const [nodeAnimPhase, setNodeAnimPhase] = useState<Record<string, 'fade-in' | 'move' | 'done'>>({})
+  const [edgeAnimating, setEdgeAnimating] = useState<Set<string>>(new Set())
 
   const canvasRef = useRef<HTMLDivElement>(null)
 
@@ -340,24 +347,260 @@ export default function WorkflowCanvas() {
     })
   }
 
-  // ── AI build (streaming) ──
+  // Fit to view reading directly from store (works in async callbacks where closure nodes are stale)
+  const fitToViewFromStore = useCallback(() => {
+    const currentNodes = useWorkflowAgentStore.getState().editingAgent.nodes
+    if (currentNodes.length === 0) { setViewOffset({ x: 0, y: 0 }); setScale(1); return }
+    const rect = canvasRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const minX = Math.min(...currentNodes.map((n) => n.x))
+    const maxX = Math.max(...currentNodes.map((n) => n.x + (COMPACT_NODES.has(n.nodeType) ? COMPACT_WIDTH : NODE_WIDTH)))
+    const minY = Math.min(...currentNodes.map((n) => n.y))
+    const maxY = Math.max(...currentNodes.map((n) => n.y + (nodeHeightsRef.current[n.id] || 120)))
+    const contentW = maxX - minX + 80
+    const contentH = maxY - minY + 80
+    const newScale = Math.min(Math.max(Math.min(rect.width / contentW, rect.height / contentH), MIN_SCALE), 1.2)
+    setScale(newScale)
+    setViewOffset({
+      x: rect.width / 2 - ((minX + maxX) / 2) * newScale,
+      y: rect.height / 2 - ((minY + maxY) / 2) * newScale,
+    })
+  }, [])
+
+  // ── AI build (streaming with progressive canvas build) ──
+  const progressiveStateRef = useRef<{
+    nodeCount: number
+    edgeCount: number
+    fullText: string
+  }>({ nodeCount: 0, edgeCount: 0, fullText: '' })
+
+  // Extract top-level JSON objects from a string using brace counting (handles nested {})
+  const extractJsonObjects = (text: string, startAfter: string): any[] => {
+    const idx = text.indexOf(startAfter)
+    if (idx === -1) return []
+    const results: any[] = []
+    let pos = idx + startAfter.length
+    // skip to first [
+    while (pos < text.length && text[pos] !== '[') pos++
+    if (pos >= text.length) return results
+    pos++ // skip [
+
+    while (pos < text.length) {
+      // skip whitespace and commas
+      while (pos < text.length && (text[pos] === ' ' || text[pos] === '\n' || text[pos] === '\r' || text[pos] === '\t' || text[pos] === ',')) pos++
+      if (pos >= text.length || text[pos] === ']') break
+      if (text[pos] !== '{') { pos++; continue }
+      // found object start — count braces
+      let depth = 0
+      const objStart = pos
+      let inString = false
+      let escaped = false
+      while (pos < text.length) {
+        const ch = text[pos]
+        if (escaped) { escaped = false; pos++; continue }
+        if (ch === '\\' && inString) { escaped = true; pos++; continue }
+        if (ch === '"') { inString = !inString; pos++; continue }
+        if (!inString) {
+          if (ch === '{') depth++
+          else if (ch === '}') { depth--; if (depth === 0) { pos++; break } }
+        }
+        pos++
+      }
+      if (depth === 0) {
+        try {
+          results.push(JSON.parse(text.substring(objStart, pos)))
+        } catch { /* incomplete */ }
+      }
+    }
+    return results
+  }
+
+  // Progressive build: add newly discovered nodes/edges to canvas
+  const tryProgressiveBuild = useCallback((text: string) => {
+    const st = progressiveStateRef.current
+    const prevNodeCount = st.nodeCount
+
+    // --- Nodes ---
+    const parsedNodes = extractJsonObjects(text, '"nodes"')
+    for (let i = st.nodeCount; i < parsedNodes.length; i++) {
+      const n = parsedNodes[i]
+      if (!n.serviceId) continue
+      const CONTROL_IDS = ['condition', 'fork', 'join', 'loop', 'delay', 'approval', 'subroute']
+      const nodeType = n.nodeType || (CONTROL_IDS.includes(n.serviceId) ? n.serviceId : 'service')
+      const svcType = n.serviceType === 'chatapp' ? 'chatapp' : 'api'
+      addNode(n.serviceId, svcType as 'api' | 'chatapp', undefined, undefined, nodeType)
+      const addedNodes = useWorkflowAgentStore.getState().editingAgent.nodes
+      const lastNode = addedNodes[addedNodes.length - 1]
+      if (lastNode && n.prompt) updateNodePrompt(lastNode.id, n.prompt)
+      if (lastNode && n.config && Object.keys(n.config).length > 0) updateNodeConfig(lastNode.id, n.config)
+      st.nodeCount = i + 1
+    }
+
+    // Edges are NOT added during progressive build — they are drawn
+    // with animation during the final reveal sequence in onResult.
+
+    // Fit viewport when new nodes are added so they stay visible during progressive build
+    if (st.nodeCount > prevNodeCount) {
+      requestAnimationFrame(() => fitToViewFromStore())
+    }
+  }, [addNode, updateNodePrompt, updateNodeConfig, fitToViewFromStore])
+
   const handleAiBuild = async () => {
     const prompt = aiPrompt.trim()
     if (!prompt || aiBuildStreaming) return
     resetAiBuildStream()
     setAiBuildStreaming(true)
+    // Reset progressive state
+    progressiveStateRef.current = { nodeCount: 0, edgeCount: 0, fullText: '' }
+    // Clear current canvas for fresh build
+    const currentNodes = editingAgent.nodes
+    currentNodes.forEach((n) => removeNode(n.id))
+
+    // Throttled token display
+    let tokenBuffer = ''
+    let displayTimer: ReturnType<typeof setTimeout> | null = null
+    const DISPLAY_INTERVAL = 250 // ms between display updates — slower for visual effect
+
+    const flushTokens = () => {
+      if (tokenBuffer) {
+        appendAiBuildContent(tokenBuffer)
+        progressiveStateRef.current.fullText += tokenBuffer
+        tokenBuffer = ''
+        // Auto-scroll streaming area
+        requestAnimationFrame(() => {
+          if (streamRef.current) streamRef.current.scrollTop = streamRef.current.scrollHeight
+        })
+        // Try progressive build with accumulated text
+        tryProgressiveBuild(progressiveStateRef.current.fullText)
+      }
+      displayTimer = null
+    }
+
     try {
       const model = editingAgent.model || defaultModel || ''
       await aiAgentBuildStream(
         prompt,
         model,
-        (token) => appendAiBuildContent(token),
-        (result) => { applyAiBuild(result); setAiPrompt('') },
+        (token) => {
+          tokenBuffer += token
+          if (!displayTimer) {
+            displayTimer = setTimeout(flushTokens, DISPLAY_INTERVAL)
+          }
+        },
+        async (result) => {
+          // Flush remaining tokens
+          if (displayTimer) { clearTimeout(displayTimer); displayTimer = null }
+          if (tokenBuffer) {
+            appendAiBuildContent(tokenBuffer)
+            tokenBuffer = ''
+          }
+
+          // ── Keep progressive nodes and animate them to final positions ──
+          const progNodes = useWorkflowAgentStore.getState().editingAgent.nodes
+          if (progNodes.length === 0) { setAiPrompt(''); return }
+
+          // Build AI-id → progressive-node-id mapping (by index)
+          const aiIdToProgId: Record<string, string> = {}
+          result.nodes.forEach((rn: any, i: number) => {
+            const aiId = rn.id || `node-${i}`
+            if (progNodes[i]) {
+              aiIdToProgId[aiId] = progNodes[i].id
+              aiIdToProgId[String(i)] = progNodes[i].id
+            }
+          })
+
+          // Compute final layout positions using existing progressive nodes
+          let mappedEdges: AgentEdge[] = []
+          let finalPositions: Record<string, { x: number; y: number }> = {}
+
+          if (result.edges && result.edges.length > 0) {
+            // Create edges with progressive node IDs for layout calculation
+            mappedEdges = result.edges.map((e: any, i: number) => ({
+              id: `edge-anim-${Date.now()}-${i}`,
+              source: aiIdToProgId[e.source] || e.source,
+              target: aiIdToProgId[e.target] || e.target,
+              sourcePort: 'bottom' as PortSide,
+              targetPort: 'top' as PortSide,
+              edgeType: e.edgeType || '',
+            }))
+            const layouted = autoLayoutGraph(progNodes, mappedEdges)
+            layouted.forEach((n) => { finalPositions[n.id] = { x: n.x, y: n.y } })
+          } else {
+            const layouted = autoLayoutNodes(progNodes)
+            layouted.forEach((n) => { finalPositions[n.id] = { x: n.x, y: n.y } })
+            mappedEdges = autoCreateLinearEdges(progNodes)
+          }
+
+          // Update node prompts/configs from final result (may differ from progressive parse)
+          result.nodes.forEach((rn: any, i: number) => {
+            if (progNodes[i]) {
+              if (rn.prompt) updateNodePrompt(progNodes[i].id, rn.prompt)
+              if (rn.config && Object.keys(rn.config).length > 0) updateNodeConfig(progNodes[i].id, rn.config)
+            }
+          })
+
+          // Update schedule & name
+          const schedule = result.schedule || {}
+          useWorkflowAgentStore.setState((s) => ({
+            editingAgent: {
+              ...s.editingAgent,
+              name: result.name || s.editingAgent.name,
+              edges: mappedEdges,
+              schedule: {
+                ...s.editingAgent.schedule,
+                execution_type: (schedule.execution_type === 'onetime' ? 'onetime' : 'recurring') as 'recurring' | 'onetime',
+                schedule_type: (schedule.schedule_type === 'interval' ? 'interval' : 'cron') as 'cron' | 'interval',
+                cron_hour: schedule.cron_hour ?? s.editingAgent.schedule.cron_hour,
+                cron_minute: schedule.cron_minute ?? s.editingAgent.schedule.cron_minute,
+                cron_days: schedule.cron_days ?? s.editingAgent.schedule.cron_days,
+                interval_minutes: schedule.interval_minutes ?? s.editingAgent.schedule.interval_minutes,
+                execute_immediately: schedule.execute_immediately ?? false,
+              },
+            },
+            isDirty: true,
+          }))
+
+          // 1. First: set CSS transition on nodes (render with transition property)
+          const movePhase: Record<string, 'move'> = {}
+          progNodes.forEach((n) => { movePhase[n.id] = 'move' })
+          setNodeAnimPhase(movePhase)
+
+          // Fit viewport to final layout before move starts
+          fitToViewFromStore()
+
+          // Wait for React to render the transition property
+          await new Promise((r) => setTimeout(r, 50))
+
+          // 2. Now update positions — CSS transition animates from current to final
+          progNodes.forEach((n) => {
+            updateNodePosition(n.id, finalPositions[n.id]?.x ?? n.x, finalPositions[n.id]?.y ?? n.y)
+          })
+
+          // Wait for move transition to complete (500ms)
+          await new Promise((r) => setTimeout(r, 550))
+
+          // 2. Draw edges one by one with animation
+          const donePhase: Record<string, 'done'> = {}
+          progNodes.forEach((n) => { donePhase[n.id] = 'done' })
+          setNodeAnimPhase(donePhase)
+
+          for (const edge of mappedEdges) {
+            setEdgeAnimating((prev) => new Set(prev).add(edge.id))
+            await new Promise((r) => setTimeout(r, 300))
+          }
+
+          // 3. Clear animation states
+          await new Promise((r) => setTimeout(r, 600))
+          setNodeAnimPhase({})
+          setEdgeAnimating(new Set())
+          setAiPrompt('')
+        },
         (error) => setAiBuildError(error),
       )
     } catch (err: any) {
       setAiBuildError(err.message || t('agent.aiBuildError'))
     } finally {
+      if (displayTimer) { clearTimeout(displayTimer); flushTokens() }
       setAiBuildStreaming(false)
     }
   }
@@ -407,6 +650,8 @@ export default function WorkflowCanvas() {
                 selected={selectedEdgeId === edge.id}
                 onClick={(id) => { setSelectedEdgeId(id === selectedEdgeId ? null : id); setSelectedNodeId(null) }}
                 onEdgeTypeChange={updateEdgeType}
+                animating={edgeAnimating.has(edge.id)}
+                hidden={Object.keys(nodeAnimPhase).length > 0 && !edgeAnimating.has(edge.id)}
               />
             ))}
             {/* Draft edge while connecting */}
@@ -429,6 +674,7 @@ export default function WorkflowCanvas() {
               selected={selectedNodeId === node.id}
               connecting={connectingFrom !== null}
               executionState={executionStates[node.id]}
+              animPhase={nodeAnimPhase[node.id]}
               onDragStart={handleNodeDragStart}
               onPortDown={handlePortDown}
               onPortUp={handlePortUp}
@@ -494,8 +740,8 @@ export default function WorkflowCanvas() {
 
       {/* AI Streaming Output */}
       {aiBuildStreaming && aiBuildStreamContent && (
-        <div className="border-t border-slate-700 bg-slate-900/60 px-3 py-2 max-h-24 overflow-y-auto">
-          <pre className="text-[11px] text-slate-400 whitespace-pre-wrap font-mono">{aiBuildStreamContent}</pre>
+        <div ref={streamRef} className="border-t border-slate-700 bg-slate-950/80 px-3 py-2 max-h-32 overflow-y-auto scroll-smooth">
+          <pre className="text-[11px] text-emerald-400/80 whitespace-pre-wrap font-mono leading-relaxed">{aiBuildStreamContent}<span className="inline-block w-1.5 h-3.5 bg-emerald-400 animate-pulse ml-0.5 align-middle" /></pre>
         </div>
       )}
 
@@ -589,6 +835,7 @@ interface CanvasNodeProps {
   selected: boolean
   connecting: boolean
   executionState?: 'pending' | 'running' | 'completed' | 'error'
+  animPhase?: 'fade-in' | 'move' | 'done'
   onDragStart: (e: React.MouseEvent, nodeId: string) => void
   onPortDown: (e: React.MouseEvent, nodeId: string, port: PortSide) => void
   onPortUp: (e: React.MouseEvent, nodeId: string, port: PortSide) => void
@@ -604,7 +851,7 @@ interface CanvasNodeProps {
 }
 
 function CanvasNode({
-  node, selected, connecting, executionState,
+  node, selected, connecting, executionState, animPhase,
   onDragStart, onPortDown, onPortUp,
   onRemove, onPromptChange, onConfigChange, onOutputVarChange, onHeightChange,
   helpOpenFor, setHelpOpenFor, helpRef, t,
@@ -645,10 +892,16 @@ function CanvasNode({
   const leftLabel = nt === 'condition' ? 'Yes' : undefined
   const rightLabel = nt === 'condition' ? 'No' : undefined
 
+  // Animation styles — smooth move transition when animPhase is 'move'
+  const animStyle: React.CSSProperties = {
+    left: node.x, top: node.y, width: nodeWidth, zIndex: selected ? 10 : 1,
+    ...(animPhase === 'move' ? { transition: 'left 500ms ease-in-out, top 500ms ease-in-out' } : {}),
+  }
+
   return (
     <div
       className="absolute select-none"
-      style={{ left: node.x, top: node.y, width: nodeWidth, zIndex: selected ? 10 : 1 }}
+      style={animStyle}
     >
       {/* Node card body */}
       <div
@@ -865,9 +1118,11 @@ interface BezierEdgeProps {
   selected: boolean
   onClick: (edgeId: string) => void
   onEdgeTypeChange: (edgeId: string, edgeType: string) => void
+  animating?: boolean
+  hidden?: boolean
 }
 
-function BezierEdge({ edge, nodes, getNodeHeight, selected, onClick, onEdgeTypeChange }: BezierEdgeProps) {
+function BezierEdge({ edge, nodes, getNodeHeight, selected, onClick, onEdgeTypeChange, animating, hidden }: BezierEdgeProps) {
   const sourceNode = nodes.find((n) => n.id === edge.source)
   const targetNode = nodes.find((n) => n.id === edge.target)
   if (!sourceNode || !targetNode) return null
@@ -892,24 +1147,52 @@ function BezierEdge({ edge, nodes, getNodeHeight, selected, onClick, onEdgeTypeC
   const midX = (start.x + end.x) / 2
   const midY = (start.y + end.y) / 2
 
+  // Edge draw animation using stroke-dashoffset
+  const pathRef = useRef<SVGPathElement>(null)
+  const [drawProgress, setDrawProgress] = useState<{ len: number; done: boolean } | null>(null)
+  useEffect(() => {
+    if (animating && pathRef.current) {
+      const len = pathRef.current.getTotalLength()
+      setDrawProgress({ len, done: false })
+      // Trigger transition on next frame
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setDrawProgress({ len, done: true }))
+      })
+    } else if (!animating) {
+      setDrawProgress(null)
+    }
+  }, [animating])
+
+  // Hide edges that haven't been animated yet during animation sequence
+  if (hidden) return null
+
   return (
     <g className="pointer-events-auto cursor-pointer" onClick={(e) => { e.stopPropagation(); onClick(edge.id) }}>
       <path d={d} fill="none" stroke="transparent" strokeWidth={14} />
       <path
+        ref={pathRef}
         d={d}
         fill="none"
         stroke={strokeColor}
         strokeWidth={selected ? 2.5 : 2}
-        strokeDasharray={selected ? '6 3' : isDashed ? '5 3' : 'none'}
+        strokeDasharray={drawProgress ? drawProgress.len : selected ? '6 3' : isDashed ? '5 3' : 'none'}
+        strokeDashoffset={drawProgress ? (drawProgress.done ? 0 : drawProgress.len) : 0}
         className="transition-colors"
+        style={drawProgress ? { transition: 'stroke-dashoffset 500ms ease-out' } : undefined}
       />
       {/* Arrow triangle at end */}
-      <g transform={`translate(${end.x},${end.y}) rotate(${angle})`}>
+      <g
+        transform={`translate(${end.x},${end.y}) rotate(${angle})`}
+        style={drawProgress ? { opacity: drawProgress.done ? 1 : 0, transition: 'opacity 200ms ease-out 400ms' } : undefined}
+      >
         <polygon points="0,2 -4,-5 4,-5" fill={strokeColor} />
       </g>
       {/* Edge type label badge */}
       {et && (
-        <g transform={`translate(${midX},${midY})`}>
+        <g
+          transform={`translate(${midX},${midY})`}
+          style={drawProgress ? { opacity: drawProgress.done ? 1 : 0, transition: 'opacity 200ms ease-out 350ms' } : undefined}
+        >
           <rect x={-16} y={-8} width={32} height={16} rx={4} fill={etColors?.stroke || '#64748b'} opacity={0.9} />
           <text x={0} y={4} textAnchor="middle" fontSize={9} fontWeight="bold" fill="white">
             {et === 'yes' ? 'Yes' : et === 'no' ? 'No' : et === 'error' ? 'Err' : et === 'loop' ? 'Loop' : et}

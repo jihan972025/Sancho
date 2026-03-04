@@ -98,11 +98,71 @@ function computeTopologicalOrder(nodes: AgentNodeDef[], edges: AgentEdge[]): Age
 
 // ── Auto-layout for legacy agents or AI build ──
 
-function autoLayoutNodes(nodes: AgentNodeDef[], startX = 300, startY = 80, spacingY = 160): AgentNodeDef[] {
+export function autoLayoutNodes(nodes: AgentNodeDef[], startX = 300, startY = 80, spacingY = 220): AgentNodeDef[] {
   return nodes.map((n, i) => ({ ...n, x: startX, y: startY + i * spacingY }))
 }
 
-function autoCreateLinearEdges(nodes: AgentNodeDef[]): AgentEdge[] {
+export function autoLayoutGraph(nodes: AgentNodeDef[], edges: AgentEdge[], startX = 300, startY = 80, spacingX = 300, spacingY = 220): AgentNodeDef[] {
+  if (nodes.length === 0) return nodes
+
+  // Build adjacency & in-degree
+  const adj: Record<string, string[]> = {}
+  const inDegree: Record<string, number> = {}
+  for (const n of nodes) {
+    adj[n.id] = []
+    inDegree[n.id] = 0
+  }
+  for (const e of edges) {
+    if (adj[e.source]) adj[e.source].push(e.target)
+    if (e.target in inDegree) inDegree[e.target]++
+  }
+
+  // Assign levels via BFS (topological)
+  const level: Record<string, number> = {}
+  const queue: string[] = []
+  for (const n of nodes) {
+    if (inDegree[n.id] === 0) {
+      queue.push(n.id)
+      level[n.id] = 0
+    }
+  }
+  while (queue.length) {
+    const id = queue.shift()!
+    for (const next of (adj[id] || [])) {
+      level[next] = Math.max(level[next] ?? 0, (level[id] ?? 0) + 1)
+      inDegree[next]--
+      if (inDegree[next] === 0) queue.push(next)
+    }
+  }
+
+  // Group by level
+  const levelGroups: Record<number, string[]> = {}
+  for (const n of nodes) {
+    const lv = level[n.id] ?? 0
+    if (!levelGroups[lv]) levelGroups[lv] = []
+    levelGroups[lv].push(n.id)
+  }
+
+  // Assign positions — center each level horizontally
+  const posMap: Record<string, { x: number; y: number }> = {}
+  const sortedLevels = Object.keys(levelGroups).map(Number).sort((a, b) => a - b)
+  for (const lv of sortedLevels) {
+    const group = levelGroups[lv]
+    const totalWidth = (group.length - 1) * spacingX
+    const offsetX = startX - totalWidth / 2
+    group.forEach((id, idx) => {
+      posMap[id] = { x: offsetX + idx * spacingX, y: startY + lv * spacingY }
+    })
+  }
+
+  return nodes.map((n) => ({
+    ...n,
+    x: posMap[n.id]?.x ?? startX,
+    y: posMap[n.id]?.y ?? startY,
+  }))
+}
+
+export function autoCreateLinearEdges(nodes: AgentNodeDef[]): AgentEdge[] {
   const edges: AgentEdge[] = []
   for (let i = 0; i < nodes.length - 1; i++) {
     edges.push({ id: `auto-edge-${i}`, source: nodes[i].id, target: nodes[i + 1].id, sourcePort: 'bottom', targetPort: 'top', edgeType: '' })
@@ -157,7 +217,7 @@ interface WorkflowAgentState {
   updateEdgeType: (edgeId: string, edgeType: string) => void
   applyAiBuild: (result: {
     name: string
-    nodes: { serviceId: string; serviceType: string; prompt: string; order: number; nodeType?: string; config?: Record<string, any> }[]
+    nodes: { id?: string; serviceId: string; serviceType: string; prompt: string; order: number; nodeType?: string; config?: Record<string, any> }[]
     edges?: { source: string; target: string; edgeType?: string }[]
     schedule: Record<string, any>
   }) => void
@@ -314,7 +374,7 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
       prompt: '',
       order: nodes.length,
       x: x ?? 300,
-      y: y ?? (nodes.length * 160 + 80),
+      y: y ?? (nodes.length * 220 + 80),
       nodeType: nt,
       config: {},
       outputVariable: '',
@@ -453,11 +513,19 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
   },
 
   applyAiBuild: (result) => {
+    // Build AI-id → real-id mapping
+    const aiIdToRealId: Record<string, string> = {}
+
     let nodes: AgentNodeDef[] = result.nodes.map((n, i) => {
       nodeCounter++
       const nt = resolveNodeType(n.serviceId, n.nodeType)
+      const realId = `node-${Date.now()}-${nodeCounter}`
+      // Map AI-generated id (e.g. "node-0") and index to real id
+      const aiId = (n as any).id || `node-${i}`
+      aiIdToRealId[aiId] = realId
+      aiIdToRealId[String(i)] = realId
       return {
-        id: `node-${Date.now()}-${nodeCounter}`,
+        id: realId,
         serviceId: n.serviceId,
         serviceType: (n.serviceType === 'chatapp' ? 'chatapp' : 'api') as 'api' | 'chatapp',
         prompt: n.prompt || '',
@@ -470,25 +538,24 @@ export const useWorkflowAgentStore = create<WorkflowAgentState>((set, get) => ({
       }
     })
 
-    // Auto-layout + auto-edges for AI-built linear chain
-    nodes = autoLayoutNodes(nodes)
-
-    // If AI provided edges, use them; otherwise auto-create linear edges
+    // If AI provided edges, use them with mapped IDs; otherwise auto-create linear edges
     let edges: AgentEdge[]
     if (result.edges && result.edges.length > 0) {
-      // Map AI edge source/target (by index or name) to actual node IDs
-      edges = result.edges.map((e, i) => {
+      edges = result.edges.map((e) => {
         nodeCounter++
         return {
           id: `edge-${Date.now()}-${nodeCounter}`,
-          source: e.source,
-          target: e.target,
+          source: aiIdToRealId[e.source] || e.source,
+          target: aiIdToRealId[e.target] || e.target,
           sourcePort: 'bottom' as PortSide,
           targetPort: 'top' as PortSide,
           edgeType: e.edgeType || '',
         }
       })
+      // Graph-aware layout for fork/join/branch workflows
+      nodes = autoLayoutGraph(nodes, edges)
     } else {
+      nodes = autoLayoutNodes(nodes)
       edges = autoCreateLinearEdges(nodes)
     }
 

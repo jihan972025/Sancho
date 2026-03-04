@@ -151,6 +151,7 @@ Output ONLY valid JSON (no markdown fences, no explanation) with this schema:
   "name": "short descriptive agent name",
   "nodes": [
     {
+      "id": "node-0",
       "serviceId": "...",
       "serviceType": "api" or "chatapp",
       "nodeType": "service" or "condition" or "fork" or "join" or "loop" or "delay" or "approval" or "subroute",
@@ -160,7 +161,7 @@ Output ONLY valid JSON (no markdown fences, no explanation) with this schema:
     }
   ],
   "edges": [
-    { "source": "node-id-1", "target": "node-id-2", "edgeType": "" or "yes" or "no" or "error" or "loop" }
+    { "source": "node-0", "target": "node-1", "edgeType": "" or "yes" or "no" or "error" or "loop" }
   ],
   "schedule": {
     "execution_type": "recurring" or "onetime",
@@ -181,11 +182,17 @@ Rules:
 5. Set schedule based on the user's timing request. If no timing is mentioned, default to onetime with execute_immediately=true.
 6. For recurring tasks, set cron_hour/cron_minute to the requested time. If "every day" or no specific days, include all 7 days.
 7. The agent name should be concise and descriptive (e.g. "Daily KOSPI Report").
-8. If the user mentions multiple data sources, create multiple API nodes in sequence.
+8. PARALLEL vs SEQUENTIAL: If the user requests multiple independent data sources fetched simultaneously/concurrently/at the same time (e.g. "동시에", "simultaneously", "in parallel", "함께"), use fork → parallel API nodes → join pattern. Otherwise, create sequential nodes.
+   Example parallel pattern: fork → [krnews, gnews, yfinance] → join → telegram
+   ```
+   nodes: [{id:"node-0",serviceId:"fork",nodeType:"fork",...}, {id:"node-1",serviceId:"krnews",...}, {id:"node-2",serviceId:"gnews",...}, {id:"node-3",serviceId:"yfinance",...}, {id:"node-4",serviceId:"join",nodeType:"join",...}, {id:"node-5",serviceId:"telegram",serviceType:"chatapp",...}]
+   edges: [{source:"node-0",target:"node-1"}, {source:"node-0",target:"node-2"}, {source:"node-0",target:"node-3"}, {source:"node-1",target:"node-4"}, {source:"node-2",target:"node-4"}, {source:"node-3",target:"node-4"}, {source:"node-4",target:"node-5"}]
+   ```
 9. CRITICAL — LANGUAGE MATCHING: The "name" and each node's "prompt" MUST be written in the SAME language as the user's input. If the user writes in Korean, write name and prompts in Korean. If in Chinese, write in Chinese. If in German, write in German. Always match the user's language exactly. Only serviceId values stay in English (they are identifiers).
-10. For simple linear workflows, you can omit the "edges" field — edges will be auto-created.
-11. For complex workflows with branching, use the "edges" field with proper edgeType values.
-12. Flow control nodes (condition, fork, join, loop, delay, approval, subroute) must have serviceId matching their nodeType.
+10. For simple linear workflows, you can omit the "edges" field — edges will be auto-created based on node order.
+11. For complex workflows with branching/parallel, you MUST provide the "edges" field with proper connections.
+12. Flow control nodes (condition, fork, join, loop, delay, approval, subroute) must have serviceId matching their nodeType, nodeType set accordingly, and an EMPTY prompt "".
+13. Every node MUST have a unique "id" field (e.g. "node-0", "node-1", ...). Edges reference these ids.
 """
 
 
@@ -226,15 +233,22 @@ def _normalize_ai_result(result: dict) -> dict:
     edges_raw = result.get("edges", [])
     schedule_raw = result.get("schedule", {})
 
-    # Build normalized nodes
+    # Build normalized nodes with stable IDs
     nodes = []
+    old_id_to_new = {}  # map LLM-generated ids to normalized ids
     for i, n in enumerate(nodes_raw):
         service_id = n.get("serviceId", "")
         service_type = n.get("serviceType", "api")
         if service_type not in ("api", "chatapp"):
             service_type = "api"
         node_type = n.get("nodeType", "service")
+        new_id = f"node-{i}"
+        # Track old id → new id mapping for edge resolution
+        old_id = n.get("id", str(i))
+        old_id_to_new[old_id] = new_id
+        old_id_to_new[str(i)] = new_id  # also map index-based refs
         nodes.append({
+            "id": new_id,
             "serviceId": service_id,
             "serviceType": service_type,
             "prompt": n.get("prompt", ""),
@@ -243,12 +257,14 @@ def _normalize_ai_result(result: dict) -> dict:
             "config": n.get("config", {}),
         })
 
-    # Build normalized edges
+    # Build normalized edges with resolved node IDs
     edges = []
     for e in edges_raw:
+        source = e.get("source", "")
+        target = e.get("target", "")
         edges.append({
-            "source": e.get("source", ""),
-            "target": e.get("target", ""),
+            "source": old_id_to_new.get(source, source),
+            "target": old_id_to_new.get(target, target),
             "edgeType": e.get("edgeType", ""),
         })
 

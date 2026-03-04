@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Callable, Optional
 
 from ..config import get_config
+from ..i18n import LANG_NAMES
 from ..llm.registry import get_provider_for_model
 from ..skills.loader import build_skill_system_prompt
 from ..skills.executor import parse_skill_call, execute_skill_call
@@ -23,17 +24,19 @@ CHATAPP_IDS = {"whatsapp", "telegram", "matrix", "slack_app", "slack"}
 class AgentExecutor:
     """Graph-based agent execution engine supporting branching, loops, fork/join, etc."""
 
-    def __init__(self, agent: AgentWorkflow, provider, model: str, depth: int = 0):
+    def __init__(self, agent: AgentWorkflow, provider, model: str, depth: int = 0, language: str = "en"):
         self.agent = agent
         self.provider = provider
         self.model = model
         self.depth = depth
+        self.language = language
         self.node_map = {n.id: n for n in agent.nodes}
         self.adj: dict[str, list[tuple[AgentEdge, str]]] = {}
         self.results: dict[str, str] = {}
         self.variables: dict[str, str] = {}
         self.executed: set[str] = set()
         self.status_callback: Optional[Callable] = None
+        self._stop_at: set[str] = set()  # Nodes to stop at (e.g. join nodes during fork)
 
         # Build adjacency list
         for n in agent.nodes:
@@ -41,6 +44,9 @@ class AgentExecutor:
         for e in agent.edges:
             if e.source in self.adj:
                 self.adj[e.source].append((e, e.target))
+
+        # Pre-identify join node IDs
+        self._join_ids = {n.id for n in agent.nodes if (n.nodeType or "service") == "join"}
 
     async def execute(self) -> str:
         """Find start nodes and execute the graph."""
@@ -128,6 +134,9 @@ class AgentExecutor:
         for nid in node_ids:
             if nid in self.executed:
                 continue
+            # Stop at barrier nodes (e.g. join nodes during fork branches)
+            if nid in self._stop_at:
+                continue
             node = self.node_map.get(nid)
             if not node:
                 continue
@@ -206,11 +215,19 @@ class AgentExecutor:
         await self._run_nodes(next_ids)
 
     async def _exec_fork(self, node: AgentNodeDef):
-        """Execute all outgoing branches in parallel."""
+        """Execute all outgoing branches in parallel, stopping at join node."""
         next_ids = self._get_next(node.id)
         self.results[node.id] = "Fork"
         if node.outputVariable:
             self.variables[node.outputVariable] = "Fork"
+
+        # Find the matching join node — any join node reachable from fork branches
+        matching_joins: set[str] = set()
+        for branch_id in next_ids:
+            self._find_reachable_joins(branch_id, matching_joins)
+
+        # Set join nodes as barriers so branches stop before entering them
+        self._stop_at |= matching_joins
 
         # Run branches concurrently
         async def run_branch(nid: str):
@@ -218,6 +235,26 @@ class AgentExecutor:
 
         tasks = [run_branch(nid) for nid in next_ids]
         await asyncio.gather(*tasks)
+
+        # Remove barriers and execute join nodes now that all branches completed
+        self._stop_at -= matching_joins
+        for join_id in matching_joins:
+            if join_id not in self.executed:
+                await self._run_nodes([join_id])
+
+    def _find_reachable_joins(self, start_id: str, found: set[str], visited: set[str] | None = None):
+        """BFS to find join nodes reachable from a starting node."""
+        if visited is None:
+            visited = set()
+        if start_id in visited:
+            return
+        visited.add(start_id)
+        node = self.node_map.get(start_id)
+        if node and (node.nodeType or "service") == "join":
+            found.add(start_id)
+            return  # Don't traverse past join
+        for _edge, target_id in self.adj.get(start_id, []):
+            self._find_reachable_joins(target_id, found, visited)
 
     async def _exec_join(self, node: AgentNodeDef):
         """Merge results from all incoming nodes."""
@@ -329,7 +366,7 @@ class AgentExecutor:
             await self._run_nodes(next_ids)
             return
 
-        sub_executor = AgentExecutor(sub_agent, self.provider, self.model, depth=self.depth + 1)
+        sub_executor = AgentExecutor(sub_agent, self.provider, self.model, depth=self.depth + 1, language=self.language)
         sub_executor.variables = {**self.variables}
         result = await sub_executor.execute()
 
@@ -382,8 +419,16 @@ class AgentExecutor:
             return self.results[node.id]
         raise last_error  # type: ignore
 
+    def _lang_instruction(self) -> str:
+        """Build a language instruction for LLM prompts based on config language."""
+        lang_name = LANG_NAMES.get(self.language, self.language)
+        if self.language == "en":
+            return "6. Answer in English."
+        return f"6. You MUST respond ENTIRELY in {lang_name}. All headings, sentences, and explanations must be written in {lang_name}."
+
     async def _execute_llm(self, node: AgentNodeDef, prompt: str) -> str:
         """Single LLM call with skill detection."""
+        lang_inst = self._lang_instruction()
         messages = [{"role": "user", "content": prompt}]
 
         skill_prompt = build_skill_system_prompt()
@@ -407,7 +452,7 @@ class AgentExecutor:
                         "3. If exact data for today is not in the results, use the MOST RECENT data available and clearly state which date it is from.\n"
                         "4. NEVER say 'I cannot provide' or 'information is unavailable'. Always produce a complete report using the best available data.\n"
                         "5. Format the output cleanly with headers, tables, and bullet points.\n"
-                        "6. Answer in the same language as the user's question."
+                        f"{lang_inst}"
                     )},
                     *messages,
                     {
@@ -424,7 +469,12 @@ class AgentExecutor:
             else:
                 return phase1_response
         else:
-            return await self.provider.complete(messages, self.model)
+            # No skills — direct LLM call with language instruction
+            sys_messages = [
+                {"role": "system", "content": f"You are an automated agent. {lang_inst}"},
+                *messages,
+            ]
+            return await self.provider.complete(sys_messages, self.model)
 
 
 # ── Public API (backward compatible) ──
@@ -463,7 +513,7 @@ async def execute_agent(agent_id: str) -> None:
     storage.update_agent(agent)
 
     try:
-        executor = AgentExecutor(agent, provider, model)
+        executor = AgentExecutor(agent, provider, model, language=config.language)
         final_result = await executor.execute()
         accumulated_context = "\n\n".join(
             f"[{executor.node_map[nid].serviceId}]\n{res}"
