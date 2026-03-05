@@ -244,11 +244,18 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     const selId = selectedNodeId
     const hlFile = highlightFile
 
-    // Determine connected nodes for highlighting
+    // Determine connected nodes for hover highlighting
     const connectedToHover = new Set<string>()
     if (hovId) {
       connectedToHover.add(hovId)
       adj.get(hovId)?.forEach((id) => connectedToHover.add(id))
+    }
+
+    // Determine connected nodes for selected node
+    const connectedToSel = new Set<string>()
+    if (selId) {
+      connectedToSel.add(selId)
+      adj.get(selId)?.forEach((id) => connectedToSel.add(id))
     }
 
     // Determine file-related nodes (file's own nodes + their direct neighbors)
@@ -274,6 +281,8 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       let showOrder = false
       let edgeColor = `rgba(94,94,94,${opacity})`
 
+      const isSelEdge = selId && (e.source === selId || e.target === selId)
+
       if (hovId) {
         if (connectedToHover.has(e.source) && connectedToHover.has(e.target)) {
           const color = getClusterColor(s.cluster)
@@ -285,6 +294,12 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
           edgeColor = `rgba(94,94,94,0.06)`
           width = 0.3
         }
+      } else if (isSelEdge) {
+        const color = getClusterColor(s.cluster)
+        const [r, g, b] = hexToRgb(color)
+        edgeColor = `rgba(${r},${g},${b},0.7)`
+        width = 1.8
+        if (e.type === 'calls') { showArrow = true; showOrder = e.order != null }
       } else if (hlFile) {
         const srcInFile = fileRelated.has(e.source) && (nodeMapRef.current.get(e.source)?.file === hlFile)
         const tgtInFile = fileRelated.has(e.target) && (nodeMapRef.current.get(e.target)?.file === hlFile)
@@ -299,7 +314,11 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
           width = 0.3
         }
       } else {
-        if (e.type === 'calls') showArrow = true
+        if (e.type === 'calls') {
+          showArrow = true
+          edgeColor = `rgba(94,94,94,0.3)`
+          width = 0.8
+        }
       }
 
       ctx.strokeStyle = edgeColor
@@ -362,6 +381,8 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       // Dimming when hovering another node
       if (hovId && !connectedToHover.has(n.id)) {
         alpha = 0.15
+      } else if (!hovId && !hlFile && selId && !connectedToSel.has(n.id)) {
+        alpha = 0.2
       }
 
       // Highlight for file filter: file's nodes full, neighbors slightly dim, rest very dim
