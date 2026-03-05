@@ -289,7 +289,8 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
           const [r, g, b] = hexToRgb(color)
           edgeColor = `rgba(${r},${g},${b},0.6)`
           width = 1.5
-          if (e.type === 'calls') { showArrow = true; showOrder = e.order != null }
+          showArrow = true
+          if (e.type === 'calls') { showOrder = e.order != null }
         } else {
           edgeColor = `rgba(94,94,94,0.06)`
           width = 0.3
@@ -299,7 +300,8 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         const [r, g, b] = hexToRgb(color)
         edgeColor = `rgba(${r},${g},${b},0.7)`
         width = 1.8
-        if (e.type === 'calls') { showArrow = true; showOrder = e.order != null }
+        showArrow = true
+        if (e.type === 'calls') { showOrder = e.order != null }
       } else if (hlFile) {
         const srcInFile = fileRelated.has(e.source) && (nodeMapRef.current.get(e.source)?.file === hlFile)
         const tgtInFile = fileRelated.has(e.target) && (nodeMapRef.current.get(e.target)?.file === hlFile)
@@ -308,7 +310,8 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
           const [r, g, b] = hexToRgb(color)
           edgeColor = `rgba(${r},${g},${b},0.5)`
           width = 1.2
-          if (e.type === 'calls') { showArrow = true; showOrder = e.order != null }
+          showArrow = true
+          if (e.type === 'calls') { showOrder = e.order != null }
         } else {
           edgeColor = `rgba(94,94,94,0.04)`
           width = 0.3

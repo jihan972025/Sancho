@@ -146,11 +146,27 @@ def _parse_java(filepath: str, nodes: dict, edges: list, file_label: str):
                 "if", "for", "while", "switch", "catch", "return",
                 "new", "super", "this", "System", "String", "Integer",
                 "Boolean", "Long", "Double", "Float", "Math",
+                "println", "print", "printf", "format", "toString",
+                "equals", "hashCode", "valueOf", "size", "length",
+                "get", "set", "add", "remove", "put", "contains",
+                "isEmpty", "clear", "iterator", "next", "hasNext",
+                "append", "delete", "replace", "substring", "trim",
+                "split", "join", "charAt", "indexOf", "lastIndexOf",
+                "startsWith", "endsWith", "toLowerCase", "toUpperCase",
+                "parseInt", "parseDouble", "parseLong", "parseFloat",
             ):
                 continue
-            # Try to match to a known method
+            # Try to match to a known method in same class
             callee_id = f"method:{owner}.{callee}"
             if callee_id != method_id:
+                # Create placeholder node for callee if it doesn't exist yet
+                if callee_id not in nodes:
+                    nodes[callee_id] = OntologyNode(
+                        id=callee_id,
+                        label=f"{owner}.{callee}()",
+                        type="method",
+                        file=file_label,
+                    )
                 edges.append(
                     OntologyEdge(source=method_id, target=callee_id, type="calls", order=call_order)
                 )
