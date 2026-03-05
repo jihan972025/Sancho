@@ -481,11 +481,20 @@ async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
     """
     semgrep_bin = _find_semgrep()
 
+    # Use local rules bundled with the app (no semgrep login required)
+    rules_file = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)),
+        "security",
+        "semgrep-rules.yml",
+    )
+    if not os.path.isfile(rules_file):
+        raise RuntimeError(
+            f"Semgrep rules file not found: {rules_file}"
+        )
+
     cmd = [
         semgrep_bin, "scan",
-        "--config", "p/security-audit",
-        "--config", "p/owasp-top-ten",
-        "--config", "p/cwe-top-25",
+        "--config", rules_file,
         "--json",
         "--timeout", "10",
         "--exclude", "node_modules",
