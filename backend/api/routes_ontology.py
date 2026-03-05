@@ -460,6 +460,109 @@ _add_rule("xxe", "medium",
     {".java"},
     r"""DocumentBuilderFactory\s*\.\s*newInstance\s*\(""")
 
+_add_rule("path-traversal", "high",
+    "Potential path traversal via File or Paths.get with user-controlled input",
+    {".java"},
+    r"""(?:new\s+File|Paths\s*\.\s*get)\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter|params\s*\.\s*get|input|userInput|fileName|filePath|path\s*\+)""")
+
+_add_rule("ldap-injection", "high",
+    "Potential LDAP injection via string concatenation in search filter",
+    {".java"},
+    r"""\.search\s*\([^)]*["']\s*\(\s*\w+\s*=\s*["']\s*\+""")
+
+_add_rule("ssrf", "high",
+    "Potential SSRF via URL connection with user-controlled input",
+    {".java"},
+    r"""new\s+URL\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter|url|uri|endpoint|target)\s*[)+]""")
+
+_add_rule("log-injection", "medium",
+    "Potential log injection via string concatenation in logger call",
+    {".java"},
+    r"""(?:logger|log|LOG|LOGGER)\s*\.\s*(?:info|debug|warn|error|trace|fatal)\s*\(\s*["'].*?\+\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter)""")
+
+_add_rule("insecure-random", "medium",
+    "Use of java.util.Random instead of SecureRandom for potentially security-sensitive operation",
+    {".java"},
+    r"""new\s+Random\s*\(\s*\)|java\s*\.\s*util\s*\.\s*Random""")
+
+_add_rule("jndi-injection", "critical",
+    "Potential JNDI injection via InitialContext.lookup with dynamic input",
+    {".java"},
+    r"""(?:InitialContext|Context)\s*\(?\s*\)?\s*\.?\s*lookup\s*\(\s*(?!["'][a-zA-Z]+:[a-zA-Z])""")
+
+_add_rule("open-redirect", "medium",
+    "Potential open redirect via sendRedirect or forward with user-controlled input",
+    {".java"},
+    r"""(?:sendRedirect|forward)\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter|url|redirect|returnUrl|next|target|destination)""",
+    re.IGNORECASE)
+
+_add_rule("insecure-file-upload", "high",
+    "File upload without proper validation of content type or extension",
+    {".java"},
+    r"""new\s+FileOutputStream\s*\(\s*.*?(?:getOriginalFilename|getSubmittedFileName)""")
+
+_add_rule("reflection-abuse", "high",
+    "Dynamic class loading via Class.forName() with potentially user-controlled input",
+    {".java"},
+    r"""Class\s*\.\s*forName\s*\(\s*(?!["'])""")
+
+_add_rule("session-fixation", "high",
+    "Potential session fixation - session used without invalidation after authentication",
+    {".java"},
+    r"""request\s*\.\s*getSession\s*\(\s*(?:true\s*)?\)[\s\S]{0,200}setAttribute\s*\(\s*["'](?:user|auth|login|role|principal)""")
+
+_add_rule("csrf-disabled", "medium",
+    "CSRF protection explicitly disabled in Spring Security configuration",
+    {".java"},
+    r"""csrf\s*\(\s*\)\s*\.\s*disable\s*\(\s*\)|csrf\s*\(\s*(?:AbstractHttpConfigurer|Customizer)\s*::\s*disable\s*\)""")
+
+_add_rule("insecure-cookie", "medium",
+    "Cookie created without Secure and/or HttpOnly flags",
+    {".java"},
+    r"""new\s+Cookie\s*\(\s*["'][^"']+["']\s*,\s*[^)]+\)(?![\s\S]{0,200}(?:setSecure\s*\(\s*true|setHttpOnly\s*\(\s*true))""")
+
+_add_rule("hardcoded-encryption-key", "critical",
+    "Hardcoded encryption key in SecretKeySpec or Cipher initialization",
+    {".java"},
+    r"""new\s+SecretKeySpec\s*\(\s*(?:["'][^"']+["']\.getBytes|new\s+byte\s*\[\s*\]\s*\{)""")
+
+_add_rule("insecure-tls", "high",
+    "Insecure SSL/TLS protocol version or disabled certificate verification",
+    {".java"},
+    r"""SSLContext\s*\.\s*getInstance\s*\(\s*["'](?:SSL|TLS|TLSv1(?:\.0|\.1)?)["']\)|HostnameVerifier.*?return\s+true|setHostnameVerifier\s*\(\s*(?:SSLConnectionSocketFactory\s*\.\s*ALLOW_ALL|NoopHostnameVerifier|ALLOW_ALL)""")
+
+_add_rule("el-injection", "critical",
+    "Potential Spring Expression Language (SpEL) injection via dynamic expression parsing",
+    {".java"},
+    r"""(?:SpelExpressionParser|ExpressionParser)\s*(?:\(\s*\))?\s*\.?\s*parseExpression\s*\(\s*(?!["'])""")
+
+_add_rule("template-injection", "critical",
+    "Potential server-side template injection via dynamic template evaluation",
+    {".java"},
+    r"""Velocity\s*\.\s*evaluate\s*\(|VelocityEngine\s*.*?\.(?:evaluate|mergeTemplate)\s*\(|freemarker\s*.*?\.process\s*\(|\.processTemplateIntoString\s*\(""",
+    re.IGNORECASE)
+
+_add_rule("race-condition", "medium",
+    "Potential race condition in check-then-act pattern on file (TOCTOU)",
+    {".java"},
+    r"""\.exists\s*\(\s*\)[\s\S]{0,100}(?:\.createNewFile|\.mkdir|\.delete|new\s+FileOutputStream|new\s+FileWriter|Files\s*\.\s*write)""")
+
+_add_rule("null-cipher", "critical",
+    "Use of NullCipher provides no encryption",
+    {".java"},
+    r"""new\s+NullCipher\s*\(""")
+
+_add_rule("unsafe-reflection", "high",
+    "Reflective method invocation with potentially user-controlled method name",
+    {".java"},
+    r"""(?:getMethod|getDeclaredMethod)\s*\(\s*(?!["']).*?\.\s*invoke\s*\(""",
+    re.DOTALL)
+
+_add_rule("unvalidated-redirect", "medium",
+    "URL redirect using request parameter without validation",
+    {".java"},
+    r"""(?:response\s*\.\s*sendRedirect|response\s*\.\s*setHeader\s*\(\s*["']Location["'])\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter)""")
+
 # Python
 _add_rule("sql-injection", "critical",
     "Potential SQL injection via string formatting in execute()",
