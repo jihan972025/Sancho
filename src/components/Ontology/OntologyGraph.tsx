@@ -270,8 +270,8 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
     },
   }))
 
-  const dragRef = useRef<{ dragging: boolean; startX: number; startY: number; camStartX: number; camStartY: number; draggedNode: GraphNode | null }>({
-    dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null,
+  const dragRef = useRef<{ dragging: boolean; startX: number; startY: number; camStartX: number; camStartY: number; draggedNode: GraphNode | null; minimapDrag: boolean }>({
+    dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null, minimapDrag: false,
   })
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null)
 
@@ -804,7 +804,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
 
   // Mouse handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    // Check minimap click
+    // Check minimap interaction
     const canvas = canvasRef.current
     if (canvas && minimapRef.current) {
       const rect = canvas.getBoundingClientRect()
@@ -812,11 +812,17 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
       const cy = e.clientY - rect.top
       const mm = minimapRef.current
       if (cx >= mm.x && cx <= mm.x + mm.w && cy >= mm.y && cy <= mm.y + mm.h) {
+        // Start minimap drag — move camera to clicked position and begin drag
         const pad = 8
         const worldX = (cx - mm.x - pad) / mm.scale + mm.minX
         const worldY = (cy - mm.y - pad) / mm.scale + mm.minY
         camRef.current.x = -worldX * camRef.current.zoom
         camRef.current.y = -worldY * camRef.current.zoom
+        dragRef.current = {
+          dragging: true, startX: e.clientX, startY: e.clientY,
+          camStartX: camRef.current.x, camStartY: camRef.current.y,
+          draggedNode: null, minimapDrag: true,
+        }
         return
       }
     }
@@ -824,21 +830,15 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
     const node = findNodeAt(e.clientX, e.clientY)
     if (node) {
       dragRef.current = {
-        dragging: true,
-        startX: e.clientX,
-        startY: e.clientY,
-        camStartX: camRef.current.x,
-        camStartY: camRef.current.y,
-        draggedNode: node,
+        dragging: true, startX: e.clientX, startY: e.clientY,
+        camStartX: camRef.current.x, camStartY: camRef.current.y,
+        draggedNode: node, minimapDrag: false,
       }
     } else {
       dragRef.current = {
-        dragging: true,
-        startX: e.clientX,
-        startY: e.clientY,
-        camStartX: camRef.current.x,
-        camStartY: camRef.current.y,
-        draggedNode: null,
+        dragging: true, startX: e.clientX, startY: e.clientY,
+        camStartX: camRef.current.x, camStartY: camRef.current.y,
+        draggedNode: null, minimapDrag: false,
       }
     }
   }, [findNodeAt])
@@ -846,18 +846,29 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const d = dragRef.current
     if (d.dragging) {
-      const dx = e.clientX - d.startX
-      const dy = e.clientY - d.startY
-      if (d.draggedNode) {
-        d.draggedNode.x += dx / camRef.current.zoom
-        d.draggedNode.y += dy / camRef.current.zoom
-        d.draggedNode.vx = 0
-        d.draggedNode.vy = 0
-        d.startX = e.clientX
-        d.startY = e.clientY
+      if (d.minimapDrag && minimapRef.current) {
+        // Minimap drag: convert mouse delta to world coords and move camera
+        const mm = minimapRef.current
+        const dx = e.clientX - d.startX
+        const dy = e.clientY - d.startY
+        const worldDx = dx / mm.scale
+        const worldDy = dy / mm.scale
+        camRef.current.x = d.camStartX - worldDx * camRef.current.zoom
+        camRef.current.y = d.camStartY - worldDy * camRef.current.zoom
       } else {
-        camRef.current.x = d.camStartX + dx
-        camRef.current.y = d.camStartY + dy
+        const dx = e.clientX - d.startX
+        const dy = e.clientY - d.startY
+        if (d.draggedNode) {
+          d.draggedNode.x += dx / camRef.current.zoom
+          d.draggedNode.y += dy / camRef.current.zoom
+          d.draggedNode.vx = 0
+          d.draggedNode.vy = 0
+          d.startX = e.clientX
+          d.startY = e.clientY
+        } else {
+          camRef.current.x = d.camStartX + dx
+          camRef.current.y = d.camStartY + dy
+        }
       }
     } else {
       const node = findNodeAt(e.clientX, e.clientY)
@@ -868,7 +879,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     const d = dragRef.current
-    if (d.dragging) {
+    if (d.dragging && !d.minimapDrag) {
       const dx = Math.abs(e.clientX - d.startX)
       const dy = Math.abs(e.clientY - d.startY)
       if (d.draggedNode && dx < 3 && dy < 3) {
@@ -877,7 +888,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
         onSelectNode(null)
       }
     }
-    dragRef.current = { dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null }
+    dragRef.current = { dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null, minimapDrag: false }
   }, [onSelectNode, selectedNodeId])
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -907,7 +918,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
         setHoveredNode(null)
         onHoverNode?.(null, 0, 0)
         if (dragRef.current.dragging) {
-          dragRef.current = { dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null }
+          dragRef.current = { dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null, minimapDrag: false }
         }
       }}
       onWheel={handleWheel}
