@@ -555,6 +555,200 @@ rules:
     metadata:
       cwe: "CWE-117: Improper Output Neutralization for Logs"
 
+  # --- Insecure Random ---
+  - id: java-insecure-random
+    pattern: new Random(...)
+    message: "java.util.Random is not cryptographically secure. Use SecureRandom for security-sensitive operations."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-330: Use of Insufficiently Random Values"
+      owasp: "A02:2021 Cryptographic Failures"
+
+  # --- Sensitive Data Logging ---
+  - id: java-sensitive-data-log
+    patterns:
+      - pattern-either:
+          - pattern: $LOG.info($MSG, $TOKEN)
+          - pattern: $LOG.debug($MSG, $TOKEN)
+          - pattern: $LOG.warn($MSG, $TOKEN)
+          - pattern: $LOG.error($MSG, $TOKEN)
+          - pattern: $LOG.info($MSG, $TOKEN, ...)
+          - pattern: $LOG.debug($MSG, $TOKEN, ...)
+      - metavariable-regex:
+          metavariable: $TOKEN
+          regex: (?i)(.*token.*|.*password.*|.*passwd.*|.*secret.*|.*credential.*|.*apikey.*)
+    message: "Sensitive data (token/password/secret) logged. Remove or mask sensitive values in log output."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+      owasp: "A09:2021 Security Logging and Monitoring Failures"
+
+  # --- Open Redirect ---
+  - id: java-open-redirect
+    pattern: $RESPONSE.sendRedirect(...)
+    message: "Potential open redirect. Validate redirect URLs against a whitelist of allowed destinations."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-601: URL Redirection to Untrusted Site"
+
+  # --- Spring CORS Misconfiguration ---
+  - id: java-cors-allow-all-methods
+    pattern: |
+      $CONFIG.addAllowedMethod("*")
+    message: "CORS allows all HTTP methods. Explicitly list only required methods (GET, POST, etc.)."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+      owasp: "A05:2021 Security Misconfiguration"
+
+  - id: java-cors-allow-all-headers
+    pattern: |
+      $CONFIG.addAllowedHeader("*")
+    message: "CORS allows all headers. Explicitly list only required headers."
+    severity: INFO
+    languages: [java]
+    metadata:
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+
+  - id: java-cors-credentials-with-wildcard
+    patterns:
+      - pattern: |
+          $CONFIG.setAllowCredentials(true)
+      - pattern: |
+          $CONFIG.addAllowedMethod("*")
+    message: "CORS allows credentials with wildcard methods. This increases CSRF attack surface."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+
+  # --- WebSocket Wildcard Origin ---
+  - id: java-websocket-wildcard-origin
+    pattern-either:
+      - pattern: |
+          $REGISTRY.setAllowedOriginPatterns("*")
+      - pattern: |
+          $REGISTRY.setAllowedOrigins("*")
+    message: "WebSocket allows all origins. Restrict to trusted domains only."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+
+  # --- @CrossOrigin without restrictions ---
+  - id: java-crossorigin-unrestricted
+    pattern: |
+      @CrossOrigin
+      class $CLASS { ... }
+    message: "@CrossOrigin without origin restrictions allows requests from all origins. Specify allowed origins."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-942: Permissive Cross-domain Policy"
+
+  # --- CSRF Disabled ---
+  - id: java-csrf-disabled
+    pattern: $HTTP.csrf().disable()
+    message: "CSRF protection is disabled. Ensure alternative CSRF mitigation (e.g., JWT tokens) is in place."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-352: Cross-Site Request Forgery (CSRF)"
+      owasp: "A01:2021 Broken Access Control"
+
+  # --- System.out in production ---
+  - id: java-system-out-println
+    pattern-either:
+      - pattern: System.out.println(...)
+      - pattern: System.out.print(...)
+      - pattern: System.err.println(...)
+      - pattern: System.err.print(...)
+    message: "System.out/err in production code. Use a proper logging framework (SLF4J/Log4j)."
+    severity: INFO
+    languages: [java]
+    metadata:
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+
+  # --- Weak Hash (Java) ---
+  - id: java-weak-hash
+    pattern-either:
+      - pattern: MessageDigest.getInstance("MD5")
+      - pattern: MessageDigest.getInstance("SHA-1")
+      - pattern: MessageDigest.getInstance("SHA1")
+    message: "Weak hash algorithm (MD5/SHA-1). Use SHA-256 or stronger for security purposes."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-328: Use of Weak Hash"
+
+  # --- Path Traversal (Java) ---
+  - id: java-path-traversal
+    pattern-either:
+      - pattern: new File($VAR + ...)
+      - pattern: Paths.get($VAR + ...)
+    message: "Potential path traversal. Validate and canonicalize file paths from user input."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-022: Path Traversal"
+
+  # --- Cookie without HttpOnly ---
+  - id: java-cookie-no-httponly
+    patterns:
+      - pattern: |
+          $COOKIE = new Cookie(...);
+          ...
+          $RESPONSE.addCookie($COOKIE);
+      - pattern-not: |
+          $COOKIE = new Cookie(...);
+          ...
+          $COOKIE.setHttpOnly(true);
+          ...
+          $RESPONSE.addCookie($COOKIE);
+    message: "Cookie set without HttpOnly flag. Set setHttpOnly(true) to prevent XSS cookie theft."
+    severity: WARNING
+    languages: [java]
+    metadata:
+      cwe: "CWE-1004: Sensitive Cookie Without HttpOnly Flag"
+
+  # --- Exception Swallowing ---
+  - id: java-empty-catch
+    pattern: |
+      try { ... } catch ($TYPE $EX) { }
+    message: "Empty catch block swallows exceptions silently. Log or handle the exception."
+    severity: INFO
+    languages: [java]
+    metadata:
+      cwe: "CWE-390: Detection of Error Condition Without Action"
+
+  # --- Trust All Certificates ---
+  - id: java-trust-all-certs
+    pattern-either:
+      - pattern: |
+          new X509TrustManager() { ... }
+      - pattern: |
+          $X.setHostnameVerifier(($H, $S) -> true)
+    message: "Custom TrustManager or HostnameVerifier bypasses certificate validation. This allows MITM attacks."
+    severity: ERROR
+    languages: [java]
+    metadata:
+      cwe: "CWE-295: Improper Certificate Validation"
+
+  # --- LDAP Injection ---
+  - id: java-ldap-injection
+    pattern-either:
+      - pattern: $CTX.search($BASE, $FILTER + ..., ...)
+      - pattern: $CTX.search($BASE, "..." + $INPUT + "...", ...)
+    message: "LDAP injection via string concatenation. Use parameterized LDAP queries."
+    severity: ERROR
+    languages: [java]
+    metadata:
+      cwe: "CWE-090: LDAP Injection"
+
   # ============================================================
   # Go Security Rules
   # ============================================================
