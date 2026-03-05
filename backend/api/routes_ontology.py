@@ -438,18 +438,48 @@ _SEMGREP_SEVERITY_MAP = {
 }
 
 
+def _find_semgrep() -> str:
+    """Locate the semgrep binary. Returns the path or raises RuntimeError."""
+    # 1. Check PATH
+    found = shutil.which("semgrep")
+    if found:
+        return found
+
+    # 2. Windows: check common pip install locations
+    if os.name == "nt":
+        import sys
+        candidates = []
+        # User-level pip install
+        local = os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python")
+        if os.path.isdir(local):
+            for d in os.listdir(local):
+                candidates.append(os.path.join(local, d, "Scripts", "semgrep.exe"))
+        # Also check the python that might be on PATH
+        py = shutil.which("python") or shutil.which("python3")
+        if py:
+            candidates.append(os.path.join(os.path.dirname(py), "Scripts", "semgrep.exe"))
+        # HOME\AppData\Roaming\Python
+        roaming = os.path.join(os.environ.get("APPDATA", ""), "Python")
+        if os.path.isdir(roaming):
+            for d in os.listdir(roaming):
+                candidates.append(os.path.join(roaming, d, "Scripts", "semgrep.exe"))
+        for c in candidates:
+            if os.path.isfile(c):
+                return c
+
+    raise RuntimeError(
+        "Semgrep is not installed. "
+        "Install it with: pip install semgrep\n"
+        "Then restart the application."
+    )
+
+
 async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
     """Run semgrep scan and return parsed JSON output.
 
     Raises RuntimeError if semgrep is not installed or the scan fails.
     """
-    semgrep_bin = shutil.which("semgrep")
-    if semgrep_bin is None:
-        raise RuntimeError(
-            "Semgrep is not installed. "
-            "Install it with: pip install semgrep\n"
-            "Then restart the application."
-        )
+    semgrep_bin = _find_semgrep()
 
     cmd = [
         semgrep_bin, "scan",
@@ -467,7 +497,7 @@ async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
         scan_path,
     ]
 
-    logger.info("semgrep: %s", " ".join(cmd))
+    logger.info("semgrep cmd: %s", " ".join(cmd))
 
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -478,6 +508,12 @@ async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
         stdout, stderr = await asyncio.wait_for(
             proc.communicate(), timeout=timeout
         )
+    except FileNotFoundError:
+        raise RuntimeError(
+            "Semgrep is not installed. "
+            "Install it with: pip install semgrep\n"
+            "Then restart the application."
+        )
     except asyncio.TimeoutError:
         proc.kill()
         raise RuntimeError(f"Semgrep scan timed out after {timeout}s")
@@ -487,8 +523,10 @@ async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
 
     # Semgrep exits with 0 (no findings) or 1 (findings found) — both OK
     if proc.returncode not in (0, 1):
+        # Include first 300 chars of stderr for debugging
+        detail = (err or out)[:300]
         raise RuntimeError(
-            f"Semgrep scan failed (exit code {proc.returncode}): {err or out}"
+            f"Semgrep scan failed (exit code {proc.returncode}): {detail}"
         )
 
     if err:
@@ -638,10 +676,18 @@ async def _scan_and_parse(root: str):
     _detect_communities(nodes, unique_edges)
     _detect_cycles(nodes, unique_edges)
     _detect_dead_code(nodes, unique_edges)
-    semgrep_output = await _run_semgrep(root)
-    vulnerabilities = _parse_semgrep_results(semgrep_output, root, nodes)
 
-    return list(nodes.values()), unique_edges, vulnerabilities
+    # Semgrep scan — non-fatal: graph is returned even if scan fails
+    vulnerabilities: list[Vulnerability] = []
+    vuln_error: str | None = None
+    try:
+        semgrep_output = await _run_semgrep(root)
+        vulnerabilities = _parse_semgrep_results(semgrep_output, root, nodes)
+    except RuntimeError as e:
+        vuln_error = str(e)
+        logger.warning("Semgrep scan failed: %s", vuln_error)
+
+    return list(nodes.values()), unique_edges, vulnerabilities, vuln_error
 
 
 # ---------------------------------------------------------------------------
@@ -653,15 +699,15 @@ async def analyze_ontology(req: AnalyzeRequest):
     folder = req.path
     if not os.path.isdir(folder):
         raise HTTPException(status_code=400, detail=f"Not a directory: {folder}")
-    try:
-        nodes, edges, vulnerabilities = await _scan_and_parse(folder)
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    return {
+    nodes, edges, vulnerabilities, vuln_error = await _scan_and_parse(folder)
+    result = {
         "nodes": [n.model_dump() for n in nodes],
         "edges": [e.model_dump() for e in edges],
         "vulnerabilities": [v.model_dump() for v in vulnerabilities],
     }
+    if vuln_error:
+        result["vulnError"] = vuln_error
+    return result
 
 
 class CodePreviewRequest(BaseModel):

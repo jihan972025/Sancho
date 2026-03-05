@@ -186,6 +186,9 @@ export default function OntologyPanel() {
       cycleIdxRef.current = 0
       deadIdxRef.current = 0
       vulnIdxRef.current = 0
+      if (graphResult.vulnError) {
+        setError(graphResult.vulnError)
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to analyze folder')
     } finally {

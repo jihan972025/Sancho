@@ -534,6 +534,7 @@ export function analyzeOntology(folderPath: string) {
       file: string
       nodeId: string
     }[]
+    vulnError?: string
   }>('/api/ontology/analyze', {
     method: 'POST',
     body: JSON.stringify({ path: folderPath }),
