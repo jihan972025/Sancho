@@ -5,7 +5,7 @@ const features: { id: FeatureId; icon: typeof MessageSquare; label: string; desc
   { id: 'chat', icon: MessageSquare, label: 'Chat', description: 'AI 채팅 인터페이스' },
   { id: 'crypto', icon: CandlestickChart, label: 'Crypto Analysis', description: '암호화폐 분석 대시보드' },
   { id: 'scheduler', icon: Bot, label: 'Agent', description: 'AI 에이전트 & 스케줄러' },
-  { id: 'ontology', icon: Network, label: 'Ontology', description: '코드 온톨로지 시각화' },
+  { id: 'ontology', icon: Network, label: 'Ontology Analysis', description: '코드 온톨로지 시각화' },
   { id: 'p2pchat', icon: Users, label: 'P2P Chat', description: 'P2P 채팅' },
   { id: 'logs', icon: ScrollText, label: 'Logs', description: '시스템 로그 뷰어' },
 ]

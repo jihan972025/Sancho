@@ -3,7 +3,7 @@ import OntologyGraph, { type GraphNode, type GraphEdge, type GraphHandle, type L
 import OntologyFileList from './OntologyFileList'
 import OntologyProperties from './OntologyProperties'
 import { analyzeOntology, listOntologyFiles, getCodePreview } from '../../api/client'
-import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost, RefreshCw, Locate, ShieldAlert } from 'lucide-react'
+import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost, RefreshCw, Locate, ShieldAlert, BookOpen, X } from 'lucide-react'
 
 interface FileEntry {
   path: string
@@ -32,6 +32,7 @@ export default function OntologyPanel() {
   const [hoverInfo, setHoverInfo] = useState<{ node: GraphNode; x: number; y: number; code?: string } | null>(null)
   const hoverTimerRef = useRef<number>(0)
   const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([])
+  const [showDoc, setShowDoc] = useState(false)
 
   // Computed stats
   const cycleCount = useMemo(() => edges.filter(e => e.circular).length, [edges])
@@ -369,8 +370,8 @@ export default function OntologyPanel() {
         {/* Toolbar overlay */}
         {nodes.length > 0 && (
           <>
-            {/* Top-left: refresh */}
-            <div className="absolute top-2 left-2 z-10">
+            {/* Top-left: refresh + doc */}
+            <div className="absolute top-2 left-2 z-10 flex gap-1">
               <button
                 onClick={() => folderPath && loadFolder(folderPath)}
                 disabled={loading}
@@ -379,6 +380,14 @@ export default function OntologyPanel() {
               >
                 <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
                 <span>Refresh</span>
+              </button>
+              <button
+                onClick={() => setShowDoc(true)}
+                className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors"
+                title="Documentation"
+              >
+                <BookOpen size={11} />
+                <span>Doc</span>
               </button>
             </div>
 
@@ -514,6 +523,276 @@ export default function OntologyPanel() {
           />
         </div>
       )}
+
+      {/* Documentation Modal */}
+      {showDoc && <OntologyDocModal onClose={() => setShowDoc(false)} />}
+    </div>
+  )
+}
+
+/* ─── Documentation Modal ─── */
+function OntologyDocModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div
+        className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-[720px] max-h-[85vh] flex flex-col"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-700 shrink-0">
+          <div className="flex items-center gap-2">
+            <BookOpen size={16} className="text-angel-400" />
+            <h2 className="text-sm font-semibold text-white">Ontology Analysis Documentation</h2>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-xs text-slate-300 leading-relaxed">
+          {/* 개요 */}
+          <DocSection title="개요" icon="🔬">
+            <p>
+              Ontology Analysis는 소스 코드의 클래스, 메소드, 함수 간 관계를 시각적으로 분석하는 도구입니다.
+              폴더를 선택하면 코드를 파싱하여 호출 관계, 상속 구조, import 의존성을 그래프로 렌더링합니다.
+              Java, Python, TypeScript, JavaScript, Go, C/C++ 을 지원합니다.
+            </p>
+          </DocSection>
+
+          <div className="border-t border-slate-800" />
+
+          {/* 코드 분석 기능 */}
+          <div className="text-[11px] font-semibold text-angel-400 uppercase tracking-wide">코드 분석</div>
+
+          {/* 1. 순환 참조 감지 */}
+          <DocSection title="순환 참조 감지" icon="🔴">
+            <p>
+              순환 import/호출 관계를 자동 감지합니다. 순환 참조가 발견되면 해당 엣지가 <b className="text-red-400">빨간색</b>으로 하이라이트되고,
+              관련 노드 사이의 연결선이 빨간색 점선으로 표시됩니다.
+            </p>
+            <p className="mt-1">
+              우측 상단의 <b className="text-red-300">cycle</b> 배지를 클릭하면 순환 참조 노드를 순차적으로 탐색할 수 있습니다.
+              노드를 클릭하면 우측 속성창에 Cycle Path(순환 경로)가 BFS 기반으로 표시됩니다.
+            </p>
+            <DocNote>
+              순환 참조의 문제점: 무한 루프 위험, 테스트 어려움, 변경 영향 확산, 빌드 순서 문제, 코드 가독성 저하, 재사용성 감소
+            </DocNote>
+          </DocSection>
+
+          {/* 2. 데드 코드 탐지 */}
+          <DocSection title="데드 코드 탐지" icon="👻">
+            <p>
+              어디에서도 호출/참조되지 않는 메소드/함수를 탐지합니다. Fan-in(incoming 호출 수)이 0인 노드를
+              데드 코드로 판정하여 <b className="text-slate-400">회색, 점선 테두리, 낮은 불투명도</b>로 표시합니다.
+            </p>
+            <p className="mt-1">
+              우측 상단의 <b className="text-slate-400">dead</b> 배지를 클릭하면 데드 코드 노드를 순차 탐색합니다.
+            </p>
+            <DocNote>
+              한계: entry point(main 함수), 이벤트 핸들러, 리플렉션 호출, 외부 API 엔드포인트 등은
+              실제로는 사용되지만 정적 분석에서 데드 코드로 오탐될 수 있습니다.
+            </DocNote>
+          </DocSection>
+
+          {/* 3. 영향도 분석 */}
+          <DocSection title="영향도 분석" icon="⚡">
+            <p>
+              특정 노드를 클릭하면 해당 노드 변경 시 영향 받는 노드들을 <b>BFS 3단계</b>로 탐색하여 하이라이트합니다.
+            </p>
+            <div className="mt-1.5 grid grid-cols-3 gap-1.5">
+              <div className="bg-orange-900/30 rounded p-1.5 text-center">
+                <div className="text-orange-400 font-bold text-[11px]">1차</div>
+                <div className="text-[10px] text-orange-300/70">직접 호출</div>
+              </div>
+              <div className="bg-orange-900/20 rounded p-1.5 text-center">
+                <div className="text-orange-500/70 font-bold text-[11px]">2차</div>
+                <div className="text-[10px] text-orange-400/50">간접 영향</div>
+              </div>
+              <div className="bg-orange-900/10 rounded p-1.5 text-center">
+                <div className="text-orange-600/50 font-bold text-[11px]">3차</div>
+                <div className="text-[10px] text-orange-500/30">파급 영향</div>
+              </div>
+            </div>
+            <p className="mt-1.5">
+              우측 속성창의 Impact Analysis 섹션에서 각 단계별 영향 노드 목록을 확인하고 클릭하여 이동할 수 있습니다.
+            </p>
+          </DocSection>
+
+          {/* 4. 복잡도 메트릭 */}
+          <DocSection title="복잡도 메트릭" icon="📊">
+            <p className="font-medium text-white mb-1">측정 항목</p>
+            <div className="overflow-hidden rounded border border-slate-700">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="bg-slate-800/80">
+                    <th className="px-2 py-1.5 text-left text-slate-400 font-medium">메트릭</th>
+                    <th className="px-2 py-1.5 text-left text-slate-400 font-medium">설명</th>
+                    <th className="px-2 py-1.5 text-left text-slate-400 font-medium">계산 방식</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr><td className="px-2 py-1 text-angel-400">Fan-in</td><td className="px-2 py-1">이 노드를 호출하는 수</td><td className="px-2 py-1 text-slate-400">incoming calls/references 엣지 수</td></tr>
+                  <tr><td className="px-2 py-1 text-angel-400">Fan-out</td><td className="px-2 py-1">이 노드가 호출하는 수</td><td className="px-2 py-1 text-slate-400">outgoing calls/references 엣지 수</td></tr>
+                  <tr><td className="px-2 py-1 text-angel-400">Lines</td><td className="px-2 py-1">메소드 본문 라인 수</td><td className="px-2 py-1 text-slate-400">{'{ } 매칭으로 계산'}</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p className="font-medium text-white mt-3 mb-1">시각적 반영</p>
+            <ul className="space-y-1 ml-1">
+              <li><b className="text-slate-200">노드 크기</b> — 연결 수(connections)에 비례: 연결 많은 노드 → 큰 원, 연결 없는 노드 → 작은 원</li>
+              <li><b className="text-slate-200">노드 색상</b> — Fan-in + Fan-out 합산으로 히트맵:</li>
+            </ul>
+            <div className="ml-3 mt-1 space-y-0.5 text-[10px]">
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-blue-500 shrink-0" /> 낮음 (0~2) → 클러스터 기본 색상</div>
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-orange-500 shrink-0" /> 중간 (3~5) → 주황 쪽으로 블렌딩</div>
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-red-500 shrink-0" /> 높음 (6+) → 빨간/주황 강조</div>
+            </div>
+
+            <p className="font-medium text-white mt-3 mb-1">속성창 표시</p>
+            <pre className="bg-slate-800/60 rounded p-2 text-[10px] font-mono text-slate-400 leading-snug overflow-x-auto">{`┌────────────┬─────────┬────────┐
+│ Connections│ Cluster │ Fan-in │
+│     12     │   #3    │   5    │
+├────────────┼─────────┼────────┤
+│  Fan-out   │  Lines  │        │
+│     7      │   42    │        │
+└────────────┴─────────┴────────┘`}</pre>
+
+            <p className="font-medium text-white mt-3 mb-1">복잡도가 높은 노드의 문제점</p>
+            <ul className="space-y-0.5 ml-1">
+              <li><b className="text-orange-400">Fan-in 높음</b> → 많은 곳에서 의존 → 변경 시 영향 범위 큼</li>
+              <li><b className="text-orange-400">Fan-out 높음</b> → 많은 것에 의존 → 하나 바뀌면 깨질 가능성 높음</li>
+              <li><b className="text-orange-400">Lines 높음</b> → 메소드가 너무 김 → 분리(Extract Method) 검토</li>
+              <li><b className="text-red-400">Fan-in + Fan-out 모두 높음</b> → &quot;God Method&quot; → 리팩토링 최우선 대상</li>
+            </ul>
+
+            <DocNote>
+              활용법: 그래프에서 크고 붉은 노드를 찾으면 → 복잡도 높은 핵심 코드.
+              클릭해서 Fan-in/Fan-out/Lines 수치 확인.
+              Fan-out 10 이상이면 책임 분리, Lines 50 이상이면 메소드 분할 검토.
+            </DocNote>
+          </DocSection>
+
+          {/* 5. 취약점 점검 */}
+          <DocSection title="취약점 점검" icon="🛡️">
+            <p>
+              코드를 regex 패턴으로 스캔하여 보안 취약점을 자동 탐지합니다. 언어별로 적용 가능한 규칙만 실행됩니다.
+            </p>
+            <div className="overflow-hidden rounded border border-slate-700 mt-1.5">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-800/80">
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">Severity</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">Rules</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1">SQL Injection, Command Injection, Unsafe Deserialization</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1">Hardcoded Credentials, eval/exec, XSS</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1">Weak Crypto (MD5/SHA1), XXE, Prototype Pollution</td></tr>
+                  <tr><td className="px-2 py-1 text-blue-400 font-bold">Low</td><td className="px-2 py-1">Hardcoded IP Address</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-1.5">
+              취약점이 있는 노드에는 <b className="text-red-400">빨간 점 인디케이터</b>가 표시됩니다.
+              우측 상단 <b className="text-red-300">vuln</b> 배지 클릭으로 취약 노드를 순차 탐색하고,
+              노드 클릭 시 속성창의 Security Issues 섹션에서 상세 내용을 확인합니다.
+            </p>
+          </DocSection>
+
+          <div className="border-t border-slate-800" />
+
+          {/* 시각화 개선 */}
+          <div className="text-[11px] font-semibold text-angel-400 uppercase tracking-wide">시각화 개선</div>
+
+          {/* 6. 노드 검색 */}
+          <DocSection title="노드 검색" icon="🔍">
+            <p>
+              <b className="text-slate-200">Ctrl+F</b> 또는 우측 하단 검색 버튼을 클릭하면 검색바가 열립니다.
+              클래스명, 메소드명을 입력하면 매칭되는 노드 목록이 표시되고, 클릭 시 해당 노드로 이동합니다.
+            </p>
+          </DocSection>
+
+          {/* 7. 레이아웃 전환 */}
+          <DocSection title="레이아웃 전환" icon="📐">
+            <p>우측 하단의 F/T/R 버튼으로 3가지 레이아웃을 전환합니다:</p>
+            <ul className="mt-1 space-y-0.5 ml-1">
+              <li><b className="text-slate-200">Force (F)</b> — 물리 시뮬레이션 기반. 연결된 노드끼리 가까이, 관련 없는 노드는 멀리 배치</li>
+              <li><b className="text-slate-200">Tree (T)</b> — 좌→우 트리 구조. 호출 깊이에 따라 수평 배치, 하위 트리 크기 기반 수직 배치</li>
+              <li><b className="text-slate-200">Radial (R)</b> — 방사형. 선택 노드를 중심으로 동심원 형태 배치, 노드 수에 따라 동적 반경 조절</li>
+            </ul>
+          </DocSection>
+
+          {/* 8. 미니맵 */}
+          <DocSection title="미니맵" icon="🗺️">
+            <p>
+              캔버스 우하단에 전체 그래프의 축소 뷰가 표시됩니다.
+              파란 사각형이 현재 보이는 영역을 나타내며, <b className="text-slate-200">드래그</b>하여 빠르게 다른 영역으로 이동할 수 있습니다.
+            </p>
+          </DocSection>
+
+          {/* 9. 코드 프리뷰 */}
+          <DocSection title="코드 프리뷰" icon="💻">
+            <p>
+              노드 위에 마우스를 올리면 해당 메소드/함수의 소스 코드 일부가 툴팁으로 표시됩니다.
+              파일명, 라인 번호와 함께 전후 5줄의 코드를 미리 볼 수 있습니다.
+            </p>
+          </DocSection>
+
+          <div className="border-t border-slate-800" />
+
+          {/* 실용 기능 */}
+          <div className="text-[11px] font-semibold text-angel-400 uppercase tracking-wide">실용 기능</div>
+
+          {/* 10. PNG 내보내기 */}
+          <DocSection title="PNG 내보내기" icon="📷">
+            <p>
+              우측 하단 다운로드 버튼을 클릭하면 현재 그래프를 PNG 이미지로 저장합니다.
+              현재 캔버스에 렌더링된 상태 그대로 내보내집니다.
+            </p>
+          </DocSection>
+
+          {/* 11. 상속 트리 뷰 */}
+          <DocSection title="상속 트리 뷰" icon="🌳">
+            <p>
+              우측 하단 GitBranch 버튼을 클릭하면 <b className="text-slate-200">extends/implements</b> 관계만 필터링하여
+              클래스 계층 구조를 시각화합니다. 상속 관계에 관여하는 노드만 표시되어 계층 구조를 명확히 파악할 수 있습니다.
+            </p>
+          </DocSection>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-2.5 border-t border-slate-700 shrink-0 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs rounded transition-colors"
+          >
+            닫기
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DocSection({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="text-sm">{icon}</span>
+        <h3 className="text-[12px] font-semibold text-white">{title}</h3>
+      </div>
+      <div className="ml-5">{children}</div>
+    </div>
+  )
+}
+
+function DocNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-1.5 bg-slate-800/60 border border-slate-700/50 rounded px-2.5 py-1.5 text-[10px] text-slate-400">
+      <span className="text-angel-400 font-medium">Note: </span>{children}
     </div>
   )
 }

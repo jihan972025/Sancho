@@ -10,7 +10,7 @@ const tabs = [
   { id: 'chat', icon: MessageSquare, label: 'Chat' },
   { id: 'crypto', icon: CandlestickChart, label: 'Crypto Analysis' },
   { id: 'scheduler', icon: Bot, label: 'Agent' },
-  { id: 'ontology', icon: Network, label: 'Ontology' },
+  { id: 'ontology', icon: Network, label: 'Ontology Analysis' },
   { id: 'p2pchat', icon: Users, label: 'P2P Chat' },
   { id: 'logs', icon: ScrollText, label: 'Logs' },
   { id: 'settings', icon: Settings, label: 'Settings' },
