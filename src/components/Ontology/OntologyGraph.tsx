@@ -250,6 +250,17 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       adj.get(hovId)?.forEach((id) => connectedToHover.add(id))
     }
 
+    // Determine file-related nodes (file's own nodes + their direct neighbors)
+    const fileRelated = new Set<string>()
+    if (hlFile) {
+      for (const n of ns) {
+        if (n.file === hlFile) {
+          fileRelated.add(n.id)
+          adj.get(n.id)?.forEach((id) => fileRelated.add(id))
+        }
+      }
+    }
+
     // Draw edges
     for (const e of es) {
       const s = nodeMapRef.current.get(e.source)
@@ -261,13 +272,24 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
 
       if (hovId) {
         if (connectedToHover.has(e.source) && connectedToHover.has(e.target)) {
-          // Edge connects to hovered node
           const color = getClusterColor(s.cluster)
           const [r, g, b] = hexToRgb(color)
           ctx.strokeStyle = `rgba(${r},${g},${b},0.6)`
           width = 1.5
         } else {
           ctx.strokeStyle = `rgba(94,94,94,0.06)`
+          width = 0.3
+        }
+      } else if (hlFile) {
+        const srcInFile = fileRelated.has(e.source) && (nodeMapRef.current.get(e.source)?.file === hlFile)
+        const tgtInFile = fileRelated.has(e.target) && (nodeMapRef.current.get(e.target)?.file === hlFile)
+        if (srcInFile || tgtInFile) {
+          const color = getClusterColor(s.cluster)
+          const [r, g, b] = hexToRgb(color)
+          ctx.strokeStyle = `rgba(${r},${g},${b},0.5)`
+          width = 1.2
+        } else {
+          ctx.strokeStyle = `rgba(94,94,94,0.04)`
           width = 0.3
         }
       } else {
@@ -296,9 +318,16 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         alpha = 0.15
       }
 
-      // Highlight for file filter
-      if (hlFile && n.file !== hlFile && n.file !== '(external)') {
-        alpha = Math.min(alpha, 0.2)
+      // Highlight for file filter: file's nodes full, neighbors slightly dim, rest very dim
+      if (hlFile) {
+        if (n.file === hlFile) {
+          alpha = 1
+          glowRadius = radius + 4
+        } else if (fileRelated.has(n.id)) {
+          alpha = 0.7
+        } else {
+          alpha = 0.08
+        }
       }
 
       // Glow for hovered node
