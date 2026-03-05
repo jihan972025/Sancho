@@ -17,7 +17,12 @@ const tabs = [
 ]
 
 export default function Sidebar({ activeTab, onTabChange }: Props) {
-  const isVisible = useFeatureStore((s) => s.isVisible)
+  const visibility = useFeatureStore((s) => s.visibility)
+
+  const isVisible = (id: string) => {
+    if (id === 'settings') return true
+    return visibility[id as keyof typeof visibility] ?? true
+  }
 
   return (
     <div className="w-16 bg-slate-950 border-r border-slate-800 flex flex-col items-center py-4 gap-2">
