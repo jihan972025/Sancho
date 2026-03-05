@@ -391,11 +391,11 @@ export default function OntologyPanel() {
             {/* Bottom-right: controls */}
             <div className="absolute bottom-4 right-4 flex flex-col gap-1 z-10">
               {/* Layout selector */}
-              <div className="flex flex-col gap-0.5 mb-1">
+              <div className="flex flex-col gap-1 mb-1">
                 {(['force', 'tree', 'radial'] as const).map(l => (
                   <button
                     key={l}
-                    className={`px-1.5 py-0.5 text-[9px] rounded ${
+                    className={`w-7 h-7 text-[9px] rounded flex items-center justify-center ${
                       (inheritanceMode ? 'tree' : layout) === l
                         ? 'bg-angel-600 text-white'
                         : 'bg-slate-800/80 text-slate-400 hover:text-white'
@@ -403,7 +403,7 @@ export default function OntologyPanel() {
                     onClick={() => { setLayout(l); setInheritanceMode(false) }}
                     title={`${l} layout`}
                   >
-                    {l[0].toUpperCase() + l.slice(1)}
+                    {l[0].toUpperCase()}
                   </button>
                 ))}
               </div>
