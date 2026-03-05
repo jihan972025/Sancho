@@ -187,19 +187,42 @@ function computeRadialLayout(nodes: GraphNode[]) {
   }
 
   const clusterKeys = [...clusters.keys()].sort()
-  const sectorAngle = (2 * Math.PI) / Math.max(1, clusterKeys.length)
+  const numClusters = Math.max(1, clusterKeys.length)
+  const sectorAngle = (2 * Math.PI) / numClusters
+  const sectorPad = sectorAngle * 0.1  // 10% gap between sectors
+  const usableAngle = sectorAngle - sectorPad
+
+  // Dynamic radius: scale with total node count for more breathing room
+  const baseRadius = Math.max(180, nodes.length * 6)
+  const ringGap = Math.max(50, 30 + nodes.length * 0.5)
+  const MIN_ARC_DIST = 40 // minimum arc distance between nodes on same ring
 
   clusterKeys.forEach((cid, ci) => {
     const clusterNodes = clusters.get(cid)!
-    const baseAngle = ci * sectorAngle
-    clusterNodes.forEach((n, ni) => {
-      const ring = 100 + Math.floor(ni / 8) * 60
-      const offset = (ni % 8) * (sectorAngle / Math.max(1, Math.min(8, clusterNodes.length)))
-      n.x = Math.cos(baseAngle + offset) * ring
-      n.y = Math.sin(baseAngle + offset) * ring
-      n.vx = 0
-      n.vy = 0
-    })
+    const sectorCenter = ci * sectorAngle + sectorPad / 2
+
+    // Distribute nodes across rings so they don't overlap
+    let ringIdx = 0
+    let placed = 0
+    while (placed < clusterNodes.length) {
+      const r = baseRadius + ringIdx * ringGap
+      // How many nodes fit on this ring's arc with MIN_ARC_DIST spacing?
+      const arcLen = r * usableAngle
+      const perRing = Math.max(1, Math.floor(arcLen / MIN_ARC_DIST))
+      const count = Math.min(perRing, clusterNodes.length - placed)
+      const step = usableAngle / Math.max(1, count)
+
+      for (let i = 0; i < count; i++) {
+        const n = clusterNodes[placed + i]
+        const angle = sectorCenter + (i + 0.5) * step
+        n.x = Math.cos(angle) * r
+        n.y = Math.sin(angle) * r
+        n.vx = 0
+        n.vy = 0
+      }
+      placed += count
+      ringIdx++
+    }
   })
 }
 
