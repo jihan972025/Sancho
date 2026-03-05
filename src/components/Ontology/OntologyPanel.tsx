@@ -396,16 +396,18 @@ export default function OntologyPanel() {
 
             {/* Top-right: badges */}
             <div className="absolute top-2 right-2 flex gap-1.5 z-10">
-              {cycleCount > 0 && (
-                <button
-                  onClick={handleCycleBadgeClick}
-                  className="flex items-center gap-1 bg-red-900/80 hover:bg-red-800/90 text-red-300 text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
-                  title="Click to navigate circular dependencies"
-                >
-                  <AlertTriangle size={11} />
-                  <span>{cycleCount} cycle{cycleCount > 1 ? 's' : ''}</span>
-                </button>
-              )}
+              <button
+                onClick={handleCycleBadgeClick}
+                className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors ${
+                  cycleCount > 0
+                    ? 'bg-red-900/80 hover:bg-red-800/90 text-red-300 cursor-pointer'
+                    : 'bg-slate-800/60 text-slate-600 cursor-default'
+                }`}
+                title={cycleCount > 0 ? 'Click to navigate circular dependencies' : 'No circular dependencies detected'}
+              >
+                <AlertTriangle size={11} />
+                <span>{cycleCount} cycle{cycleCount !== 1 ? 's' : ''}</span>
+              </button>
               <button
                 onClick={handleDeadBadgeClick}
                 className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors ${
