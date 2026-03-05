@@ -680,7 +680,8 @@ function OntologyDocModal({ onClose }: { onClose: () => void }) {
           {/* 5. 취약점 점검 */}
           <DocSection title="취약점 점검" icon="🛡️">
             <p>
-              코드를 regex 패턴으로 스캔하여 보안 취약점을 자동 탐지합니다. 언어별로 적용 가능한 규칙만 실행됩니다.
+              코드를 regex 패턴으로 스캔하여 보안 취약점을 자동 탐지합니다. 총 <b className="text-white">35개 규칙</b> (Java 25개, Python 4개, JS/TS 4개, 공통 2개).
+              언어별로 적용 가능한 규칙만 실행됩니다.
             </p>
 
             <p className="font-medium text-white mt-3 mb-1">Severity 요약</p>
@@ -689,177 +690,175 @@ function OntologyDocModal({ onClose }: { onClose: () => void }) {
                 <thead>
                   <tr className="bg-slate-800/80">
                     <th className="px-2 py-1 text-left text-slate-400 font-medium">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">Rules</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">설명</th>
+                    <th className="px-2 py-1 text-right text-slate-400 font-medium">규칙 수</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1">SQL Injection, Command Injection, Unsafe Deserialization</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1">Hardcoded Credentials, eval/exec, XSS</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1">Weak Crypto (MD5/SHA1), XXE, Prototype Pollution</td></tr>
-                  <tr><td className="px-2 py-1 text-blue-400 font-bold">Low</td><td className="px-2 py-1">Hardcoded IP Address</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1">원격 코드 실행(RCE) 또는 데이터 완전 탈취 가능</td><td className="px-2 py-1 text-right text-slate-400">11</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1">파일 시스템 접근, 데이터 유출, 보안 우회 가능</td><td className="px-2 py-1 text-right text-slate-400">12</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1">보안 약점이나 추가 조건 필요한 취약점</td><td className="px-2 py-1 text-right text-slate-400">11</td></tr>
+                  <tr><td className="px-2 py-1 text-blue-400 font-bold">Low</td><td className="px-2 py-1">정보 노출 또는 보안 모범 사례 미준수</td><td className="px-2 py-1 text-right text-slate-400">1</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <p className="font-medium text-white mt-3 mb-1">상세 점검 항목 (15개 규칙)</p>
+            {/* Java 25개 */}
+            <p className="font-medium text-white mt-4 mb-1">☕ Java 상세 점검 항목 (25개)</p>
+
+            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ Injection 공격 (7개)</p>
             <div className="overflow-hidden rounded border border-slate-700">
               <table className="w-full text-[10px]">
                 <thead>
                   <tr className="bg-slate-800/80">
                     <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-28">Rule</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
                     <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-20">언어</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {/* Java */}
-                  <tr>
-                    <td className="px-2 py-1 text-red-400 font-bold">Critical</td>
-                    <td className="px-2 py-1 text-slate-200">SQL Injection</td>
-                    <td className="px-2 py-1 text-slate-400">문자열 연결로 SQL 쿼리 생성 (SELECT/INSERT/UPDATE/DELETE + 변수 결합)</td>
-                    <td className="px-2 py-1 text-slate-500">Java</td>
-                  </tr>
-                  <tr>
-                    <td className="px-2 py-1 text-red-400 font-bold">Critical</td>
-                    <td className="px-2 py-1 text-slate-200">Command Injection</td>
-                    <td className="px-2 py-1 text-slate-400">Runtime.exec() 또는 ProcessBuilder로 외부 명령 실행</td>
-                    <td className="px-2 py-1 text-slate-500">Java</td>
-                  </tr>
-                  <tr>
-                    <td className="px-2 py-1 text-red-400 font-bold">Critical</td>
-                    <td className="px-2 py-1 text-slate-200">Unsafe Deserialization</td>
-                    <td className="px-2 py-1 text-slate-400">ObjectInputStream.readObject()로 신뢰할 수 없는 객체 역직렬화</td>
-                    <td className="px-2 py-1 text-slate-500">Java</td>
-                  </tr>
-                  <tr>
-                    <td className="px-2 py-1 text-yellow-400 font-bold">Medium</td>
-                    <td className="px-2 py-1 text-slate-200">Weak Crypto</td>
-                    <td className="px-2 py-1 text-slate-400">MD5, SHA-1, DES 등 취약한 암호화 알고리즘 사용</td>
-                    <td className="px-2 py-1 text-slate-500">Java</td>
-                  </tr>
-                  <tr>
-                    <td className="px-2 py-1 text-yellow-400 font-bold">Medium</td>
-                    <td className="px-2 py-1 text-slate-200">XXE</td>
-                    <td className="px-2 py-1 text-slate-400">외부 엔티티 비활성화 없이 XML 파싱 (DocumentBuilderFactory)</td>
-                    <td className="px-2 py-1 text-slate-500">Java</td>
-                  </tr>
-                  {/* Python */}
-                  <tr className="bg-slate-800/30">
-                    <td className="px-2 py-1 text-red-400 font-bold">Critical</td>
-                    <td className="px-2 py-1 text-slate-200">SQL Injection</td>
-                    <td className="px-2 py-1 text-slate-400">execute()에서 f-string, %, .format()으로 SQL 문자열 포매팅</td>
-                    <td className="px-2 py-1 text-slate-500">Python</td>
-                  </tr>
-                  <tr className="bg-slate-800/30">
-                    <td className="px-2 py-1 text-red-400 font-bold">Critical</td>
-                    <td className="px-2 py-1 text-slate-200">Command Injection</td>
-                    <td className="px-2 py-1 text-slate-400">os.system() 또는 subprocess에서 shell=True 사용</td>
-                    <td className="px-2 py-1 text-slate-500">Python</td>
-                  </tr>
-                  <tr className="bg-slate-800/30">
-                    <td className="px-2 py-1 text-red-400 font-bold">Critical</td>
-                    <td className="px-2 py-1 text-slate-200">Unsafe Deserialization</td>
-                    <td className="px-2 py-1 text-slate-400">pickle.load(s) 또는 yaml.load()에서 SafeLoader 미사용</td>
-                    <td className="px-2 py-1 text-slate-500">Python</td>
-                  </tr>
-                  <tr className="bg-slate-800/30">
-                    <td className="px-2 py-1 text-orange-400 font-bold">High</td>
-                    <td className="px-2 py-1 text-slate-200">eval/exec</td>
-                    <td className="px-2 py-1 text-slate-400">eval() 또는 exec()로 임의 코드 실행 가능</td>
-                    <td className="px-2 py-1 text-slate-500">Python</td>
-                  </tr>
-                  {/* JS/TS */}
-                  <tr>
-                    <td className="px-2 py-1 text-orange-400 font-bold">High</td>
-                    <td className="px-2 py-1 text-slate-200">XSS</td>
-                    <td className="px-2 py-1 text-slate-400">innerHTML, document.write(), dangerouslySetInnerHTML 사용</td>
-                    <td className="px-2 py-1 text-slate-500">JS/TS</td>
-                  </tr>
-                  <tr>
-                    <td className="px-2 py-1 text-red-400 font-bold">Critical</td>
-                    <td className="px-2 py-1 text-slate-200">Command Injection</td>
-                    <td className="px-2 py-1 text-slate-400">child_process.exec()로 외부 명령 실행</td>
-                    <td className="px-2 py-1 text-slate-500">JS/TS</td>
-                  </tr>
-                  <tr>
-                    <td className="px-2 py-1 text-orange-400 font-bold">High</td>
-                    <td className="px-2 py-1 text-slate-200">eval/Function</td>
-                    <td className="px-2 py-1 text-slate-400">eval() 또는 new Function()으로 임의 코드 실행 가능</td>
-                    <td className="px-2 py-1 text-slate-500">JS/TS</td>
-                  </tr>
-                  <tr>
-                    <td className="px-2 py-1 text-yellow-400 font-bold">Medium</td>
-                    <td className="px-2 py-1 text-slate-200">Prototype Pollution</td>
-                    <td className="px-2 py-1 text-slate-400">__proto__ 직접 접근으로 프로토타입 오염 가능</td>
-                    <td className="px-2 py-1 text-slate-500">JS/TS</td>
-                  </tr>
-                  {/* All languages */}
-                  <tr className="bg-slate-800/30">
-                    <td className="px-2 py-1 text-orange-400 font-bold">High</td>
-                    <td className="px-2 py-1 text-slate-200">Hardcoded Credential</td>
-                    <td className="px-2 py-1 text-slate-400">소스코드에 password, api_key, secret, token 등 하드코딩</td>
-                    <td className="px-2 py-1 text-slate-500">전체</td>
-                  </tr>
-                  <tr className="bg-slate-800/30">
-                    <td className="px-2 py-1 text-blue-400 font-bold">Low</td>
-                    <td className="px-2 py-1 text-slate-200">Hardcoded IP</td>
-                    <td className="px-2 py-1 text-slate-400">소스코드에 IP 주소 하드코딩 (예: &quot;192.168.1.1&quot;)</td>
-                    <td className="px-2 py-1 text-slate-500">전체</td>
-                  </tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">SQL Injection</td><td className="px-2 py-1 text-slate-400">문자열 연결로 SQL 쿼리 생성 (SELECT/INSERT/UPDATE/DELETE + 변수 결합)</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Command Injection</td><td className="px-2 py-1 text-slate-400">Runtime.exec() 또는 ProcessBuilder로 외부 명령 실행</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">JNDI Injection</td><td className="px-2 py-1 text-slate-400">InitialContext.lookup()에 동적 입력 (Log4Shell 계열)</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">EL Injection</td><td className="px-2 py-1 text-slate-400">SpEL parseExpression()에 동적 입력 → 임의 메소드 호출</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Template Injection</td><td className="px-2 py-1 text-slate-400">Velocity/FreeMarker/Thymeleaf 동적 템플릿 평가 → RCE</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">LDAP Injection</td><td className="px-2 py-1 text-slate-400">LDAP 검색 필터에 문자열 연결로 쿼리 조작</td></tr>
+                  <tr><td className="px-2 py-1 text-medium font-bold text-yellow-400">Medium</td><td className="px-2 py-1 text-slate-200">Log Injection</td><td className="px-2 py-1 text-slate-400">logger 호출에 request.getParameter 직접 연결 → 로그 위조</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <p className="font-medium text-white mt-3 mb-1">언어별 적용 규칙</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              <div className="bg-slate-800/40 rounded p-2">
-                <div className="text-[11px] font-semibold text-orange-400 mb-1">Java (5개)</div>
-                <div className="text-[10px] text-slate-400 space-y-0.5">
-                  <div>• SQL Injection</div>
-                  <div>• Command Injection</div>
-                  <div>• Unsafe Deserialization</div>
-                  <div>• Weak Crypto</div>
-                  <div>• XXE</div>
-                </div>
-              </div>
-              <div className="bg-slate-800/40 rounded p-2">
-                <div className="text-[11px] font-semibold text-blue-400 mb-1">Python (4개)</div>
-                <div className="text-[10px] text-slate-400 space-y-0.5">
-                  <div>• SQL Injection</div>
-                  <div>• Command Injection</div>
-                  <div>• Unsafe Deserialization</div>
-                  <div>• eval/exec</div>
-                </div>
-              </div>
-              <div className="bg-slate-800/40 rounded p-2">
-                <div className="text-[11px] font-semibold text-yellow-400 mb-1">JS/TS (4개)</div>
-                <div className="text-[10px] text-slate-400 space-y-0.5">
-                  <div>• XSS</div>
-                  <div>• Command Injection</div>
-                  <div>• eval/Function</div>
-                  <div>• Prototype Pollution</div>
-                </div>
-              </div>
-              <div className="bg-slate-800/40 rounded p-2">
-                <div className="text-[11px] font-semibold text-green-400 mb-1">전체 언어 (2개)</div>
-                <div className="text-[10px] text-slate-400 space-y-0.5">
-                  <div>• Hardcoded Credential</div>
-                  <div>• Hardcoded IP</div>
-                </div>
-              </div>
+            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 역직렬화 &amp; 리플렉션 (4개)</p>
+            <div className="overflow-hidden rounded border border-slate-700">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-800/80">
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Unsafe Deserialization</td><td className="px-2 py-1 text-slate-400">ObjectInputStream.readObject()로 신뢰 불가 객체 역직렬화</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Reflection Abuse</td><td className="px-2 py-1 text-slate-400">Class.forName()에 동적 입력 → 임의 클래스 로드</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Unsafe Reflection</td><td className="px-2 py-1 text-slate-400">getMethod()에 동적 입력 후 invoke() → 임의 메소드 실행</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Insecure File Upload</td><td className="px-2 py-1 text-slate-400">MultipartFile 원본 파일명으로 FileOutputStream → 웹쉘 업로드</td></tr>
+                </tbody>
+              </table>
             </div>
 
-            <p className="mt-2">
+            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 암호화 &amp; 인증 (5개)</p>
+            <div className="overflow-hidden rounded border border-slate-700">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-800/80">
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Hardcoded Encryption Key</td><td className="px-2 py-1 text-slate-400">SecretKeySpec에 하드코딩된 키 → 암호화 무효</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Null Cipher</td><td className="px-2 py-1 text-slate-400">NullCipher 사용 → 암호화 없이 평문 전송</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Insecure TLS</td><td className="px-2 py-1 text-slate-400">SSLContext에 SSL/TLSv1.0/1.1 또는 TrustManager/HostnameVerifier 우회</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Weak Crypto</td><td className="px-2 py-1 text-slate-400">MD5, SHA-1, DES 등 취약한 암호화 알고리즘 사용</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Insecure Random</td><td className="px-2 py-1 text-slate-400">java.util.Random 사용 (SecureRandom 대신) → 예측 가능한 난수</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 웹 보안 (5개)</p>
+            <div className="overflow-hidden rounded border border-slate-700">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-800/80">
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">SSRF</td><td className="px-2 py-1 text-slate-400">new URL()에 사용자 입력 → 내부 네트워크 요청 위조</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Session Fixation</td><td className="px-2 py-1 text-slate-400">인증 후 세션 무효화 없이 setAttribute → 세션 고정 공격</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Open Redirect</td><td className="px-2 py-1 text-slate-400">sendRedirect/forward에 사용자 입력 → 피싱 사이트 리다이렉트</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">CSRF Disabled</td><td className="px-2 py-1 text-slate-400">Spring Security csrf().disable() → CSRF 보호 해제</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Insecure Cookie</td><td className="px-2 py-1 text-slate-400">Cookie에 Secure/HttpOnly 미설정 → XSS 탈취 가능</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 파일 &amp; 기타 (4개)</p>
+            <div className="overflow-hidden rounded border border-slate-700">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-800/80">
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Path Traversal</td><td className="px-2 py-1 text-slate-400">new File()/Paths.get()에 사용자 입력 → ../../ 경로 탈출</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">XXE</td><td className="px-2 py-1 text-slate-400">DocumentBuilderFactory에 외부 엔티티 비활성화 없이 XML 파싱</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Race Condition</td><td className="px-2 py-1 text-slate-400">File.exists() 후 파일 조작 (TOCTOU) → 경쟁 상태</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Unvalidated Redirect</td><td className="px-2 py-1 text-slate-400">response.sendRedirect(request.getParameter) → 검증 없는 리다이렉트</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Python / JS/TS / 전체 */}
+            <p className="font-medium text-white mt-4 mb-1">🐍 Python / 🌐 JS/TS / 🔧 공통 (10개)</p>
+            <div className="overflow-hidden rounded border border-slate-700">
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="bg-slate-800/80">
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">언어</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800">
+                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">SQL Injection</td><td className="px-2 py-1 text-slate-400">execute()에서 f-string, %, .format()으로 SQL 포매팅</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
+                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Command Injection</td><td className="px-2 py-1 text-slate-400">os.system() 또는 subprocess(shell=True)</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
+                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Unsafe Deserialization</td><td className="px-2 py-1 text-slate-400">pickle.load(s) / yaml.load(SafeLoader 미사용)</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
+                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">eval/exec</td><td className="px-2 py-1 text-slate-400">eval() 또는 exec()로 임의 코드 실행</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">XSS</td><td className="px-2 py-1 text-slate-400">innerHTML, document.write(), dangerouslySetInnerHTML</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Command Injection</td><td className="px-2 py-1 text-slate-400">child_process.exec()로 외부 명령 실행</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">eval/Function</td><td className="px-2 py-1 text-slate-400">eval() 또는 new Function()으로 임의 코드 실행</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Prototype Pollution</td><td className="px-2 py-1 text-slate-400">__proto__ 직접 접근으로 프로토타입 오염</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
+                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Hardcoded Credential</td><td className="px-2 py-1 text-slate-400">password, api_key, secret, token 등 하드코딩</td><td className="px-2 py-1 text-slate-500">전체</td></tr>
+                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-blue-400 font-bold">Low</td><td className="px-2 py-1 text-slate-200">Hardcoded IP</td><td className="px-2 py-1 text-slate-400">소스코드에 IP 주소 하드코딩</td><td className="px-2 py-1 text-slate-500">전체</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p className="font-medium text-white mt-4 mb-1">언어별 규칙 수</p>
+            <div className="grid grid-cols-3 gap-1.5">
+              <div className="bg-slate-800/40 rounded p-2 text-center">
+                <div className="text-[18px] font-bold text-orange-400">25</div>
+                <div className="text-[10px] text-slate-400">Java</div>
+              </div>
+              <div className="bg-slate-800/40 rounded p-2 text-center">
+                <div className="text-[18px] font-bold text-blue-400">4</div>
+                <div className="text-[10px] text-slate-400">Python</div>
+              </div>
+              <div className="bg-slate-800/40 rounded p-2 text-center">
+                <div className="text-[18px] font-bold text-yellow-400">4</div>
+                <div className="text-[10px] text-slate-400">JS/TS</div>
+              </div>
+            </div>
+            <div className="text-[10px] text-slate-500 text-center mt-1">+ 공통 2개 (Hardcoded Credential, Hardcoded IP) = 총 35개</div>
+
+            <p className="mt-3">
               취약점이 있는 노드에는 <b className="text-red-400">빨간 점 인디케이터</b>가 표시됩니다.
               우측 상단 <b className="text-red-300">vuln</b> 배지 클릭으로 취약 노드를 순차 탐색하고,
               노드 클릭 시 속성창의 Security Issues 섹션에서 상세 내용을 확인합니다.
             </p>
 
             <DocNote>
-              한계: regex 기반 정적 분석이므로 복잡한 데이터 흐름 추적은 불가합니다.
-              문자열 변수에 저장된 후 사용되는 경우, 동적으로 생성되는 쿼리, 간접 호출 등은 탐지되지 않을 수 있습니다.
-              오탐(false positive)이 발생할 수 있으며, 실제 보안 점검 시에는 전문 SAST 도구와 병행 사용을 권장합니다.
+              한계: regex 기반 정적 분석이므로 복잡한 데이터 흐름 추적(taint analysis)은 불가합니다.
+              오탐(false positive)이 발생할 수 있으며, 실제 보안 점검 시에는 전문 SAST 도구(SonarQube, Fortify 등)와 병행 사용을 권장합니다.
             </DocNote>
           </DocSection>
 
