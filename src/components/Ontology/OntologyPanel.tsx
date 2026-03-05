@@ -3,7 +3,7 @@ import OntologyGraph, { type GraphNode, type GraphEdge, type GraphHandle, type L
 import OntologyFileList from './OntologyFileList'
 import OntologyProperties from './OntologyProperties'
 import { analyzeOntology, listOntologyFiles, getCodePreview } from '../../api/client'
-import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost, RefreshCw } from 'lucide-react'
+import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost, RefreshCw, Locate } from 'lucide-react'
 
 interface FileEntry {
   path: string
@@ -451,6 +451,17 @@ export default function OntologyPanel() {
                 onClick={() => graphRef.current?.zoomOut()}
               >
                 <ZoomOut size={14} />
+              </button>
+              <button
+                className={`w-7 h-7 rounded flex items-center justify-center ${
+                  selectedNode
+                    ? 'bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer'
+                    : 'bg-slate-800/40 text-slate-600 cursor-default'
+                }`}
+                title={selectedNode ? `Focus on ${selectedNode.label}` : 'Select a node first'}
+                onClick={() => selectedNode && graphRef.current?.focusOnNode(selectedNode.id)}
+              >
+                <Locate size={14} />
               </button>
             </div>
           </>
