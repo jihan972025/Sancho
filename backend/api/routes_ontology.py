@@ -1,9 +1,15 @@
+import asyncio
+import json
+import logging
 import os
 import re
+import shutil
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/ontology", tags=["ontology"])
 
@@ -422,207 +428,85 @@ def _detect_dead_code(nodes: dict, edges: list) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Security vulnerability detection (regex-based)
+# Security vulnerability detection (Semgrep AST-based SAST)
 # ---------------------------------------------------------------------------
 
-_VULN_RULES: list[tuple[str, str, str, set, re.Pattern]] = []
+_SEMGREP_SEVERITY_MAP = {
+    "ERROR": "critical",
+    "WARNING": "high",
+    "INFO": "medium",
+}
 
 
-def _add_rule(rule_id: str, severity: str, message: str, langs: set, pattern: str, flags: int = 0):
-    _VULN_RULES.append((rule_id, severity, message, langs, re.compile(pattern, flags)))
+async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
+    """Run semgrep scan and return parsed JSON output.
+
+    Raises RuntimeError if semgrep is not installed or the scan fails.
+    """
+    semgrep_bin = shutil.which("semgrep")
+    if semgrep_bin is None:
+        raise RuntimeError(
+            "Semgrep is not installed. "
+            "Install it with: pip install semgrep\n"
+            "Then restart the application."
+        )
+
+    cmd = [
+        semgrep_bin, "scan",
+        "--config", "auto",
+        "--json",
+        "--timeout", "10",
+        "--exclude", "node_modules",
+        "--exclude", ".git",
+        "--exclude", "__pycache__",
+        "--exclude", "venv",
+        "--exclude", ".venv",
+        "--exclude", "dist",
+        "--exclude", "build",
+        "--exclude", "target",
+        scan_path,
+    ]
+
+    logger.info("semgrep: %s", " ".join(cmd))
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await asyncio.wait_for(
+            proc.communicate(), timeout=timeout
+        )
+    except asyncio.TimeoutError:
+        proc.kill()
+        raise RuntimeError(f"Semgrep scan timed out after {timeout}s")
+
+    out = stdout.decode("utf-8", errors="replace")
+    err = stderr.decode("utf-8", errors="replace").strip()
+
+    # Semgrep exits with 0 (no findings) or 1 (findings found) — both OK
+    if proc.returncode not in (0, 1):
+        raise RuntimeError(
+            f"Semgrep scan failed (exit code {proc.returncode}): {err or out}"
+        )
+
+    if err:
+        logger.debug("semgrep stderr: %s", err[:500])
+
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"Failed to parse Semgrep output: {e}")
 
 
-# Java
-_add_rule("sql-injection", "critical",
-    "Potential SQL injection via string concatenation",
-    {".java"},
-    r"""(?:"|')\s*(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\s+.*?\+\s*\w+""",
-    re.IGNORECASE)
-
-_add_rule("command-injection", "critical",
-    "Potential command injection via Runtime.exec() or ProcessBuilder",
-    {".java"},
-    r"""Runtime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*exec\s*\(|new\s+ProcessBuilder\s*\(""")
-
-_add_rule("unsafe-deserialization", "critical",
-    "Unsafe deserialization via ObjectInputStream.readObject()",
-    {".java"},
-    r"""ObjectInputStream.*?\.\s*readObject\s*\(""")
-
-_add_rule("weak-crypto", "medium",
-    "Use of weak cryptographic algorithm (MD5/SHA1/DES)",
-    {".java"},
-    r"""MessageDigest\s*\.\s*getInstance\s*\(\s*["'](?:MD5|SHA-?1|DES)["']""",
-    re.IGNORECASE)
-
-_add_rule("xxe", "medium",
-    "XML parsing without disabling external entities (potential XXE)",
-    {".java"},
-    r"""DocumentBuilderFactory\s*\.\s*newInstance\s*\(""")
-
-_add_rule("path-traversal", "high",
-    "Potential path traversal via File or Paths.get with user-controlled input",
-    {".java"},
-    r"""(?:new\s+File|Paths\s*\.\s*get)\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter|params\s*\.\s*get|input|userInput|fileName|filePath|path\s*\+)""")
-
-_add_rule("ldap-injection", "high",
-    "Potential LDAP injection via string concatenation in search filter",
-    {".java"},
-    r"""\.search\s*\([^)]*["']\s*\(\s*\w+\s*=\s*["']\s*\+""")
-
-_add_rule("ssrf", "high",
-    "Potential SSRF via URL connection with user-controlled input",
-    {".java"},
-    r"""new\s+URL\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter|url|uri|endpoint|target)\s*[)+]""")
-
-_add_rule("log-injection", "medium",
-    "Potential log injection via string concatenation in logger call",
-    {".java"},
-    r"""(?:logger|log|LOG|LOGGER)\s*\.\s*(?:info|debug|warn|error|trace|fatal)\s*\(\s*["'].*?\+\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter)""")
-
-_add_rule("insecure-random", "medium",
-    "Use of java.util.Random instead of SecureRandom for potentially security-sensitive operation",
-    {".java"},
-    r"""new\s+Random\s*\(\s*\)|java\s*\.\s*util\s*\.\s*Random""")
-
-_add_rule("jndi-injection", "critical",
-    "Potential JNDI injection via InitialContext.lookup with dynamic input",
-    {".java"},
-    r"""(?:InitialContext|Context)\s*\(?\s*\)?\s*\.?\s*lookup\s*\(\s*(?!["'][a-zA-Z]+:[a-zA-Z])""")
-
-_add_rule("open-redirect", "medium",
-    "Potential open redirect via sendRedirect or forward with user-controlled input",
-    {".java"},
-    r"""(?:sendRedirect|forward)\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter|url|redirect|returnUrl|next|target|destination)""",
-    re.IGNORECASE)
-
-_add_rule("insecure-file-upload", "high",
-    "File upload without proper validation of content type or extension",
-    {".java"},
-    r"""new\s+FileOutputStream\s*\(\s*.*?(?:getOriginalFilename|getSubmittedFileName)""")
-
-_add_rule("reflection-abuse", "high",
-    "Dynamic class loading via Class.forName() with potentially user-controlled input",
-    {".java"},
-    r"""Class\s*\.\s*forName\s*\(\s*(?!["'])""")
-
-_add_rule("session-fixation", "high",
-    "Potential session fixation - session used without invalidation after authentication",
-    {".java"},
-    r"""request\s*\.\s*getSession\s*\(\s*(?:true\s*)?\)[\s\S]{0,200}setAttribute\s*\(\s*["'](?:user|auth|login|role|principal)""")
-
-_add_rule("csrf-disabled", "medium",
-    "CSRF protection explicitly disabled in Spring Security configuration",
-    {".java"},
-    r"""csrf\s*\(\s*\)\s*\.\s*disable\s*\(\s*\)|csrf\s*\(\s*(?:AbstractHttpConfigurer|Customizer)\s*::\s*disable\s*\)""")
-
-_add_rule("insecure-cookie", "medium",
-    "Cookie created without Secure and/or HttpOnly flags",
-    {".java"},
-    r"""new\s+Cookie\s*\(\s*["'][^"']+["']\s*,\s*[^)]+\)(?![\s\S]{0,200}(?:setSecure\s*\(\s*true|setHttpOnly\s*\(\s*true))""")
-
-_add_rule("hardcoded-encryption-key", "critical",
-    "Hardcoded encryption key in SecretKeySpec or Cipher initialization",
-    {".java"},
-    r"""new\s+SecretKeySpec\s*\(\s*(?:["'][^"']+["']\.getBytes|new\s+byte\s*\[\s*\]\s*\{)""")
-
-_add_rule("insecure-tls", "high",
-    "Insecure SSL/TLS protocol version or disabled certificate verification",
-    {".java"},
-    r"""SSLContext\s*\.\s*getInstance\s*\(\s*["'](?:SSL|TLS|TLSv1(?:\.0|\.1)?)["']\)|HostnameVerifier.*?return\s+true|setHostnameVerifier\s*\(\s*(?:SSLConnectionSocketFactory\s*\.\s*ALLOW_ALL|NoopHostnameVerifier|ALLOW_ALL)""")
-
-_add_rule("el-injection", "critical",
-    "Potential Spring Expression Language (SpEL) injection via dynamic expression parsing",
-    {".java"},
-    r"""(?:SpelExpressionParser|ExpressionParser)\s*(?:\(\s*\))?\s*\.?\s*parseExpression\s*\(\s*(?!["'])""")
-
-_add_rule("template-injection", "critical",
-    "Potential server-side template injection via dynamic template evaluation",
-    {".java"},
-    r"""Velocity\s*\.\s*evaluate\s*\(|VelocityEngine\s*.*?\.(?:evaluate|mergeTemplate)\s*\(|freemarker\s*.*?\.process\s*\(|\.processTemplateIntoString\s*\(""",
-    re.IGNORECASE)
-
-_add_rule("race-condition", "medium",
-    "Potential race condition in check-then-act pattern on file (TOCTOU)",
-    {".java"},
-    r"""\.exists\s*\(\s*\)[\s\S]{0,100}(?:\.createNewFile|\.mkdir|\.delete|new\s+FileOutputStream|new\s+FileWriter|Files\s*\.\s*write)""")
-
-_add_rule("null-cipher", "critical",
-    "Use of NullCipher provides no encryption",
-    {".java"},
-    r"""new\s+NullCipher\s*\(""")
-
-_add_rule("unsafe-reflection", "high",
-    "Reflective method invocation with potentially user-controlled method name",
-    {".java"},
-    r"""(?:getMethod|getDeclaredMethod)\s*\(\s*(?!["']).*?\.\s*invoke\s*\(""",
-    re.DOTALL)
-
-_add_rule("unvalidated-redirect", "medium",
-    "URL redirect using request parameter without validation",
-    {".java"},
-    r"""(?:response\s*\.\s*sendRedirect|response\s*\.\s*setHeader\s*\(\s*["']Location["'])\s*\(\s*(?:request\s*\.\s*getParameter|req\s*\.\s*getParameter)""")
-
-# Python
-_add_rule("sql-injection", "critical",
-    "Potential SQL injection via string formatting in execute()",
-    {".py"},
-    r"""\.execute\s*\(\s*(?:f["']|["'].*?%|["'].*?\.\s*format\s*\()""")
-
-_add_rule("command-injection", "critical",
-    "Potential command injection via os.system() or subprocess with shell=True",
-    {".py"},
-    r"""os\s*\.\s*system\s*\(|subprocess\s*\.\s*(?:call|run|Popen)\s*\([^)]*shell\s*=\s*True""")
-
-_add_rule("unsafe-deserialization", "critical",
-    "Unsafe deserialization via pickle or yaml.load without SafeLoader",
-    {".py"},
-    r"""pickle\s*\.\s*loads?\s*\(|yaml\s*\.\s*load\s*\([^)]*(?!Loader)""")
-
-_add_rule("eval-usage", "high",
-    "Use of eval() or exec() can execute arbitrary code",
-    {".py"},
-    r"""\b(?:eval|exec)\s*\(""")
-
-# TypeScript / JavaScript
-_add_rule("xss", "high",
-    "Potential XSS via innerHTML, document.write, or dangerouslySetInnerHTML",
-    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
-    r"""\.innerHTML\s*=|document\s*\.\s*write\s*\(|dangerouslySetInnerHTML""")
-
-_add_rule("command-injection", "critical",
-    "Potential command injection via child_process",
-    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
-    r"""child_process.*?\.exec\s*\(""")
-
-_add_rule("eval-usage", "high",
-    "Use of eval() or new Function() can execute arbitrary code",
-    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
-    r"""\beval\s*\(|new\s+Function\s*\(""")
-
-_add_rule("prototype-pollution", "medium",
-    "Potential prototype pollution via __proto__",
-    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
-    r"""__proto__\s*[=\[]""")
-
-# All languages
-_add_rule("hardcoded-credential", "high",
-    "Hardcoded credential or secret in source code",
-    {".java", ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".c", ".cpp", ".cc", ".h", ".hpp"},
-    r"""(?:password|passwd|secret|api_?key|apikey|api_?secret|auth_?token|access_?token|private_?key)\s*[=:]\s*["'][^"']{4,}["']""",
-    re.IGNORECASE)
-
-_add_rule("hardcoded-ip", "low",
-    "Hardcoded IP address found",
-    {".java", ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".c", ".cpp", ".cc", ".h", ".hpp"},
-    r"""["'](?:\d{1,3}\.){3}\d{1,3}["']""")
-
-
-def _detect_vulnerabilities(
-    nodes: dict, file_contents: dict
-) -> list:
-    """Scan file contents for security vulnerability patterns."""
-    vulnerabilities: list[Vulnerability] = []
+def _parse_semgrep_results(
+    semgrep_output: dict,
+    scan_root: str,
+    nodes: dict,
+) -> list[Vulnerability]:
+    """Convert Semgrep JSON results to Vulnerability objects."""
+    results = semgrep_output.get("results", [])
 
     # Build lookup: file -> nodes sorted by line desc (to find enclosing node)
     file_nodes: dict[str, list] = {}
@@ -632,38 +516,39 @@ def _detect_vulnerabilities(
     for fn_list in file_nodes.values():
         fn_list.sort(key=lambda n: n.line or 0, reverse=True)
 
-    for rel_path, content in file_contents.items():
-        ext = os.path.splitext(rel_path)[1].lower()
-        lines = content.split("\n")
+    vulnerabilities: list[Vulnerability] = []
 
-        for rule_id, severity, message, langs, pattern in _VULN_RULES:
-            if ext not in langs:
-                continue
+    for finding in results:
+        check_id = finding.get("check_id", "unknown")
+        # Extract short rule name from dotted check_id
+        # e.g. "python.lang.security.audit.eval-detected" -> "eval-detected"
+        rule_name = check_id.rsplit(".", 1)[-1] if "." in check_id else check_id
 
-            for m in pattern.finditer(content):
-                line_no = content[:m.start()].count("\n") + 1
+        abs_path = finding.get("path", "")
+        rel_path = os.path.relpath(abs_path, scan_root).replace("\\", "/")
 
-                # Skip matches inside comments
-                line_text = lines[line_no - 1] if line_no <= len(lines) else ""
-                stripped = line_text.lstrip()
-                if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("*"):
-                    continue
+        line_no = finding.get("start", {}).get("line", 0)
 
-                # Find enclosing node
-                node_id = f"file:{rel_path}"
-                for n in file_nodes.get(rel_path, []):
-                    if n.line and n.line <= line_no:
-                        node_id = n.id
-                        break
+        extra = finding.get("extra", {})
+        message = extra.get("message", "")
+        raw_severity = extra.get("severity", "INFO")
+        severity = _SEMGREP_SEVERITY_MAP.get(raw_severity, "medium")
 
-                vulnerabilities.append(Vulnerability(
-                    rule=rule_id,
-                    severity=severity,
-                    message=message,
-                    line=line_no,
-                    file=rel_path,
-                    nodeId=node_id,
-                ))
+        # Find enclosing node
+        node_id = f"file:{rel_path}"
+        for n in file_nodes.get(rel_path, []):
+            if n.line and n.line <= line_no:
+                node_id = n.id
+                break
+
+        vulnerabilities.append(Vulnerability(
+            rule=rule_name,
+            severity=severity,
+            message=message,
+            line=line_no,
+            file=rel_path,
+            nodeId=node_id,
+        ))
 
     # Update vulnCount on nodes
     for v in vulnerabilities:
@@ -704,10 +589,9 @@ MAX_FILES = 500
 MAX_FILE_SIZE = 512 * 1024  # 512 KB
 
 
-def _scan_and_parse(root: str):
+async def _scan_and_parse(root: str):
     nodes: dict[str, OntologyNode] = {}
     edges: list[OntologyEdge] = []
-    file_contents: dict[str, str] = {}  # rel_path -> content for vuln scanning
     file_count = 0
 
     for dirpath, dirnames, filenames in os.walk(root):
@@ -730,13 +614,6 @@ def _scan_and_parse(root: str):
                 break
 
             rel = os.path.relpath(filepath, root).replace("\\", "/")
-
-            # Cache file content for vulnerability scanning
-            try:
-                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-                    file_contents[rel] = f.read()
-            except Exception:
-                pass
 
             if ext == ".java":
                 _parse_java(filepath, nodes, edges, rel)
@@ -761,7 +638,8 @@ def _scan_and_parse(root: str):
     _detect_communities(nodes, unique_edges)
     _detect_cycles(nodes, unique_edges)
     _detect_dead_code(nodes, unique_edges)
-    vulnerabilities = _detect_vulnerabilities(nodes, file_contents)
+    semgrep_output = await _run_semgrep(root)
+    vulnerabilities = _parse_semgrep_results(semgrep_output, root, nodes)
 
     return list(nodes.values()), unique_edges, vulnerabilities
 
@@ -775,7 +653,10 @@ async def analyze_ontology(req: AnalyzeRequest):
     folder = req.path
     if not os.path.isdir(folder):
         raise HTTPException(status_code=400, detail=f"Not a directory: {folder}")
-    nodes, edges, vulnerabilities = _scan_and_parse(folder)
+    try:
+        nodes, edges, vulnerabilities = await _scan_and_parse(folder)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     return {
         "nodes": [n.model_dump() for n in nodes],
         "edges": [e.model_dump() for e in edges],

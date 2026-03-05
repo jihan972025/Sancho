@@ -290,8 +290,30 @@ export default function OntologyPanel() {
       {/* Center: Graph Canvas */}
       <div className="flex-1 relative">
         {error && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-red-900/80 text-red-200 text-xs px-3 py-1.5 rounded">
-            {error}
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 max-w-md bg-red-900/90 text-red-200 text-xs px-4 py-2.5 rounded-lg border border-red-700/50">
+            {error.includes('Semgrep is not installed') ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5 font-medium text-red-300">
+                  <ShieldAlert size={12} />
+                  Semgrep Not Found
+                </div>
+                <p>Semgrep is required for vulnerability scanning. Install it:</p>
+                <code className="block bg-black/30 rounded px-2 py-1 font-mono text-[11px] text-red-100">
+                  pip install semgrep
+                </code>
+                <p className="text-red-300/70 text-[10px]">Then restart the application and re-analyze.</p>
+              </div>
+            ) : error.includes('timed out') ? (
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 font-medium text-red-300">
+                  <ShieldAlert size={12} />
+                  Scan Timeout
+                </div>
+                <p>{error}</p>
+              </div>
+            ) : (
+              <span>{error}</span>
+            )}
           </div>
         )}
 
@@ -680,177 +702,62 @@ function OntologyDocModal({ onClose }: { onClose: () => void }) {
           </DocSection>
 
           {/* 5. 취약점 점검 */}
-          <DocSection title="취약점 점검" icon="🛡️">
+          <DocSection title="취약점 점검 (Semgrep)" icon="🛡️">
             <p>
-              코드를 regex 패턴으로 스캔하여 보안 취약점을 자동 탐지합니다. 총 <b className="text-white">35개 규칙</b> (Java 25개, Python 4개, JS/TS 4개, 공통 2개).
-              언어별로 적용 가능한 규칙만 실행됩니다.
+              코드 보안 취약점 탐지에 <b className="text-white">Semgrep</b> (오픈소스 AST 기반 SAST 도구)를 사용합니다.
+              Semgrep의 <code className="text-angel-400">--config auto</code> 모드로 커뮤니티가 관리하는 수천 개의 보안 규칙을 자동 적용합니다.
             </p>
 
-            <p className="font-medium text-white mt-3 mb-1">Severity 요약</p>
+            <p className="font-medium text-white mt-3 mb-1">Severity 매핑</p>
             <div className="overflow-hidden rounded border border-slate-700">
               <table className="w-full text-[10px]">
                 <thead>
                   <tr className="bg-slate-800/80">
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">Severity</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">Semgrep Level</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">표시 Severity</th>
                     <th className="px-2 py-1 text-left text-slate-400 font-medium">설명</th>
-                    <th className="px-2 py-1 text-right text-slate-400 font-medium">규칙 수</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1">원격 코드 실행(RCE) 또는 데이터 완전 탈취 가능</td><td className="px-2 py-1 text-right text-slate-400">12</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1">파일 시스템 접근, 데이터 유출, 보안 우회 가능</td><td className="px-2 py-1 text-right text-slate-400">12</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1">보안 약점이나 추가 조건 필요한 취약점</td><td className="px-2 py-1 text-right text-slate-400">10</td></tr>
-                  <tr><td className="px-2 py-1 text-blue-400 font-bold">Low</td><td className="px-2 py-1">정보 노출 또는 보안 모범 사례 미준수</td><td className="px-2 py-1 text-right text-slate-400">1</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">ERROR</td><td className="px-2 py-1 text-red-300">Critical</td><td className="px-2 py-1 text-slate-400">원격 코드 실행(RCE) 또는 데이터 완전 탈취 가능</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-400 font-bold">WARNING</td><td className="px-2 py-1 text-orange-300">High</td><td className="px-2 py-1 text-slate-400">파일 시스템 접근, 데이터 유출, 보안 우회 가능</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">INFO</td><td className="px-2 py-1 text-yellow-300">Medium</td><td className="px-2 py-1 text-slate-400">보안 약점이나 추가 조건 필요한 취약점</td></tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Java 25개 */}
-            <p className="font-medium text-white mt-4 mb-1">☕ Java 상세 점검 항목 (25개)</p>
+            <p className="font-medium text-white mt-3 mb-1">지원 언어</p>
+            <div className="grid grid-cols-4 gap-1">
+              {['Java', 'Python', 'JS/TS', 'Go', 'C/C++', 'Ruby', 'Kotlin', 'PHP'].map(lang => (
+                <div key={lang} className="bg-slate-800/40 rounded px-2 py-1 text-center text-[10px] text-slate-300">{lang}</div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 mt-1">등 30+ 언어를 지원합니다. AST 기반 분석으로 regex보다 정확한 탐지가 가능합니다.</p>
 
-            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ Injection 공격 (7개)</p>
+            <p className="font-medium text-white mt-3 mb-1">주요 탐지 카테고리</p>
             <div className="overflow-hidden rounded border border-slate-700">
               <table className="w-full text-[10px]">
                 <thead>
                   <tr className="bg-slate-800/80">
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">카테고리</th>
+                    <th className="px-2 py-1 text-left text-slate-400 font-medium">주요 탐지 항목</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">SQL Injection</td><td className="px-2 py-1 text-slate-400">문자열 연결로 SQL 쿼리 생성 (SELECT/INSERT/UPDATE/DELETE + 변수 결합)</td></tr>
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Command Injection</td><td className="px-2 py-1 text-slate-400">Runtime.exec() 또는 ProcessBuilder로 외부 명령 실행</td></tr>
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">JNDI Injection</td><td className="px-2 py-1 text-slate-400">InitialContext.lookup()에 동적 입력 (Log4Shell 계열)</td></tr>
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">EL Injection</td><td className="px-2 py-1 text-slate-400">SpEL parseExpression()에 동적 입력 → 임의 메소드 호출</td></tr>
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Template Injection</td><td className="px-2 py-1 text-slate-400">Velocity/FreeMarker/Thymeleaf 동적 템플릿 평가 → RCE</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">LDAP Injection</td><td className="px-2 py-1 text-slate-400">LDAP 검색 필터에 문자열 연결로 쿼리 조작</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Log Injection</td><td className="px-2 py-1 text-slate-400">logger 호출에 request.getParameter 직접 연결 → 로그 위조</td></tr>
+                  <tr><td className="px-2 py-1 text-red-300 font-medium">Injection</td><td className="px-2 py-1 text-slate-400">SQL Injection, Command Injection, LDAP Injection, XSS, Template Injection</td></tr>
+                  <tr><td className="px-2 py-1 text-orange-300 font-medium">Crypto</td><td className="px-2 py-1 text-slate-400">Weak Cipher, Hardcoded Keys, Insecure TLS, Insecure Random</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-300 font-medium">Auth</td><td className="px-2 py-1 text-slate-400">Hardcoded Credentials, Session Fixation, CSRF Disabled</td></tr>
+                  <tr><td className="px-2 py-1 text-blue-300 font-medium">Data Flow</td><td className="px-2 py-1 text-slate-400">Path Traversal, SSRF, Open Redirect, Unsafe Deserialization</td></tr>
+                  <tr><td className="px-2 py-1 text-purple-300 font-medium">Code Quality</td><td className="px-2 py-1 text-slate-400">eval/exec Usage, Prototype Pollution, Race Condition</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 역직렬화 &amp; 리플렉션 (4개)</p>
-            <div className="overflow-hidden rounded border border-slate-700">
-              <table className="w-full text-[10px]">
-                <thead>
-                  <tr className="bg-slate-800/80">
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Unsafe Deserialization</td><td className="px-2 py-1 text-slate-400">ObjectInputStream.readObject()로 신뢰 불가 객체 역직렬화</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Reflection Abuse</td><td className="px-2 py-1 text-slate-400">Class.forName()에 동적 입력 → 임의 클래스 로드</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Unsafe Reflection</td><td className="px-2 py-1 text-slate-400">getMethod()에 동적 입력 후 invoke() → 임의 메소드 실행</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Insecure File Upload</td><td className="px-2 py-1 text-slate-400">MultipartFile 원본 파일명으로 FileOutputStream → 웹쉘 업로드</td></tr>
-                </tbody>
-              </table>
+            <p className="font-medium text-white mt-3 mb-1">설치 필수</p>
+            <div className="bg-slate-800/60 rounded p-2">
+              <code className="text-[11px] font-mono text-angel-400">pip install semgrep</code>
+              <p className="text-[10px] text-slate-500 mt-1">Semgrep가 설치되지 않으면 취약점 스캔이 실행되지 않고 오류가 표시됩니다.</p>
             </div>
-
-            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 암호화 &amp; 인증 (5개)</p>
-            <div className="overflow-hidden rounded border border-slate-700">
-              <table className="w-full text-[10px]">
-                <thead>
-                  <tr className="bg-slate-800/80">
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Hardcoded Encryption Key</td><td className="px-2 py-1 text-slate-400">SecretKeySpec에 하드코딩된 키 → 암호화 무효</td></tr>
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Null Cipher</td><td className="px-2 py-1 text-slate-400">NullCipher 사용 → 암호화 없이 평문 전송</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Insecure TLS</td><td className="px-2 py-1 text-slate-400">SSLContext에 SSL/TLSv1.0/1.1 또는 TrustManager/HostnameVerifier 우회</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Weak Crypto</td><td className="px-2 py-1 text-slate-400">MD5, SHA-1, DES 등 취약한 암호화 알고리즘 사용</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Insecure Random</td><td className="px-2 py-1 text-slate-400">java.util.Random 사용 (SecureRandom 대신) → 예측 가능한 난수</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 웹 보안 (5개)</p>
-            <div className="overflow-hidden rounded border border-slate-700">
-              <table className="w-full text-[10px]">
-                <thead>
-                  <tr className="bg-slate-800/80">
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">SSRF</td><td className="px-2 py-1 text-slate-400">new URL()에 사용자 입력 → 내부 네트워크 요청 위조</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Session Fixation</td><td className="px-2 py-1 text-slate-400">인증 후 세션 무효화 없이 setAttribute → 세션 고정 공격</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Open Redirect</td><td className="px-2 py-1 text-slate-400">sendRedirect/forward에 사용자 입력 → 피싱 사이트 리다이렉트</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">CSRF Disabled</td><td className="px-2 py-1 text-slate-400">Spring Security csrf().disable() → CSRF 보호 해제</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Insecure Cookie</td><td className="px-2 py-1 text-slate-400">Cookie에 Secure/HttpOnly 미설정 → XSS 탈취 가능</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-[10px] text-angel-400 font-semibold mt-2 mb-1">▸ 파일 &amp; 기타 (4개)</p>
-            <div className="overflow-hidden rounded border border-slate-700">
-              <table className="w-full text-[10px]">
-                <thead>
-                  <tr className="bg-slate-800/80">
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Path Traversal</td><td className="px-2 py-1 text-slate-400">new File()/Paths.get()에 사용자 입력 → ../../ 경로 탈출</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">XXE</td><td className="px-2 py-1 text-slate-400">DocumentBuilderFactory에 외부 엔티티 비활성화 없이 XML 파싱</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Race Condition</td><td className="px-2 py-1 text-slate-400">File.exists() 후 파일 조작 (TOCTOU) → 경쟁 상태</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Unvalidated Redirect</td><td className="px-2 py-1 text-slate-400">response.sendRedirect(request.getParameter) → 검증 없는 리다이렉트</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Python / JS/TS / 전체 */}
-            <p className="font-medium text-white mt-4 mb-1">🐍 Python / 🌐 JS/TS / 🔧 공통 (10개)</p>
-            <div className="overflow-hidden rounded border border-slate-700">
-              <table className="w-full text-[10px]">
-                <thead>
-                  <tr className="bg-slate-800/80">
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">Severity</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-32">Rule</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium">탐지 대상</th>
-                    <th className="px-2 py-1 text-left text-slate-400 font-medium w-16">언어</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">SQL Injection</td><td className="px-2 py-1 text-slate-400">execute()에서 f-string, %, .format()으로 SQL 포매팅</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
-                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Command Injection</td><td className="px-2 py-1 text-slate-400">os.system() 또는 subprocess(shell=True)</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
-                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Unsafe Deserialization</td><td className="px-2 py-1 text-slate-400">pickle.load(s) / yaml.load(SafeLoader 미사용)</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
-                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">eval/exec</td><td className="px-2 py-1 text-slate-400">eval() 또는 exec()로 임의 코드 실행</td><td className="px-2 py-1 text-slate-500">Python</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">XSS</td><td className="px-2 py-1 text-slate-400">innerHTML, document.write(), dangerouslySetInnerHTML</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Command Injection</td><td className="px-2 py-1 text-slate-400">child_process.exec()로 외부 명령 실행</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
-                  <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">eval/Function</td><td className="px-2 py-1 text-slate-400">eval() 또는 new Function()으로 임의 코드 실행</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Prototype Pollution</td><td className="px-2 py-1 text-slate-400">__proto__ 직접 접근으로 프로토타입 오염</td><td className="px-2 py-1 text-slate-500">JS/TS</td></tr>
-                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">Hardcoded Credential</td><td className="px-2 py-1 text-slate-400">password, api_key, secret, token 등 하드코딩</td><td className="px-2 py-1 text-slate-500">전체</td></tr>
-                  <tr className="bg-slate-800/30"><td className="px-2 py-1 text-blue-400 font-bold">Low</td><td className="px-2 py-1 text-slate-200">Hardcoded IP</td><td className="px-2 py-1 text-slate-400">소스코드에 IP 주소 하드코딩</td><td className="px-2 py-1 text-slate-500">전체</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <p className="font-medium text-white mt-4 mb-1">언어별 규칙 수</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              <div className="bg-slate-800/40 rounded p-2 text-center">
-                <div className="text-[18px] font-bold text-orange-400">25</div>
-                <div className="text-[10px] text-slate-400">Java</div>
-              </div>
-              <div className="bg-slate-800/40 rounded p-2 text-center">
-                <div className="text-[18px] font-bold text-blue-400">4</div>
-                <div className="text-[10px] text-slate-400">Python</div>
-              </div>
-              <div className="bg-slate-800/40 rounded p-2 text-center">
-                <div className="text-[18px] font-bold text-yellow-400">4</div>
-                <div className="text-[10px] text-slate-400">JS/TS</div>
-              </div>
-            </div>
-            <div className="text-[10px] text-slate-500 text-center mt-1">+ 공통 2개 (Hardcoded Credential, Hardcoded IP) = 총 35개</div>
 
             <p className="mt-3">
               취약점이 있는 노드에는 <b className="text-red-400">빨간 점 인디케이터</b>가 표시됩니다.
@@ -859,8 +766,8 @@ function OntologyDocModal({ onClose }: { onClose: () => void }) {
             </p>
 
             <DocNote>
-              한계: regex 기반 정적 분석이므로 복잡한 데이터 흐름 추적(taint analysis)은 불가합니다.
-              오탐(false positive)이 발생할 수 있으며, 실제 보안 점검 시에는 전문 SAST 도구(SonarQube, Fortify 등)와 병행 사용을 권장합니다.
+              Semgrep은 AST 기반 분석으로 regex보다 정확하지만, cross-file 데이터 흐름 추적(taint analysis)에는 한계가 있습니다.
+              Semgrep Pro (유료)를 사용하면 cross-file taint tracking도 가능합니다.
             </DocNote>
           </DocSection>
 
