@@ -5,11 +5,8 @@ rules:
 
   # --- SQL Injection ---
   - id: python-sql-injection-format
-    patterns:
-      - pattern: |
-          $CURSOR.execute($SQL % ...)
-    message: >
-      SQL injection via string formatting. Use parameterized queries instead.
+    pattern: $CURSOR.execute($SQL % ...)
+    message: "SQL injection via string formatting. Use parameterized queries instead."
     severity: ERROR
     languages: [python]
     metadata:
@@ -17,11 +14,8 @@ rules:
       owasp: "A03:2021 Injection"
 
   - id: python-sql-injection-fstring
-    patterns:
-      - pattern: |
-          $CURSOR.execute(f"...{$VAR}...")
-    message: >
-      SQL injection via f-string. Use parameterized queries instead.
+    pattern: $CURSOR.execute(f"...{$VAR}...")
+    message: "SQL injection via f-string. Use parameterized queries instead."
     severity: ERROR
     languages: [python]
     metadata:
@@ -29,11 +23,8 @@ rules:
       owasp: "A03:2021 Injection"
 
   - id: python-sql-injection-concat
-    patterns:
-      - pattern: |
-          $CURSOR.execute($SQL + ...)
-    message: >
-      SQL injection via string concatenation. Use parameterized queries instead.
+    pattern: $CURSOR.execute($SQL + ...)
+    message: "SQL injection via string concatenation. Use parameterized queries instead."
     severity: ERROR
     languages: [python]
     metadata:
@@ -43,9 +34,7 @@ rules:
   # --- Command Injection ---
   - id: python-os-system
     pattern: os.system(...)
-    message: >
-      Use of os.system() can lead to command injection. Use subprocess with
-      shell=False instead.
+    message: "os.system() can lead to command injection. Use subprocess with shell=False."
     severity: ERROR
     languages: [python]
     metadata:
@@ -53,15 +42,13 @@ rules:
       owasp: "A03:2021 Injection"
 
   - id: python-subprocess-shell-true
-    patterns:
+    pattern-either:
       - pattern: subprocess.call(..., shell=True, ...)
       - pattern: subprocess.run(..., shell=True, ...)
       - pattern: subprocess.Popen(..., shell=True, ...)
       - pattern: subprocess.check_output(..., shell=True, ...)
       - pattern: subprocess.check_call(..., shell=True, ...)
-    message: >
-      subprocess with shell=True is vulnerable to command injection.
-      Use shell=False and pass args as a list.
+    message: "subprocess with shell=True is vulnerable to command injection. Use shell=False."
     severity: ERROR
     languages: [python]
     metadata:
@@ -70,8 +57,7 @@ rules:
 
   - id: python-os-popen
     pattern: os.popen(...)
-    message: >
-      os.popen() can lead to command injection. Use subprocess with shell=False.
+    message: "os.popen() can lead to command injection. Use subprocess with shell=False."
     severity: ERROR
     languages: [python]
     metadata:
@@ -80,9 +66,7 @@ rules:
   # --- Code Injection ---
   - id: python-eval
     pattern: eval(...)
-    message: >
-      eval() executes arbitrary code. Avoid eval() or use ast.literal_eval()
-      for parsing literals.
+    message: "eval() executes arbitrary code. Use ast.literal_eval() for parsing literals."
     severity: ERROR
     languages: [python]
     metadata:
@@ -90,8 +74,7 @@ rules:
 
   - id: python-exec
     pattern: exec(...)
-    message: >
-      exec() executes arbitrary code and is a security risk.
+    message: "exec() executes arbitrary code and is a security risk."
     severity: ERROR
     languages: [python]
     metadata:
@@ -99,12 +82,10 @@ rules:
 
   # --- Deserialization ---
   - id: python-pickle-load
-    patterns:
+    pattern-either:
       - pattern: pickle.load(...)
       - pattern: pickle.loads(...)
-    message: >
-      pickle deserialization of untrusted data can execute arbitrary code.
-      Use JSON or other safe formats.
+    message: "pickle deserialization of untrusted data can execute arbitrary code. Use JSON."
     severity: ERROR
     languages: [python]
     metadata:
@@ -112,12 +93,20 @@ rules:
       owasp: "A08:2021 Software and Data Integrity Failures"
 
   - id: python-yaml-unsafe-load
-    patterns:
+    pattern-either:
       - pattern: yaml.load(...)
       - pattern: yaml.unsafe_load(...)
-    message: >
-      yaml.load() without SafeLoader can execute arbitrary code.
-      Use yaml.safe_load() instead.
+    message: "yaml.load() without SafeLoader can execute arbitrary code. Use yaml.safe_load()."
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+
+  - id: python-marshal-load
+    pattern-either:
+      - pattern: marshal.load(...)
+      - pattern: marshal.loads(...)
+    message: "marshal deserialization of untrusted data can execute arbitrary code."
     severity: ERROR
     languages: [python]
     metadata:
@@ -130,8 +119,7 @@ rules:
       - metavariable-regex:
           metavariable: $VAR
           regex: (?i)(password|passwd|pwd|secret|api_key|apikey|token|secret_key|private_key)
-    message: >
-      Hardcoded credential detected. Use environment variables or a secrets manager.
+    message: "Hardcoded credential detected. Use environment variables or a secrets manager."
     severity: WARNING
     languages: [python]
     metadata:
@@ -140,12 +128,11 @@ rules:
 
   # --- Path Traversal ---
   - id: python-path-traversal-open
-    patterns:
+    pattern-either:
       - pattern: open($PATH + ..., ...)
       - pattern: open(f"...{$PATH}...", ...)
       - pattern: open(os.path.join(..., $REQ, ...), ...)
-    message: >
-      Potential path traversal. Validate and sanitize file paths from user input.
+    message: "Potential path traversal. Validate and sanitize file paths from user input."
     severity: WARNING
     languages: [python]
     metadata:
@@ -153,20 +140,16 @@ rules:
 
   # --- Weak Cryptography ---
   - id: python-weak-hash-md5
-    patterns:
-      - pattern: hashlib.md5(...)
-    message: >
-      MD5 is cryptographically weak. Use SHA-256 or stronger.
+    pattern: hashlib.md5(...)
+    message: "MD5 is cryptographically weak. Use SHA-256 or stronger."
     severity: WARNING
     languages: [python]
     metadata:
       cwe: "CWE-328: Use of Weak Hash"
 
   - id: python-weak-hash-sha1
-    patterns:
-      - pattern: hashlib.sha1(...)
-    message: >
-      SHA-1 is cryptographically weak. Use SHA-256 or stronger.
+    pattern: hashlib.sha1(...)
+    message: "SHA-1 is cryptographically weak. Use SHA-256 or stronger."
     severity: WARNING
     languages: [python]
     metadata:
@@ -174,13 +157,12 @@ rules:
 
   # --- SSRF ---
   - id: python-ssrf-requests
-    patterns:
+    pattern-either:
       - pattern: requests.get($URL + ..., ...)
       - pattern: requests.get(f"...{$VAR}...", ...)
       - pattern: requests.post($URL + ..., ...)
       - pattern: requests.post(f"...{$VAR}...", ...)
-    message: >
-      Potential SSRF. Validate and restrict URLs from user input.
+    message: "Potential SSRF. Validate and restrict URLs from user input."
     severity: WARNING
     languages: [python]
     metadata:
@@ -189,8 +171,7 @@ rules:
   # --- Debug / Info Exposure ---
   - id: python-flask-debug
     pattern: app.run(..., debug=True, ...)
-    message: >
-      Flask debug mode exposes sensitive information in production.
+    message: "Flask debug mode exposes sensitive information in production."
     severity: WARNING
     languages: [python]
     metadata:
@@ -198,8 +179,7 @@ rules:
 
   - id: python-django-debug
     pattern: DEBUG = True
-    message: >
-      Django DEBUG=True exposes sensitive information in production.
+    message: "Django DEBUG=True exposes sensitive information in production."
     severity: WARNING
     languages: [python]
     metadata:
@@ -207,14 +187,13 @@ rules:
 
   # --- Insecure TLS ---
   - id: python-ssl-no-verify
-    patterns:
+    pattern-either:
       - pattern: requests.get(..., verify=False, ...)
       - pattern: requests.post(..., verify=False, ...)
       - pattern: requests.put(..., verify=False, ...)
       - pattern: requests.delete(..., verify=False, ...)
       - pattern: requests.patch(..., verify=False, ...)
-    message: >
-      SSL verification disabled. This allows man-in-the-middle attacks.
+    message: "SSL verification disabled. This allows man-in-the-middle attacks."
     severity: WARNING
     languages: [python]
     metadata:
@@ -222,14 +201,21 @@ rules:
 
   # --- Temporary File ---
   - id: python-tempfile-insecure
-    patterns:
-      - pattern: tempfile.mktemp(...)
-    message: >
-      tempfile.mktemp() is insecure (race condition). Use tempfile.mkstemp().
+    pattern: tempfile.mktemp(...)
+    message: "tempfile.mktemp() is insecure (race condition). Use tempfile.mkstemp()."
     severity: WARNING
     languages: [python]
     metadata:
       cwe: "CWE-377: Insecure Temporary File"
+
+  # --- Assert for access control ---
+  - id: python-assert-access-control
+    pattern: assert $COND
+    message: "assert is removed with -O flag. Do not use for access control."
+    severity: INFO
+    languages: [python]
+    metadata:
+      cwe: "CWE-617: Reachable Assertion"
 
   # ============================================================
   # JavaScript / TypeScript Security Rules
@@ -237,33 +223,35 @@ rules:
 
   # --- XSS ---
   - id: js-innerhtml-assignment
-    patterns:
-      - pattern: $EL.innerHTML = $VAL
-    message: >
-      Direct innerHTML assignment can lead to XSS. Use textContent or
-      a sanitization library like DOMPurify.
+    pattern: $EL.innerHTML = $VAL
+    message: "Direct innerHTML assignment can lead to XSS. Use textContent or DOMPurify."
     severity: ERROR
     languages: [javascript, typescript]
     metadata:
       cwe: "CWE-079: Cross-site Scripting (XSS)"
       owasp: "A03:2021 Injection"
 
+  - id: js-outerhtml-assignment
+    pattern: $EL.outerHTML = $VAL
+    message: "Direct outerHTML assignment can lead to XSS."
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: "CWE-079: Cross-site Scripting (XSS)"
+
   - id: js-document-write
-    patterns:
-      - pattern: document.write(...)
-    message: >
-      document.write() can introduce XSS vulnerabilities.
+    pattern: document.write(...)
+    message: "document.write() can introduce XSS vulnerabilities."
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
       cwe: "CWE-079: Cross-site Scripting (XSS)"
 
   - id: react-dangerouslysetinnerhtml
-    patterns:
+    pattern-either:
       - pattern: <$EL dangerouslySetInnerHTML={...} />
       - pattern: <$EL dangerouslySetInnerHTML={...}>...</$EL>
-    message: >
-      dangerouslySetInnerHTML can lead to XSS if content is not sanitized.
+    message: "dangerouslySetInnerHTML can lead to XSS if content is not sanitized."
     severity: WARNING
     languages: [typescript, javascript]
     metadata:
@@ -271,11 +259,10 @@ rules:
 
   # --- SQL Injection (Node.js) ---
   - id: js-sql-injection-template
-    patterns:
+    pattern-either:
       - pattern: $DB.query(`...${$VAR}...`)
       - pattern: $DB.query($SQL + ...)
-    message: >
-      SQL injection via string interpolation. Use parameterized queries.
+    message: "SQL injection via string interpolation. Use parameterized queries."
     severity: ERROR
     languages: [javascript, typescript]
     metadata:
@@ -284,13 +271,21 @@ rules:
 
   # --- Command Injection (Node.js) ---
   - id: js-child-process-exec
-    patterns:
+    pattern-either:
       - pattern: child_process.exec(...)
       - pattern: exec(...)
-    message: >
-      child_process.exec() runs commands in a shell and is vulnerable to
-      injection. Use execFile() or spawn() with arguments as an array.
+    message: "child_process.exec() runs in a shell. Use execFile() or spawn()."
     severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: "CWE-078: OS Command Injection"
+
+  - id: js-execsync-usage
+    pattern-either:
+      - pattern: execSync(...)
+      - pattern: child_process.execSync(...)
+    message: "execSync() runs commands in a shell. Ensure arguments are not from untrusted sources."
+    severity: WARNING
     languages: [javascript, typescript]
     metadata:
       cwe: "CWE-078: OS Command Injection"
@@ -298,8 +293,7 @@ rules:
   # --- Code Injection ---
   - id: js-eval
     pattern: eval(...)
-    message: >
-      eval() executes arbitrary code and can lead to code injection.
+    message: "eval() executes arbitrary code and can lead to code injection."
     severity: ERROR
     languages: [javascript, typescript]
     metadata:
@@ -307,8 +301,7 @@ rules:
 
   - id: js-function-constructor
     pattern: new Function(...)
-    message: >
-      new Function() is similar to eval() and can execute arbitrary code.
+    message: "new Function() is similar to eval() and can execute arbitrary code."
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
@@ -322,8 +315,7 @@ rules:
       - metavariable-regex:
           metavariable: $VAR
           regex: (?i)(password|passwd|pwd|secret|api_key|apiKey|token|secretKey|privateKey|API_SECRET)
-    message: >
-      Hardcoded credential detected. Use environment variables.
+    message: "Hardcoded credential detected. Use environment variables."
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
@@ -332,15 +324,14 @@ rules:
 
   # --- Path Traversal (Node.js) ---
   - id: js-path-traversal
-    patterns:
+    pattern-either:
       - pattern: fs.readFileSync($PATH + ..., ...)
       - pattern: fs.readFileSync(`...${$VAR}...`, ...)
       - pattern: fs.readFile($PATH + ..., ...)
       - pattern: fs.readFile(`...${$VAR}...`, ...)
       - pattern: fs.writeFileSync($PATH + ..., ...)
       - pattern: fs.writeFileSync(`...${$VAR}...`, ...)
-    message: >
-      Potential path traversal. Validate and sanitize file paths.
+    message: "Potential path traversal. Validate and sanitize file paths."
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
@@ -348,11 +339,8 @@ rules:
 
   # --- Insecure Randomness ---
   - id: js-math-random-crypto
-    patterns:
-      - pattern: Math.random()
-    message: >
-      Math.random() is not cryptographically secure. Use crypto.randomBytes()
-      or crypto.getRandomValues() for security-sensitive operations.
+    pattern: Math.random()
+    message: "Math.random() is not cryptographically secure. Use crypto.getRandomValues()."
     severity: INFO
     languages: [javascript, typescript]
     metadata:
@@ -360,12 +348,11 @@ rules:
 
   # --- Prototype Pollution ---
   - id: js-prototype-pollution
-    patterns:
+    pattern-either:
       - pattern: $OBJ.__proto__ = ...
       - pattern: $OBJ["__proto__"] = ...
       - pattern: $OBJ.constructor.prototype.$PROP = ...
-    message: >
-      Prototype pollution can lead to property injection attacks.
+    message: "Prototype pollution can lead to property injection attacks."
     severity: ERROR
     languages: [javascript, typescript]
     metadata:
@@ -373,12 +360,11 @@ rules:
 
   # --- Open Redirect ---
   - id: js-open-redirect
-    patterns:
+    pattern-either:
       - pattern: window.location = $VAR
       - pattern: window.location.href = $VAR
       - pattern: $RES.redirect($VAR)
-    message: >
-      Potential open redirect. Validate redirect URLs against a whitelist.
+    message: "Potential open redirect. Validate redirect URLs against a whitelist."
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
@@ -386,15 +372,14 @@ rules:
 
   # --- CORS Misconfiguration ---
   - id: js-cors-wildcard
-    patterns:
+    pattern-either:
       - pattern: |
           $RES.setHeader("Access-Control-Allow-Origin", "*")
       - pattern: |
           cors({origin: "*"})
       - pattern: |
           cors({ origin: true })
-    message: >
-      CORS wildcard allows any origin. Restrict to trusted domains.
+    message: "CORS wildcard allows any origin. Restrict to trusted domains."
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
@@ -402,14 +387,64 @@ rules:
 
   # --- JWT Issues ---
   - id: js-jwt-no-verify
-    patterns:
-      - pattern: jwt.decode(...)
-    message: >
-      jwt.decode() does not verify the signature. Use jwt.verify() instead.
+    pattern: jwt.decode(...)
+    message: "jwt.decode() does not verify the signature. Use jwt.verify() instead."
     severity: WARNING
     languages: [javascript, typescript]
     metadata:
       cwe: "CWE-345: Insufficient Verification of Data Authenticity"
+
+  # --- Electron Security ---
+  - id: electron-web-security-false
+    pattern: |
+      webSecurity: false
+    message: "webSecurity disabled. This allows cross-origin attacks from loaded content."
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      cwe: "CWE-346: Origin Validation Error"
+
+  - id: electron-node-integration-true
+    pattern: |
+      nodeIntegration: true
+    message: "nodeIntegration enabled. Loaded content can access Node.js APIs."
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: "CWE-094: Code Injection"
+
+  - id: electron-context-isolation-false
+    pattern: |
+      contextIsolation: false
+    message: "contextIsolation disabled. Preload scripts share context with page content."
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: "CWE-094: Code Injection"
+
+  # --- Weak Crypto (Node.js) ---
+  - id: js-weak-hash
+    pattern-either:
+      - pattern: crypto.createHash("md5")
+      - pattern: crypto.createHash('md5')
+      - pattern: crypto.createHash("sha1")
+      - pattern: crypto.createHash('sha1')
+    message: "Weak hash algorithm. Use SHA-256 or stronger."
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      cwe: "CWE-328: Use of Weak Hash"
+
+  # --- PostMessage ---
+  - id: js-postmessage-wildcard
+    pattern-either:
+      - pattern: $W.postMessage(..., "*")
+      - pattern: window.postMessage(..., "*")
+    message: "postMessage with wildcard origin. Specify target origin explicitly."
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      cwe: "CWE-346: Origin Validation Error"
 
   # ============================================================
   # Java Security Rules
@@ -417,15 +452,11 @@ rules:
 
   # --- SQL Injection ---
   - id: java-sql-injection
-    patterns:
-      - pattern: |
-          $STMT.executeQuery($SQL + ...)
-      - pattern: |
-          $STMT.executeUpdate($SQL + ...)
-      - pattern: |
-          $STMT.execute($SQL + ...)
-    message: >
-      SQL injection via string concatenation. Use PreparedStatement.
+    pattern-either:
+      - pattern: $STMT.executeQuery($SQL + ...)
+      - pattern: $STMT.executeUpdate($SQL + ...)
+      - pattern: $STMT.execute($SQL + ...)
+    message: "SQL injection via string concatenation. Use PreparedStatement."
     severity: ERROR
     languages: [java]
     metadata:
@@ -435,9 +466,7 @@ rules:
   # --- Command Injection ---
   - id: java-runtime-exec
     pattern: Runtime.getRuntime().exec(...)
-    message: >
-      Runtime.exec() can be vulnerable to command injection.
-      Use ProcessBuilder with argument list.
+    message: "Runtime.exec() can be vulnerable to command injection. Use ProcessBuilder."
     severity: ERROR
     languages: [java]
     metadata:
@@ -445,11 +474,8 @@ rules:
 
   # --- Deserialization ---
   - id: java-objectinputstream
-    patterns:
-      - pattern: new ObjectInputStream(...)
-    message: >
-      Java deserialization of untrusted data can lead to remote code execution.
-      Use a safe alternative like JSON.
+    pattern: new ObjectInputStream(...)
+    message: "Java deserialization of untrusted data can lead to RCE. Use JSON."
     severity: ERROR
     languages: [java]
     metadata:
@@ -463,9 +489,7 @@ rules:
           $FACTORY = DocumentBuilderFactory.newInstance();
           ...
           $BUILDER = $FACTORY.newDocumentBuilder();
-    message: >
-      XML parser without disabling external entities is vulnerable to XXE.
-      Set FEATURE_SECURE_PROCESSING and disable external entities.
+    message: "XML parser without disabling external entities is vulnerable to XXE."
     severity: ERROR
     languages: [java]
     metadata:
@@ -479,8 +503,7 @@ rules:
       - metavariable-regex:
           metavariable: $VAR
           regex: (?i)(password|passwd|pwd|secret|apiKey|token|secretKey|privateKey)
-    message: >
-      Hardcoded credential detected. Use configuration or secrets manager.
+    message: "Hardcoded credential detected. Use configuration or secrets manager."
     severity: WARNING
     languages: [java]
     metadata:
@@ -488,24 +511,21 @@ rules:
 
   # --- Weak Crypto ---
   - id: java-weak-cipher
-    patterns:
+    pattern-either:
       - pattern: Cipher.getInstance("DES")
       - pattern: Cipher.getInstance("DES/...")
       - pattern: Cipher.getInstance("RC4")
       - pattern: Cipher.getInstance("RC2")
       - pattern: Cipher.getInstance("Blowfish")
-    message: >
-      Weak encryption algorithm. Use AES with 256-bit key.
+    message: "Weak encryption algorithm. Use AES with 256-bit key."
     severity: WARNING
     languages: [java]
     metadata:
       cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
 
   - id: java-ecb-mode
-    patterns:
-      - pattern: Cipher.getInstance("AES/ECB/...")
-    message: >
-      ECB mode does not provide semantic security. Use CBC or GCM mode.
+    pattern: Cipher.getInstance("AES/ECB/...")
+    message: "ECB mode does not provide semantic security. Use CBC or GCM mode."
     severity: WARNING
     languages: [java]
     metadata:
@@ -513,11 +533,10 @@ rules:
 
   # --- SSRF ---
   - id: java-ssrf-url
-    patterns:
+    pattern-either:
       - pattern: new URL($VAR).openConnection()
       - pattern: new URL($VAR).openStream()
-    message: >
-      Potential SSRF. Validate and restrict user-supplied URLs.
+    message: "Potential SSRF. Validate and restrict user-supplied URLs."
     severity: WARNING
     languages: [java]
     metadata:
@@ -525,13 +544,12 @@ rules:
 
   # --- Log Injection ---
   - id: java-log-injection
-    patterns:
+    pattern-either:
       - pattern: $LOG.info($VAR + ...)
       - pattern: $LOG.error($VAR + ...)
       - pattern: $LOG.warn($VAR + ...)
       - pattern: $LOG.debug($VAR + ...)
-    message: >
-      Log injection via string concatenation. Use parameterized logging.
+    message: "Log injection via string concatenation. Use parameterized logging."
     severity: INFO
     languages: [java]
     metadata:
@@ -543,24 +561,22 @@ rules:
 
   # --- SQL Injection ---
   - id: go-sql-injection
-    patterns:
+    pattern-either:
       - pattern: $DB.Query($SQL + ...)
       - pattern: $DB.Exec($SQL + ...)
       - pattern: $DB.QueryRow($SQL + ...)
-    message: >
-      SQL injection via string concatenation. Use parameterized queries.
+    message: "SQL injection via string concatenation. Use parameterized queries."
     severity: ERROR
     languages: [go]
     metadata:
       cwe: "CWE-089: SQL Injection"
 
   - id: go-sql-injection-fmt
-    patterns:
+    pattern-either:
       - pattern: $DB.Query(fmt.Sprintf(...))
       - pattern: $DB.Exec(fmt.Sprintf(...))
       - pattern: $DB.QueryRow(fmt.Sprintf(...))
-    message: >
-      SQL injection via fmt.Sprintf(). Use parameterized queries.
+    message: "SQL injection via fmt.Sprintf(). Use parameterized queries."
     severity: ERROR
     languages: [go]
     metadata:
@@ -568,14 +584,12 @@ rules:
 
   # --- Command Injection ---
   - id: go-command-injection
-    patterns:
+    pattern-either:
       - pattern: exec.Command("bash", "-c", $VAR)
       - pattern: exec.Command("sh", "-c", $VAR)
       - pattern: exec.Command("/bin/sh", "-c", $VAR)
       - pattern: exec.Command("/bin/bash", "-c", $VAR)
-    message: >
-      Potential command injection via shell execution.
-      Pass commands and arguments separately.
+    message: "Potential command injection. Pass commands and arguments separately."
     severity: ERROR
     languages: [go]
     metadata:
@@ -583,11 +597,9 @@ rules:
 
   # --- Insecure TLS ---
   - id: go-tls-insecure
-    patterns:
-      - pattern: |
-          &tls.Config{..., InsecureSkipVerify: true, ...}
-    message: >
-      TLS certificate verification disabled. This allows MITM attacks.
+    pattern: |
+      &tls.Config{..., InsecureSkipVerify: true, ...}
+    message: "TLS certificate verification disabled. This allows MITM attacks."
     severity: WARNING
     languages: [go]
     metadata:
@@ -601,8 +613,7 @@ rules:
       - metavariable-regex:
           metavariable: $VAR
           regex: (?i)(password|passwd|pwd|secret|apiKey|token|secretKey|privateKey)
-    message: >
-      Hardcoded credential detected. Use environment variables.
+    message: "Hardcoded credential detected. Use environment variables."
     severity: WARNING
     languages: [go]
     metadata:
@@ -612,12 +623,9 @@ rules:
   # C / C++ Security Rules
   # ============================================================
 
-  # --- Buffer Overflow ---
   - id: c-gets-usage
     pattern: gets(...)
-    message: >
-      gets() has no bounds checking and is vulnerable to buffer overflow.
-      Use fgets() instead.
+    message: "gets() has no bounds checking. Use fgets() instead."
     severity: ERROR
     languages: [c]
     metadata:
@@ -625,8 +633,7 @@ rules:
 
   - id: c-strcpy-usage
     pattern: strcpy(...)
-    message: >
-      strcpy() has no bounds checking. Use strncpy() or strlcpy().
+    message: "strcpy() has no bounds checking. Use strncpy() or strlcpy()."
     severity: WARNING
     languages: [c]
     metadata:
@@ -634,21 +641,18 @@ rules:
 
   - id: c-sprintf-usage
     pattern: sprintf(...)
-    message: >
-      sprintf() has no bounds checking. Use snprintf() instead.
+    message: "sprintf() has no bounds checking. Use snprintf() instead."
     severity: WARNING
     languages: [c]
     metadata:
       cwe: "CWE-120: Buffer Copy without Checking Size of Input"
 
-  # --- Format String ---
   - id: c-format-string
-    patterns:
+    pattern-either:
       - pattern: printf($VAR)
       - pattern: fprintf($FILE, $VAR)
       - pattern: sprintf($BUF, $VAR)
-    message: >
-      Potential format string vulnerability. Always use a format specifier.
+    message: "Potential format string vulnerability. Always use a format specifier."
     severity: ERROR
     languages: [c]
     metadata:
@@ -658,55 +662,46 @@ rules:
   # PHP Security Rules
   # ============================================================
 
-  # --- SQL Injection ---
   - id: php-sql-injection
     pattern-either:
       - pattern: mysqli_query($CONN, $SQL . $INPUT);
       - pattern: $PDO->query($SQL . $INPUT);
-    message: >
-      SQL injection via string concatenation. Use prepared statements.
+    message: "SQL injection via string concatenation. Use prepared statements."
     severity: ERROR
     languages: [php]
     metadata:
       cwe: "CWE-089: SQL Injection"
 
-  # --- Command Injection ---
   - id: php-shell-exec
     pattern-either:
       - pattern: shell_exec(...);
       - pattern: system(...);
       - pattern: passthru(...);
       - pattern: exec(...);
-    message: >
-      Potential command injection via shell function.
-      Use escapeshellarg() and escapeshellcmd().
+    message: "Potential command injection. Use escapeshellarg() and escapeshellcmd()."
     severity: ERROR
     languages: [php]
     metadata:
       cwe: "CWE-078: OS Command Injection"
 
-  # --- XSS ---
   - id: php-echo-unsanitized
     pattern-either:
       - pattern: echo $_GET[$KEY];
       - pattern: echo $_POST[$KEY];
       - pattern: echo $_REQUEST[$KEY];
-    message: >
-      XSS via direct output of user input. Use htmlspecialchars().
+    message: "XSS via direct output of user input. Use htmlspecialchars()."
     severity: ERROR
     languages: [php]
     metadata:
       cwe: "CWE-079: Cross-site Scripting (XSS)"
 
-  # --- File Inclusion ---
   - id: php-file-inclusion
     pattern-either:
       - pattern: include($_GET[$KEY]);
       - pattern: include($_POST[$KEY]);
       - pattern: require($_GET[$KEY]);
       - pattern: require_once($_GET[$KEY]);
-    message: >
-      Local/Remote file inclusion via user input. Validate file paths.
+    message: "Local/Remote file inclusion via user input. Validate file paths."
     severity: ERROR
     languages: [php]
     metadata:
@@ -716,67 +711,52 @@ rules:
   # Ruby Security Rules
   # ============================================================
 
-  # --- Command Injection ---
   - id: ruby-backtick-injection
-    patterns:
-      - pattern: |
-          `...#{$VAR}...`
-    message: >
-      Potential command injection via backtick interpolation.
+    pattern: |
+      `...#{$VAR}...`
+    message: "Potential command injection via backtick interpolation."
     severity: ERROR
     languages: [ruby]
     metadata:
       cwe: "CWE-078: OS Command Injection"
 
   - id: ruby-system-call
-    patterns:
-      - pattern: system(...)
-    message: >
-      system() call can be vulnerable to command injection.
+    pattern: system(...)
+    message: "system() call can be vulnerable to command injection."
     severity: WARNING
     languages: [ruby]
     metadata:
       cwe: "CWE-078: OS Command Injection"
 
-  # --- SQL Injection ---
   - id: ruby-sql-injection
-    patterns:
+    pattern-either:
       - pattern: $MODEL.where("...#{$VAR}...")
       - pattern: $MODEL.find_by_sql("...#{$VAR}...")
-    message: >
-      SQL injection via string interpolation. Use parameterized queries.
+    message: "SQL injection via string interpolation. Use parameterized queries."
     severity: ERROR
     languages: [ruby]
     metadata:
       cwe: "CWE-089: SQL Injection"
 
-  # --- Mass Assignment ---
   - id: ruby-mass-assignment
-    patterns:
-      - pattern: params.permit!
-    message: >
-      Mass assignment vulnerability. Explicitly whitelist permitted parameters.
+    pattern: params.permit!
+    message: "Mass assignment vulnerability. Explicitly whitelist permitted parameters."
     severity: WARNING
     languages: [ruby]
     metadata:
       cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
 
-  # --- Deserialization ---
   - id: ruby-yaml-load
-    patterns:
-      - pattern: YAML.load(...)
-    message: >
-      YAML.load() can execute arbitrary code. Use YAML.safe_load() instead.
+    pattern: YAML.load(...)
+    message: "YAML.load() can execute arbitrary code. Use YAML.safe_load() instead."
     severity: ERROR
     languages: [ruby]
     metadata:
       cwe: "CWE-502: Deserialization of Untrusted Data"
 
   - id: ruby-marshal-load
-    patterns:
-      - pattern: Marshal.load(...)
-    message: >
-      Marshal.load() of untrusted data can execute arbitrary code.
+    pattern: Marshal.load(...)
+    message: "Marshal.load() of untrusted data can execute arbitrary code."
     severity: ERROR
     languages: [ruby]
     metadata:
