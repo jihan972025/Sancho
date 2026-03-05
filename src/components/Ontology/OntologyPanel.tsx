@@ -367,29 +367,32 @@ export default function OntologyPanel() {
           />
         )}
 
+        {/* Doc button — always visible */}
+        <div className="absolute top-2 left-2 z-10 flex gap-1">
+          {nodes.length > 0 && (
+            <button
+              onClick={() => folderPath && loadFolder(folderPath)}
+              disabled={loading}
+              className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors disabled:opacity-50"
+              title="Refresh analysis"
+            >
+              <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+              <span>Refresh</span>
+            </button>
+          )}
+          <button
+            onClick={() => setShowDoc(true)}
+            className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors"
+            title="Documentation"
+          >
+            <BookOpen size={11} />
+            <span>Doc</span>
+          </button>
+        </div>
+
         {/* Toolbar overlay */}
         {nodes.length > 0 && (
           <>
-            {/* Top-left: refresh + doc */}
-            <div className="absolute top-2 left-2 z-10 flex gap-1">
-              <button
-                onClick={() => folderPath && loadFolder(folderPath)}
-                disabled={loading}
-                className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors disabled:opacity-50"
-                title="Refresh analysis"
-              >
-                <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
-                <span>Refresh</span>
-              </button>
-              <button
-                onClick={() => setShowDoc(true)}
-                className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors"
-                title="Documentation"
-              >
-                <BookOpen size={11} />
-                <span>Doc</span>
-              </button>
-            </div>
 
             {/* Top-right: badges */}
             <div className="absolute top-2 right-2 flex gap-1.5 z-10">
