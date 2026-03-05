@@ -171,6 +171,11 @@ function createWindow(): void {
     mainWindow?.show()
   })
 
+  // Prevent <title> tags from overriding the window title
+  mainWindow.on('page-title-updated', (e) => {
+    e.preventDefault()
+  })
+
   if (isDev) {
     // Load splash screen first — it polls backend + Vite and redirects when ready
     const loadingPath = path.join(__dirname, '..', 'electron', 'loading.html')
