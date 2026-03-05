@@ -86,6 +86,13 @@ export default function OntologyPanel() {
     if (node) setSelectedNode(node)
   }, [nodes])
 
+  const handleHighlightFile = useCallback((file: string | null) => {
+    setHighlightFile(file)
+    if (file) {
+      graphRef.current?.focusOnFile(file)
+    }
+  }, [])
+
   return (
     <div className="flex h-full">
       {/* Left: File List */}
@@ -96,7 +103,7 @@ export default function OntologyPanel() {
           loading={loading}
           highlightFile={highlightFile}
           onSelectFolder={handleSelectFolder}
-          onHighlightFile={setHighlightFile}
+          onHighlightFile={handleHighlightFile}
         />
         {showManualInput && (
           <div className="p-2 border-t border-slate-700">

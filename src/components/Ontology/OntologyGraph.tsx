@@ -24,6 +24,7 @@ export interface GraphEdge {
 export interface GraphHandle {
   zoomIn: () => void
   zoomOut: () => void
+  focusOnFile: (file: string) => void
 }
 
 interface Props {
@@ -74,6 +75,19 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     },
     zoomOut() {
       camRef.current.zoom = Math.max(0.1, camRef.current.zoom * 0.7)
+    },
+    focusOnFile(file: string) {
+      // Find all nodes belonging to this file
+      const fileNodes = nodesRef.current.filter((n) => n.file === file)
+      if (fileNodes.length === 0) return
+      // Compute centroid
+      let cx = 0, cy = 0
+      for (const n of fileNodes) { cx += n.x; cy += n.y }
+      cx /= fileNodes.length
+      cy /= fileNodes.length
+      // Center camera on centroid with a nice zoom level
+      camRef.current.x = -cx * camRef.current.zoom
+      camRef.current.y = -cy * camRef.current.zoom
     },
   }))
   const dragRef = useRef<{ dragging: boolean; startX: number; startY: number; camStartX: number; camStartY: number; draggedNode: GraphNode | null }>({
