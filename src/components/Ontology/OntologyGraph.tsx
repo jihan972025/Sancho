@@ -77,56 +77,103 @@ function hexToRgb(hex: string): [number, number, number] {
 
 function computeTreeLayout(nodes: GraphNode[], edges: GraphEdge[]) {
   if (nodes.length === 0) return
-  const incoming = new Set<string>()
+  const nodeMap = new Map(nodes.map(n => [n.id, n]))
+  const NODE_GAP = 45
+  const LAYER_HEIGHT = 80
+
+  // Build adjacency
+  const incomingSet = new Set<string>()
   const outAdj = new Map<string, string[]>()
   for (const n of nodes) outAdj.set(n.id, [])
   for (const e of edges) {
-    incoming.add(e.target)
+    incomingSet.add(e.target)
     outAdj.get(e.source)?.push(e.target)
   }
-  const roots = nodes.filter(n => !incoming.has(n.id))
+
+  // BFS to build a spanning tree (one parent per node)
+  const roots = nodes.filter(n => !incomingSet.has(n.id))
   if (roots.length === 0) roots.push(nodes[0])
 
-  const layer = new Map<string, number>()
-  const queue: string[] = []
-  for (const r of roots) { layer.set(r.id, 0); queue.push(r.id) }
+  const treeChildren = new Map<string, string[]>()
+  const assigned = new Set<string>()
+  const bfsQueue: string[] = []
+  const depthMap = new Map<string, number>()
+
+  for (const r of roots) {
+    assigned.add(r.id)
+    treeChildren.set(r.id, [])
+    depthMap.set(r.id, 0)
+    bfsQueue.push(r.id)
+  }
 
   let qi = 0
-  while (qi < queue.length) {
-    const curr = queue[qi++]
-    const depth = layer.get(curr)!
+  while (qi < bfsQueue.length) {
+    const curr = bfsQueue[qi++]
+    const depth = depthMap.get(curr)!
     for (const nb of outAdj.get(curr) ?? []) {
-      if (!layer.has(nb)) {
-        layer.set(nb, depth + 1)
-        queue.push(nb)
+      if (!assigned.has(nb)) {
+        assigned.add(nb)
+        depthMap.set(nb, depth + 1)
+        if (!treeChildren.has(curr)) treeChildren.set(curr, [])
+        treeChildren.get(curr)!.push(nb)
+        treeChildren.set(nb, [])
+        bfsQueue.push(nb)
       }
     }
   }
 
-  // Assign orphans to layer 0
-  for (const n of nodes) {
-    if (!layer.has(n.id)) layer.set(n.id, 0)
+  // Orphans (disconnected nodes) → group as extra roots
+  const orphans = nodes.filter(n => !assigned.has(n.id))
+  for (const o of orphans) {
+    assigned.add(o.id)
+    depthMap.set(o.id, 0)
+    treeChildren.set(o.id, [])
+    roots.push(o)
   }
 
-  // Group by layer
-  const layers = new Map<number, GraphNode[]>()
-  for (const n of nodes) {
-    const d = layer.get(n.id) ?? 0
-    if (!layers.has(d)) layers.set(d, [])
-    layers.get(d)!.push(n)
+  // Calculate subtree leaf-width bottom-up
+  const subtreeW = new Map<string, number>()
+  function calcWidth(nid: string): number {
+    const ch = treeChildren.get(nid) ?? []
+    if (ch.length === 0) { subtreeW.set(nid, 1); return 1 }
+    const w = ch.reduce((sum, c) => sum + calcWidth(c), 0)
+    subtreeW.set(nid, w)
+    return w
   }
 
-  const layerHeight = 80
-  const nodeSpacing = 60
-  for (const [depth, layerNodes] of layers) {
-    const startX = -(layerNodes.length - 1) * nodeSpacing / 2
-    layerNodes.forEach((n, i) => {
-      n.x = startX + i * nodeSpacing
-      n.y = depth * layerHeight
-      n.vx = 0
-      n.vy = 0
-    })
+  // Position each subtree: node centered above its children
+  function positionSubtree(nid: string, leftX: number, depth: number) {
+    const n = nodeMap.get(nid)
+    if (!n) return
+    const ch = treeChildren.get(nid) ?? []
+    const w = subtreeW.get(nid) ?? 1
+
+    n.x = leftX + (w - 1) * NODE_GAP / 2
+    n.y = depth * LAYER_HEIGHT
+    n.vx = 0
+    n.vy = 0
+
+    let childX = leftX
+    for (const c of ch) {
+      const cw = subtreeW.get(c) ?? 1
+      positionSubtree(c, childX, depth + 1)
+      childX += cw * NODE_GAP
+    }
   }
+
+  // Layout all root subtrees side by side
+  for (const r of roots) calcWidth(r.id)
+
+  let totalX = 0
+  for (const r of roots) {
+    positionSubtree(r.id, totalX, 0)
+    totalX += (subtreeW.get(r.id) ?? 1) * NODE_GAP
+  }
+
+  // Center the whole tree at origin
+  const xs = nodes.map(n => n.x)
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2
+  for (const n of nodes) n.x -= cx
 }
 
 function computeRadialLayout(nodes: GraphNode[]) {
