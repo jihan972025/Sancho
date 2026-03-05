@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react'
 
 export interface GraphNode {
   id: string
@@ -19,6 +19,11 @@ export interface GraphEdge {
   source: string
   target: string
   type: string
+}
+
+export interface GraphHandle {
+  zoomIn: () => void
+  zoomOut: () => void
 }
 
 interface Props {
@@ -54,7 +59,7 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b]
 }
 
-export default function OntologyGraph({ nodes, edges, selectedNodeId, highlightFile, onSelectNode }: Props) {
+const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ nodes, edges, selectedNodeId, highlightFile, onSelectNode }, ref) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
   const nodesRef = useRef<GraphNode[]>([])
@@ -62,6 +67,15 @@ export default function OntologyGraph({ nodes, edges, selectedNodeId, highlightF
 
   // Camera state
   const camRef = useRef({ x: 0, y: 0, zoom: 1 })
+
+  useImperativeHandle(ref, () => ({
+    zoomIn() {
+      camRef.current.zoom = Math.min(5, camRef.current.zoom * 1.3)
+    },
+    zoomOut() {
+      camRef.current.zoom = Math.max(0.1, camRef.current.zoom * 0.7)
+    },
+  }))
   const dragRef = useRef<{ dragging: boolean; startX: number; startY: number; camStartX: number; camStartY: number; draggedNode: GraphNode | null }>({
     dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null,
   })
@@ -477,4 +491,6 @@ export default function OntologyGraph({ nodes, edges, selectedNodeId, highlightF
       onDoubleClick={handleDblClick}
     />
   )
-}
+})
+
+export default OntologyGraph

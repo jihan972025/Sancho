@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import OntologyGraph, { type GraphNode, type GraphEdge } from './OntologyGraph'
+import { useState, useCallback, useRef } from 'react'
+import OntologyGraph, { type GraphNode, type GraphEdge, type GraphHandle } from './OntologyGraph'
 import OntologyFileList from './OntologyFileList'
 import OntologyProperties from './OntologyProperties'
 import { analyzeOntology, listOntologyFiles } from '../../api/client'
@@ -11,6 +11,7 @@ interface FileEntry {
 }
 
 export default function OntologyPanel() {
+  const graphRef = useRef<GraphHandle>(null)
   const [folderPath, setFolderPath] = useState('')
   const [files, setFiles] = useState<FileEntry[]>([])
   const [nodes, setNodes] = useState<GraphNode[]>([])
@@ -137,6 +138,7 @@ export default function OntologyPanel() {
           </div>
         ) : (
           <OntologyGraph
+            ref={graphRef}
             nodes={nodes}
             edges={edges}
             selectedNodeId={selectedNode?.id ?? null}
@@ -151,14 +153,14 @@ export default function OntologyPanel() {
             <button
               className="w-7 h-7 bg-slate-800/80 hover:bg-slate-700 rounded flex items-center justify-center text-slate-400 hover:text-white"
               title="Zoom In"
-              onClick={() => {/* handled by mouse wheel */}}
+              onClick={() => graphRef.current?.zoomIn()}
             >
               <ZoomIn size={14} />
             </button>
             <button
               className="w-7 h-7 bg-slate-800/80 hover:bg-slate-700 rounded flex items-center justify-center text-slate-400 hover:text-white"
               title="Zoom Out"
-              onClick={() => {/* handled by mouse wheel */}}
+              onClick={() => graphRef.current?.zoomOut()}
             >
               <ZoomOut size={14} />
             </button>
