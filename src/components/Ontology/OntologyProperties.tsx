@@ -120,60 +120,56 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
             const circularIn = incoming.filter(e => e.circular)
             if (circularOut.length === 0 && circularIn.length === 0) return null
 
+            // BFS helper: find shortest path from 'start' to 'goal' via outgoing edges
+            const bfsPath = (start: string, goal: string, excludeEdge?: GraphEdge) => {
+              const queue: { nid: string; path: string[]; types: string[] }[] = []
+              const visited = new Set([start])
+              // seed with all outgoing edges from start
+              for (const e of edges) {
+                if (e.source !== start || visited.has(e.target) || e === excludeEdge) continue
+                if (e.target === goal) return { path: [start, goal], types: [e.type] }
+                queue.push({ nid: e.target, path: [start, e.target], types: [e.type] })
+                visited.add(e.target)
+              }
+              while (queue.length > 0) {
+                const cur = queue.shift()!
+                for (const e of edges) {
+                  if (e.source !== cur.nid || visited.has(e.target) || e === excludeEdge) continue
+                  if (e.target === goal) return { path: [...cur.path, goal], types: [...cur.types, e.type] }
+                  if (cur.path.length < 10) {
+                    visited.add(e.target)
+                    queue.push({ nid: e.target, path: [...cur.path, e.target], types: [...cur.types, e.type] })
+                  }
+                }
+              }
+              return null
+            }
+
             // Trace cycle paths
             const cyclePaths: { path: string[]; edgeTypes: string[] }[] = []
             const seenCycles = new Set<string>()
 
-            // For outgoing circular edges: trace node → target → ... → node
+            // For outgoing circular edges: node → target → ... → node
             for (const ce of circularOut) {
-              const path = [node.id, ce.target]
-              const edgeTypes = [ce.type]
-              const visited = new Set([node.id])
-              let current = ce.target
-              let found = false
-              for (let step = 0; step < 10 && !found; step++) {
-                const nextEdge = edges.find(e => e.source === current && !visited.has(e.target))
-                if (!nextEdge) break
-                if (nextEdge.target === node.id) {
-                  edgeTypes.push(nextEdge.type)
-                  found = true
-                } else {
-                  visited.add(nextEdge.target)
-                  path.push(nextEdge.target)
-                  edgeTypes.push(nextEdge.type)
-                  current = nextEdge.target
-                }
-              }
-              if (found) {
+              // Find path from ce.target back to node
+              const result = bfsPath(ce.target, node.id)
+              if (result) {
+                const path = [node.id, ...result.path]
+                const types = [ce.type, ...result.types]
                 const key = path.join('→')
-                if (!seenCycles.has(key)) { seenCycles.add(key); cyclePaths.push({ path, edgeTypes }) }
+                if (!seenCycles.has(key)) { seenCycles.add(key); cyclePaths.push({ path, edgeTypes: types }) }
               }
             }
 
-            // For incoming circular edges: trace node → ... → source → node
+            // For incoming circular edges: node → ... → source → node
             for (const ce of circularIn) {
-              const path = [node.id]
-              const edgeTypes: string[] = []
-              const visited = new Set<string>()
-              let current = node.id
-              let found = false
-              for (let step = 0; step < 10 && !found; step++) {
-                // Follow outgoing edges from current toward ce.source
-                const nextEdge = edges.find(e => e.source === current && !visited.has(e.target) && e !== ce)
-                if (!nextEdge) break
-                visited.add(nextEdge.target)
-                path.push(nextEdge.target)
-                edgeTypes.push(nextEdge.type)
-                if (nextEdge.target === ce.source) {
-                  edgeTypes.push(ce.type)
-                  found = true
-                } else {
-                  current = nextEdge.target
-                }
-              }
-              if (found) {
+              // Find path from node to ce.source (excluding the circular edge itself)
+              const result = bfsPath(node.id, ce.source, ce)
+              if (result) {
+                const path = result.path
+                const types = [...result.types, ce.type]
                 const key = path.join('→')
-                if (!seenCycles.has(key)) { seenCycles.add(key); cyclePaths.push({ path, edgeTypes }) }
+                if (!seenCycles.has(key)) { seenCycles.add(key); cyclePaths.push({ path, edgeTypes: types }) }
               }
             }
 
