@@ -61,17 +61,12 @@ export default function OntologyPanel() {
 
   const handleSelectFolder = useCallback(async () => {
     try {
-      // Use Electron native dialog
-      if (window.electronAPI?.selectFolder) {
-        const folder = await window.electronAPI.selectFolder()
-        if (!folder) return
-        await loadFolder(folder)
-      } else {
-        // Fallback: show manual input
-        setShowManualInput(true)
-      }
+      const folder = await window.electronAPI.selectFolder()
+      if (!folder) return
+      await loadFolder(folder)
     } catch (err: any) {
-      setError(err.message || 'Failed to select folder')
+      // Fallback if electronAPI not available (e.g. browser dev)
+      setShowManualInput(true)
     }
   }, [loadFolder])
 
