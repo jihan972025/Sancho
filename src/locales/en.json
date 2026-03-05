@@ -239,7 +239,8 @@
     "matrixTokenHelp": "If signed up via SSO without password: Element Web → Settings → Help & About → Copy Access Token",
     "slackTokenHelp": "Create a Slack App at api.slack.com/apps. Enable Socket Mode for App Token (xapp-...), and copy Bot Token (xoxb-...) from OAuth & Permissions.",
     "discordTokenHelp": "Create a Discord Bot at discord.com/developers/applications. Copy the Bot Token from the Bot section. Enable Message Content Intent.",
-    "voiceApp": "Voice App"
+    "voiceApp": "Voice App",
+    "features": "Features"
   },
   "profile": {
     "googleAccount": "Google Account",

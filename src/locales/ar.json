@@ -238,6 +238,7 @@
     "matrixPasswordHelp": "كلمة مرور حساب Element X الخاص بك. إذا سجلت عبر SSO (Gmail، إلخ)، استخدم رمز الوصول أدناه.",
     "matrixTokenHelp": "إذا سجلت عبر SSO بدون كلمة مرور: Element Web → Settings → Help & About → نسخ رمز الوصول",
     "voiceApp": "تطبيق الصوت",
+    "features": "إدارة الميزات",
     "discordTokenHelp": "أنشئ بوت Discord على discord.com/developers/applications. انسخ Bot Token من قسم Bot. فعّل Message Content Intent."
   },
   "profile": {

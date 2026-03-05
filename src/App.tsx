@@ -14,6 +14,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useChatStore } from './stores/chatStore'
 import { useMemoryStore } from './stores/memoryStore'
 import { useConversationStore } from './stores/conversationStore'
+import { useFeatureStore } from './stores/featureStore'
 import PatchNotification from './components/PatchNotification'
 
 type Tab = 'chat' | 'crypto' | 'scheduler' | 'ontology' | 'p2pchat' | 'logs' | 'settings'
@@ -25,6 +26,15 @@ export default function App() {
   const setConfig = useSettingsStore((s) => s.setConfig)
   const setModels = useChatStore((s) => s.setModels)
   const addMessage = useChatStore((s) => s.addMessage)
+  const isVisible = useFeatureStore((s) => s.isVisible)
+
+  // If current tab was disabled, fall back to first visible tab
+  useEffect(() => {
+    if (activeTab !== 'settings' && !isVisible(activeTab)) {
+      const fallback = ['chat', 'crypto', 'scheduler', 'ontology', 'p2pchat', 'logs'].find((t) => isVisible(t))
+      setActiveTab((fallback as Tab) || 'settings')
+    }
+  }, [activeTab, isVisible])
 
   // Global chat app message listeners (works regardless of active tab)
   useEffect(() => {

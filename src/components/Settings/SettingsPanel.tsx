@@ -10,8 +10,9 @@ import ChatAppTab from './ChatAppTab'
 import ApiTab from './ApiTab'
 import LanguageTab from './LanguageTab'
 import VoiceAppTab from './VoiceAppTab'
+import FeatureManagementTab from './FeatureManagementTab'
 
-type Tab = 'profile' | 'llm' | 'chatapp' | 'api' | 'voice' | 'language'
+type Tab = 'profile' | 'llm' | 'chatapp' | 'api' | 'voice' | 'language' | 'features'
 
 export default function SettingsPanel() {
   const { t } = useTranslation()
@@ -50,6 +51,7 @@ export default function SettingsPanel() {
     { id: 'api', labelKey: 'settings.api' },
     { id: 'voice', labelKey: 'settings.voiceApp' },
     { id: 'language', labelKey: 'settings.languageTab' },
+    { id: 'features', labelKey: 'settings.features' },
   ]
 
   return (
@@ -80,11 +82,12 @@ export default function SettingsPanel() {
           {activeTab === 'api' && <ApiTab />}
           {activeTab === 'voice' && <VoiceAppTab />}
           {activeTab === 'language' && <LanguageTab />}
+          {activeTab === 'features' && <FeatureManagementTab />}
         </div>
       </div>
 
       {/* Fixed save button - hidden on profile tab (has its own save) */}
-      {activeTab !== 'profile' && activeTab !== 'voice' && (
+      {activeTab !== 'profile' && activeTab !== 'voice' && activeTab !== 'features' && (
         <div className="border-t border-slate-700 px-6 py-3">
           <div className="max-w-2xl mx-auto">
             <button

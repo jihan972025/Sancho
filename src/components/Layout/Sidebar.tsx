@@ -1,4 +1,5 @@
 import { MessageSquare, CandlestickChart, Bot, Users, Settings, ScrollText, Network } from 'lucide-react'
+import { useFeatureStore } from '../../stores/featureStore'
 
 interface Props {
   activeTab: string
@@ -16,9 +17,11 @@ const tabs = [
 ]
 
 export default function Sidebar({ activeTab, onTabChange }: Props) {
+  const isVisible = useFeatureStore((s) => s.isVisible)
+
   return (
     <div className="w-16 bg-slate-950 border-r border-slate-800 flex flex-col items-center py-4 gap-2">
-      {tabs.map((tab) => {
+      {tabs.filter((tab) => isVisible(tab.id)).map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
         return (
