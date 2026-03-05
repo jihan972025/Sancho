@@ -7,12 +7,12 @@ const STORAGE_KEY = 'sancho-feature-visibility'
 
 function loadVisibility(): Record<FeatureId, boolean> {
   const defaults: Record<FeatureId, boolean> = {
-    chat: true,
-    crypto: true,
-    scheduler: true,
+    chat: false,
+    crypto: false,
+    scheduler: false,
     ontology: true,
-    p2pchat: true,
-    logs: true,
+    p2pchat: false,
+    logs: false,
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
