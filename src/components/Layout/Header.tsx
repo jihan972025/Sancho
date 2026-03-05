@@ -44,9 +44,6 @@ export default function Header({ activeTab, backendReady }: Props) {
         <h1 className="text-sm font-medium text-slate-200">
           {tabNames[activeTab] || activeTab}
         </h1>
-        <span className="text-[10px] text-slate-500 font-mono select-none">
-          v{__APP_VERSION__}
-        </span>
       </div>
       <div className="flex items-center gap-3 text-xs text-slate-400">
         <div className="flex items-center gap-1.5">
