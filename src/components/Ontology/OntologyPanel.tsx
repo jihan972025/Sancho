@@ -20,26 +20,18 @@ export default function OntologyPanel() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSelectFolder = useCallback(async () => {
+  const [manualPath, setManualPath] = useState('')
+  const [showManualInput, setShowManualInput] = useState(false)
+
+  const loadFolder = useCallback(async (folder: string) => {
+    setFolderPath(folder)
+    setError(null)
+    setLoading(true)
+    setSelectedNode(null)
+    setHighlightFile(null)
+    setShowManualInput(false)
+
     try {
-      let folder: string | null = null
-
-      // Try Electron dialog first
-      if (window.electronAPI?.selectFolder) {
-        folder = await window.electronAPI.selectFolder()
-      } else {
-        // Fallback: prompt for path
-        folder = prompt('Enter folder path:')
-      }
-
-      if (!folder) return
-      setFolderPath(folder)
-      setError(null)
-      setLoading(true)
-      setSelectedNode(null)
-      setHighlightFile(null)
-
-      // Fetch file list and analysis in parallel
       const [fileResult, graphResult] = await Promise.all([
         listOntologyFiles(folder),
         analyzeOntology(folder),
@@ -47,7 +39,6 @@ export default function OntologyPanel() {
 
       setFiles(fileResult.files)
 
-      // Initialize graph nodes with positions
       const graphNodes: GraphNode[] = graphResult.nodes.map((n, i) => {
         const angle = i * 2.39996
         const r = Math.sqrt(i) * 30
@@ -67,6 +58,28 @@ export default function OntologyPanel() {
       setLoading(false)
     }
   }, [])
+
+  const handleSelectFolder = useCallback(async () => {
+    try {
+      // Use Electron native dialog
+      if (window.electronAPI?.selectFolder) {
+        const folder = await window.electronAPI.selectFolder()
+        if (!folder) return
+        await loadFolder(folder)
+      } else {
+        // Fallback: show manual input
+        setShowManualInput(true)
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to select folder')
+    }
+  }, [loadFolder])
+
+  const handleManualSubmit = useCallback(async () => {
+    const folder = manualPath.trim()
+    if (!folder) return
+    await loadFolder(folder)
+  }, [manualPath, loadFolder])
 
   const handleSelectNode = useCallback((node: GraphNode | null) => {
     setSelectedNode(node)
@@ -89,6 +102,24 @@ export default function OntologyPanel() {
           onSelectFolder={handleSelectFolder}
           onHighlightFile={setHighlightFile}
         />
+        {showManualInput && (
+          <div className="p-2 border-t border-slate-700">
+            <input
+              value={manualPath}
+              onChange={(e) => setManualPath(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+              placeholder="C:\path\to\folder"
+              className="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-angel-500 mb-1"
+              autoFocus
+            />
+            <button
+              onClick={handleManualSubmit}
+              className="w-full px-2 py-1 bg-angel-600 hover:bg-angel-500 text-white text-xs rounded"
+            >
+              Analyze
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Center: Graph Canvas */}
