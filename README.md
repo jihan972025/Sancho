@@ -179,6 +179,19 @@ All messengers share the same **AI persona, long-term memory, and conversation c
 - **Auto-trading on Upbit** — LLM-based or rule-based strategies with stop-loss and daily loss limits
 - **Natural language trading** — "Buy 100,000 KRW of Bitcoin" or "Check my balance"
 
+### Ontology Analysis
+Visualize and analyze source code relationships with an interactive graph:
+
+- **Code Graph** — parses classes, methods, functions and renders call relationships, inheritance, and imports as a force-directed graph
+- **6 Languages** — Java, Python, TypeScript, JavaScript, Go, C/C++
+- **Circular Dependency Detection** — detects cyclic imports/calls, highlights in red with BFS cycle path tracing
+- **Dead Code Detection** — identifies unreferenced methods/functions (fan-in = 0), shown in gray
+- **Impact Analysis** — BFS 3-depth analysis showing which nodes are affected when a node changes
+- **Complexity Metrics** — fan-in, fan-out, lines count reflected in node size and color (heatmap)
+- **Security Vulnerability Scanning** — regex-based detection of SQL injection, command injection, hardcoded credentials, eval/exec, XSS, weak crypto, and more (15 rules, 4 severity levels)
+- **3 Layout Modes** — force-directed, tree (left-to-right), radial
+- **Interactive Features** — node search (Ctrl+F), minimap with drag, code preview on hover, PNG export, inheritance tree view
+
 ### Agent Builder
 Build automated multi-step workflows with a visual drag-and-drop canvas:
 
@@ -318,6 +331,7 @@ Python FastAPI Backend (port 8765)         <- Subprocess managed by Electron
   |-- Email (Gmail + Outlook via Graph API)
   |-- Calendar, Tasks & Sheets (Google APIs)
   |-- Messenger Bots (WhatsApp, Telegram, Slack, Discord, Matrix)
+  |-- Ontology Analysis (code graph, vulnerability scan)
   |-- Agent Builder (visual workflow canvas)
   |-- Auto-Trading Engine (Upbit)
   |-- P2P Chat (WebSocket rooms)

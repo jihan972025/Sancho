@@ -1,19 +1,25 @@
 {
     "requires_full_update":  false,
     "channels":  {
-                     "frontend":  {
-                                      "target":  "app.asar.unpacked/dist",
-                                      "sha256":  "834c85a045fdd1b12832ac17ea107eec77a475b8fb3cc85a9b46e39139798595",
-                                      "asset":  "patch-frontend-1.1.6.zip",
-                                      "size":  268199
-                                  },
                      "backend":  {
                                      "target":  "backend",
-                                     "sha256":  "1467af31246dd959d39c5ba51cca32a412282a9ab18284d38341bd530de71785",
-                                     "asset":  "patch-backend-1.1.6.zip",
-                                     "size":  23718115
-                                 }
+                                     "sha256":  "ca92e790ed88a4044070370ba2c21e94eb634996412aa2598865c4deceb22f2d",
+                                     "asset":  "patch-backend-1.1.7.zip",
+                                     "size":  23732498
+                                 },
+                     "frontend":  {
+                                      "target":  "app.asar.unpacked/dist",
+                                      "sha256":  "43ab687889c2abbad8eb06cb540dba6e62869829bd8f90937cbc2d7c485127e2",
+                                      "asset":  "patch-frontend-1.1.7.zip",
+                                      "size":  285463
+                                  },
+                     "electron":  {
+                                      "target":  "app.asar.unpacked/dist-electron",
+                                      "sha256":  "7f53c93b06166edd84f4e068a63cf6ff4ef848fcec707830e35ac7fb5abd7105",
+                                      "asset":  "patch-electron-1.1.7.zip",
+                                      "size":  7982
+                                  }
                  },
-    "min_version":  "1.1.5",
-    "version":  "1.1.6"
+    "min_version":  "1.1.7",
+    "version":  "1.1.7"
 }
