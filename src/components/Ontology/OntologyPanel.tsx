@@ -3,7 +3,7 @@ import OntologyGraph, { type GraphNode, type GraphEdge, type GraphHandle, type L
 import OntologyFileList from './OntologyFileList'
 import OntologyProperties from './OntologyProperties'
 import { analyzeOntology, listOntologyFiles, getCodePreview } from '../../api/client'
-import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost } from 'lucide-react'
+import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost, RefreshCw } from 'lucide-react'
 
 interface FileEntry {
   path: string
@@ -349,6 +349,19 @@ export default function OntologyPanel() {
         {/* Toolbar overlay */}
         {nodes.length > 0 && (
           <>
+            {/* Top-left: refresh */}
+            <div className="absolute top-2 left-2 z-10">
+              <button
+                onClick={() => folderPath && loadFolder(folderPath)}
+                disabled={loading}
+                className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white text-[10px] px-2 py-1 rounded transition-colors disabled:opacity-50"
+                title="Refresh analysis"
+              >
+                <RefreshCw size={11} className={loading ? 'animate-spin' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
+
             {/* Top-right: badges */}
             <div className="absolute top-2 right-2 flex gap-1.5 z-10">
               {cycleCount > 0 && (
