@@ -1,4 +1,4 @@
-import { X, FileCode, ArrowRight, Circle, ListOrdered, Zap } from 'lucide-react'
+import { X, FileCode, ArrowRight, Circle, ListOrdered, Zap, AlertTriangle, RefreshCw } from 'lucide-react'
 import type { GraphNode, GraphEdge } from './OntologyGraph'
 
 interface Props {
@@ -113,6 +113,123 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
             )}
           </div>
 
+          {/* Circular Dependencies */}
+          {(() => {
+            // Find circular edges connected to this node
+            const circularOut = outgoing.filter(e => e.circular)
+            const circularIn = incoming.filter(e => e.circular)
+            if (circularOut.length === 0 && circularIn.length === 0) return null
+
+            // Trace cycle paths: for each circular outgoing edge, trace forward to find the loop back
+            const cyclePaths: { path: string[]; edgeTypes: string[] }[] = []
+            for (const ce of circularOut) {
+              const path = [node.id, ce.target]
+              const edgeTypes = [ce.type]
+              const visited = new Set([node.id])
+              let current = ce.target
+              let found = false
+              for (let step = 0; step < 10 && !found; step++) {
+                const nextEdge = edges.find(e => e.source === current && !visited.has(e.target))
+                if (!nextEdge) break
+                if (nextEdge.target === node.id) {
+                  edgeTypes.push(nextEdge.type)
+                  found = true
+                } else {
+                  visited.add(nextEdge.target)
+                  path.push(nextEdge.target)
+                  edgeTypes.push(nextEdge.type)
+                  current = nextEdge.target
+                }
+              }
+              if (found) cyclePaths.push({ path, edgeTypes })
+            }
+
+            return (
+              <div>
+                <div className="text-red-400 mb-1.5 flex items-center gap-1 font-medium">
+                  <AlertTriangle size={10} />
+                  Circular Dependencies ({circularOut.length + circularIn.length})
+                </div>
+
+                {/* Show cycle paths */}
+                {cyclePaths.length > 0 && cyclePaths.map((cp, ci) => (
+                  <div key={ci} className="mb-2 bg-red-950/30 border border-red-900/40 rounded p-2">
+                    <div className="text-[10px] text-red-400/70 mb-1 flex items-center gap-1">
+                      <RefreshCw size={8} />
+                      Cycle Path
+                    </div>
+                    <div className="space-y-0.5">
+                      {cp.path.map((nid, pi) => {
+                        const pn = nodeMap.get(nid)
+                        if (!pn) return null
+                        return (
+                          <div key={pi} className="flex items-center gap-1">
+                            <button
+                              className="flex items-center gap-1 text-left hover:text-white text-red-300 text-[11px]"
+                              onClick={() => onNavigate(nid)}
+                            >
+                              <span className="truncate">{pn.label}</span>
+                            </button>
+                            {pi < cp.path.length - 1 && (
+                              <span className="text-red-500/60 text-[9px]">→ {cp.edgeTypes[pi]}</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                      <div className="flex items-center gap-1 text-red-500/60 text-[9px]">
+                        <span>→ {cp.edgeTypes[cp.edgeTypes.length - 1]} →</span>
+                        <span className="text-red-300 text-[11px]">{node.label}</span>
+                        <span className="text-red-500/50">(loop)</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Circular outgoing */}
+                {circularOut.length > 0 && (
+                  <div className="space-y-0.5">
+                    {circularOut.map((e, i) => {
+                      const target = nodeMap.get(e.target)
+                      if (!target) return null
+                      return (
+                        <button
+                          key={`co-${i}`}
+                          className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-red-900/30 text-red-300 hover:text-red-200"
+                          onClick={() => onNavigate(e.target)}
+                        >
+                          <ArrowRight size={8} className="shrink-0 text-red-500" />
+                          <span className="truncate">{target.label}</span>
+                          <span className="text-red-500/60 ml-auto shrink-0">{EDGE_TYPE_LABELS[e.type] || e.type}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Circular incoming */}
+                {circularIn.length > 0 && (
+                  <div className="space-y-0.5 mt-0.5">
+                    {circularIn.map((e, i) => {
+                      const source = nodeMap.get(e.source)
+                      if (!source) return null
+                      return (
+                        <button
+                          key={`ci-${i}`}
+                          className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-red-900/30 text-red-300 hover:text-red-200"
+                          onClick={() => onNavigate(e.source)}
+                        >
+                          <ArrowRight size={8} className="shrink-0 text-red-500 rotate-180" />
+                          <span className="truncate">{source.label}</span>
+                          <span className="text-red-500/60 ml-auto shrink-0">{EDGE_TYPE_LABELS[e.type] || e.type}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
           {/* Impact Analysis */}
           {impactMap && impactMap.size > 1 && (
             <div>
@@ -198,12 +315,15 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
                   return (
                     <button
                       key={i}
-                      className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                      className={`flex items-center gap-1.5 w-full text-left px-2 py-1 rounded ${e.circular ? 'hover:bg-red-900/30 text-red-300 hover:text-red-200' : 'hover:bg-slate-700/50 text-slate-300 hover:text-white'}`}
                       onClick={() => onNavigate(e.target)}
                     >
-                      <Circle size={6} className="shrink-0" style={{ color: getClusterColor(target.cluster) }} />
+                      {e.circular
+                        ? <AlertTriangle size={6} className="shrink-0 text-red-500" />
+                        : <Circle size={6} className="shrink-0" style={{ color: getClusterColor(target.cluster) }} />
+                      }
                       <span className="truncate">{target.label}</span>
-                      <span className="text-slate-600 ml-auto shrink-0">{EDGE_TYPE_LABELS[e.type] || e.type}</span>
+                      <span className={`ml-auto shrink-0 ${e.circular ? 'text-red-500/60' : 'text-slate-600'}`}>{EDGE_TYPE_LABELS[e.type] || e.type}</span>
                     </button>
                   )
                 })}
@@ -225,12 +345,15 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
                   return (
                     <button
                       key={i}
-                      className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                      className={`flex items-center gap-1.5 w-full text-left px-2 py-1 rounded ${e.circular ? 'hover:bg-red-900/30 text-red-300 hover:text-red-200' : 'hover:bg-slate-700/50 text-slate-300 hover:text-white'}`}
                       onClick={() => onNavigate(e.source)}
                     >
-                      <Circle size={6} className="shrink-0" style={{ color: getClusterColor(source.cluster) }} />
+                      {e.circular
+                        ? <AlertTriangle size={6} className="shrink-0 text-red-500" />
+                        : <Circle size={6} className="shrink-0" style={{ color: getClusterColor(source.cluster) }} />
+                      }
                       <span className="truncate">{source.label}</span>
-                      <span className="text-slate-600 ml-auto shrink-0">{EDGE_TYPE_LABELS[e.type] || e.type}</span>
+                      <span className={`ml-auto shrink-0 ${e.circular ? 'text-red-500/60' : 'text-slate-600'}`}>{EDGE_TYPE_LABELS[e.type] || e.type}</span>
                     </button>
                   )
                 })}
