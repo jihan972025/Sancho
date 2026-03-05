@@ -474,23 +474,24 @@ def _find_semgrep() -> str:
     )
 
 
-async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
-    """Run semgrep scan and return parsed JSON output.
-
-    Raises RuntimeError if semgrep is not installed or the scan fails.
-    """
-    semgrep_bin = _find_semgrep()
-
-    # Use local rules bundled with the app (no semgrep login required)
+def _get_rules_file() -> str:
+    """Return absolute path to bundled Semgrep rules YAML."""
     rules_file = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)),
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "security",
         "semgrep-rules.yml",
     )
     if not os.path.isfile(rules_file):
-        raise RuntimeError(
-            f"Semgrep rules file not found: {rules_file}"
-        )
+        raise RuntimeError(f"Semgrep rules file not found: {rules_file}")
+    return rules_file
+
+
+def _run_semgrep_sync(scan_path: str, timeout: float = 120) -> dict:
+    """Run semgrep synchronously (called via asyncio.to_thread)."""
+    import subprocess as sp
+
+    semgrep_bin = _find_semgrep()
+    rules_file = _get_rules_file()
 
     cmd = [
         semgrep_bin, "scan",
@@ -505,19 +506,23 @@ async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
         "--exclude", "dist",
         "--exclude", "build",
         "--exclude", "target",
+        "--exclude", ".claude",
         scan_path,
     ]
 
-    logger.info("semgrep cmd: %s", " ".join(cmd))
+    logger.info("Semgrep binary: %s", semgrep_bin)
+    logger.info("Semgrep rules:  %s", rules_file)
+    logger.info("Semgrep scan:   %s", scan_path)
+    logger.info("Semgrep cmd:    %s", " ".join(cmd))
 
     try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await asyncio.wait_for(
-            proc.communicate(), timeout=timeout
+        result = sp.run(
+            cmd,
+            capture_output=True,
+            timeout=timeout,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
         )
     except FileNotFoundError:
         raise RuntimeError(
@@ -525,28 +530,46 @@ async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
             "Install it with: pip install semgrep\n"
             "Then restart the application."
         )
-    except asyncio.TimeoutError:
-        proc.kill()
+    except sp.TimeoutExpired:
         raise RuntimeError(f"Semgrep scan timed out after {timeout}s")
 
-    out = stdout.decode("utf-8", errors="replace")
-    err = stderr.decode("utf-8", errors="replace").strip()
+    out = result.stdout or ""
+    err = (result.stderr or "").strip()
+    rc = result.returncode
 
-    # Semgrep exits with 0 (no findings) or 1 (findings found) — both OK
-    if proc.returncode not in (0, 1):
-        # Include first 300 chars of stderr for debugging
-        detail = (err or out)[:300]
-        raise RuntimeError(
-            f"Semgrep scan failed (exit code {proc.returncode}): {detail}"
-        )
+    logger.info(
+        "Semgrep finished: exit=%d, stdout=%d bytes, stderr=%d bytes",
+        rc, len(out), len(err),
+    )
 
     if err:
-        logger.debug("semgrep stderr: %s", err[:500])
+        logger.debug("Semgrep stderr: %s", err[:500])
+
+    # Semgrep exits with 0 (no findings) or 1 (findings found) — both OK
+    if rc not in (0, 1):
+        detail = (err or out)[:500]
+        raise RuntimeError(
+            f"Semgrep scan failed (exit code {rc}): {detail}"
+        )
+
+    if not out.strip():
+        raise RuntimeError("Semgrep returned empty output")
 
     try:
-        return json.loads(out)
+        data = json.loads(out)
     except json.JSONDecodeError as e:
-        raise RuntimeError(f"Failed to parse Semgrep output: {e}")
+        raise RuntimeError(f"Failed to parse Semgrep JSON: {e}")
+
+    num_results = len(data.get("results", []))
+    num_errors = len(data.get("errors", []))
+    logger.info("Semgrep results: %d findings, %d rule errors", num_results, num_errors)
+
+    return data
+
+
+async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
+    """Run semgrep scan asynchronously and return parsed JSON output."""
+    return await asyncio.to_thread(_run_semgrep_sync, scan_path, timeout)
 
 
 def _parse_semgrep_results(
@@ -694,9 +717,10 @@ async def _scan_and_parse(root: str):
     try:
         semgrep_output = await _run_semgrep(root)
         vulnerabilities = _parse_semgrep_results(semgrep_output, root, nodes)
-    except RuntimeError as e:
+        logger.info("Vulnerability scan complete: %d issues found", len(vulnerabilities))
+    except Exception as e:
         vuln_error = str(e)
-        logger.warning("Semgrep scan failed: %s", vuln_error)
+        logger.warning("Semgrep scan failed (%s): %s", type(e).__name__, vuln_error)
 
     return list(nodes.values()), unique_edges, vulnerabilities, vuln_error
 
