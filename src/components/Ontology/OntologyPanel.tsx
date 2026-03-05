@@ -695,9 +695,9 @@ function OntologyDocModal({ onClose }: { onClose: () => void }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1">원격 코드 실행(RCE) 또는 데이터 완전 탈취 가능</td><td className="px-2 py-1 text-right text-slate-400">11</td></tr>
+                  <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1">원격 코드 실행(RCE) 또는 데이터 완전 탈취 가능</td><td className="px-2 py-1 text-right text-slate-400">12</td></tr>
                   <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1">파일 시스템 접근, 데이터 유출, 보안 우회 가능</td><td className="px-2 py-1 text-right text-slate-400">12</td></tr>
-                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1">보안 약점이나 추가 조건 필요한 취약점</td><td className="px-2 py-1 text-right text-slate-400">11</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1">보안 약점이나 추가 조건 필요한 취약점</td><td className="px-2 py-1 text-right text-slate-400">10</td></tr>
                   <tr><td className="px-2 py-1 text-blue-400 font-bold">Low</td><td className="px-2 py-1">정보 노출 또는 보안 모범 사례 미준수</td><td className="px-2 py-1 text-right text-slate-400">1</td></tr>
                 </tbody>
               </table>
@@ -723,7 +723,7 @@ function OntologyDocModal({ onClose }: { onClose: () => void }) {
                   <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">EL Injection</td><td className="px-2 py-1 text-slate-400">SpEL parseExpression()에 동적 입력 → 임의 메소드 호출</td></tr>
                   <tr><td className="px-2 py-1 text-red-400 font-bold">Critical</td><td className="px-2 py-1 text-slate-200">Template Injection</td><td className="px-2 py-1 text-slate-400">Velocity/FreeMarker/Thymeleaf 동적 템플릿 평가 → RCE</td></tr>
                   <tr><td className="px-2 py-1 text-orange-400 font-bold">High</td><td className="px-2 py-1 text-slate-200">LDAP Injection</td><td className="px-2 py-1 text-slate-400">LDAP 검색 필터에 문자열 연결로 쿼리 조작</td></tr>
-                  <tr><td className="px-2 py-1 text-medium font-bold text-yellow-400">Medium</td><td className="px-2 py-1 text-slate-200">Log Injection</td><td className="px-2 py-1 text-slate-400">logger 호출에 request.getParameter 직접 연결 → 로그 위조</td></tr>
+                  <tr><td className="px-2 py-1 text-yellow-400 font-bold">Medium</td><td className="px-2 py-1 text-slate-200">Log Injection</td><td className="px-2 py-1 text-slate-400">logger 호출에 request.getParameter 직접 연결 → 로그 위조</td></tr>
                 </tbody>
               </table>
             </div>
