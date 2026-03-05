@@ -301,7 +301,17 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
       computeRadialLayout(ns)
       camRef.current = { x: 0, y: 0, zoom: 1 }
     } else if (layout === 'force') {
+      // Re-initialize positions to compact spiral so forces are effective
+      for (let i = 0; i < ns.length; i++) {
+        const angle = i * 2.39996
+        const r = Math.sqrt(i) * 30
+        ns[i].x = Math.cos(angle) * r
+        ns[i].y = Math.sin(angle) * r
+        ns[i].vx = 0
+        ns[i].vy = 0
+      }
       tickCount.current = 0
+      camRef.current = { x: 0, y: 0, zoom: 1 }
     }
   }, [layout])
 
