@@ -36,6 +36,38 @@ export default function OntologyPanel() {
   const cycleCount = useMemo(() => edges.filter(e => e.circular).length, [edges])
   const deadCount = useMemo(() => nodes.filter(n => n.dead).length, [nodes])
 
+  // Circular edge source nodes (unique) for badge click navigation
+  const circularNodes = useMemo(() => {
+    const ids = new Set<string>()
+    for (const e of edges) {
+      if (e.circular) { ids.add(e.source); ids.add(e.target) }
+    }
+    return nodes.filter(n => ids.has(n.id))
+  }, [edges, nodes])
+
+  const deadNodes = useMemo(() => nodes.filter(n => n.dead), [nodes])
+
+  const cycleIdxRef = useRef(0)
+  const deadIdxRef = useRef(0)
+
+  const handleCycleBadgeClick = useCallback(() => {
+    if (circularNodes.length === 0) return
+    cycleIdxRef.current = cycleIdxRef.current % circularNodes.length
+    const node = circularNodes[cycleIdxRef.current]
+    setSelectedNode(node)
+    graphRef.current?.focusOnNode(node.id)
+    cycleIdxRef.current = (cycleIdxRef.current + 1) % circularNodes.length
+  }, [circularNodes])
+
+  const handleDeadBadgeClick = useCallback(() => {
+    if (deadNodes.length === 0) return
+    deadIdxRef.current = deadIdxRef.current % deadNodes.length
+    const node = deadNodes[deadIdxRef.current]
+    setSelectedNode(node)
+    graphRef.current?.focusOnNode(node.id)
+    deadIdxRef.current = (deadIdxRef.current + 1) % deadNodes.length
+  }, [deadNodes])
+
   // Impact analysis: BFS from selected node
   const impactMap = useMemo(() => {
     if (!selectedNode) return null
@@ -320,16 +352,24 @@ export default function OntologyPanel() {
             {/* Top-right: badges */}
             <div className="absolute top-2 right-2 flex gap-1.5 z-10">
               {cycleCount > 0 && (
-                <div className="flex items-center gap-1 bg-red-900/80 text-red-300 text-[10px] px-2 py-1 rounded" title="Circular dependencies detected">
+                <button
+                  onClick={handleCycleBadgeClick}
+                  className="flex items-center gap-1 bg-red-900/80 hover:bg-red-800/90 text-red-300 text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                  title="Click to navigate circular dependencies"
+                >
                   <AlertTriangle size={11} />
                   <span>{cycleCount} cycle{cycleCount > 1 ? 's' : ''}</span>
-                </div>
+                </button>
               )}
               {deadCount > 0 && (
-                <div className="flex items-center gap-1 bg-slate-700/80 text-slate-400 text-[10px] px-2 py-1 rounded" title="Unreferenced methods/functions">
+                <button
+                  onClick={handleDeadBadgeClick}
+                  className="flex items-center gap-1 bg-slate-700/80 hover:bg-slate-600/90 text-slate-400 text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
+                  title="Click to navigate dead code"
+                >
                   <Ghost size={11} />
                   <span>{deadCount} dead</span>
-                </div>
+                </button>
               )}
             </div>
 
