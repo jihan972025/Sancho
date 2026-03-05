@@ -300,8 +300,9 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
     } else if (layout === 'radial') {
       computeRadialLayout(ns)
       camRef.current = { x: 0, y: 0, zoom: 1 }
+    } else if (layout === 'force') {
+      tickCount.current = 0
     }
-    // force: just let physics resume
   }, [layout])
 
   // Initialize node positions

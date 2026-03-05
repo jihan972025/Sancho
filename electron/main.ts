@@ -508,64 +508,7 @@ app.whenReady().then(async () => {
   createWindow()
   createTray()
 
-  const menuTemplate: Electron.MenuItemConstructorOptions[] = [
-    {
-      label: 'File',
-      submenu: [
-        { role: 'quit' },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-      ],
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: `Sancho v${getDisplayVersion()}`,
-          enabled: false,
-        },
-        { type: 'separator' },
-        {
-          label: 'About Sancho',
-          click: () => {
-            dialog.showMessageBox({
-              type: 'info',
-              title: 'About Sancho',
-              message: `Sancho v${getDisplayVersion()}`,
-              detail: 'Windows AI Agent Desktop App\n\nhttps://github.com/jihan972025/sancho',
-            })
-          },
-        },
-      ],
-    },
-  ]
-
-  const menu = Menu.buildFromTemplate(menuTemplate)
-  Menu.setApplicationMenu(menu)
+  Menu.setApplicationMenu(null)
 
   if (mainWindow) {
     initWhatsApp(mainWindow)
