@@ -1,3 +1,5 @@
+declare const __APP_VERSION__: string
+
 interface ElectronChatAppAPI {
   connect: (...args: any[]) => Promise<void>
   disconnect: () => Promise<void>
