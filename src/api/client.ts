@@ -518,6 +518,7 @@ export function analyzeOntology(folderPath: string) {
       source: string
       target: string
       type: string
+      order?: number
     }[]
   }>('/api/ontology/analyze', {
     method: 'POST',

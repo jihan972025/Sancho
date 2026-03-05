@@ -19,6 +19,7 @@ export interface GraphEdge {
   source: string
   target: string
   type: string
+  order?: number
 }
 
 export interface GraphHandle {
@@ -269,15 +270,19 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
 
       let opacity = 0.15
       let width = 0.5
+      let showArrow = false
+      let showOrder = false
+      let edgeColor = `rgba(94,94,94,${opacity})`
 
       if (hovId) {
         if (connectedToHover.has(e.source) && connectedToHover.has(e.target)) {
           const color = getClusterColor(s.cluster)
           const [r, g, b] = hexToRgb(color)
-          ctx.strokeStyle = `rgba(${r},${g},${b},0.6)`
+          edgeColor = `rgba(${r},${g},${b},0.6)`
           width = 1.5
+          if (e.type === 'calls') { showArrow = true; showOrder = e.order != null }
         } else {
-          ctx.strokeStyle = `rgba(94,94,94,0.06)`
+          edgeColor = `rgba(94,94,94,0.06)`
           width = 0.3
         }
       } else if (hlFile) {
@@ -286,21 +291,62 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         if (srcInFile || tgtInFile) {
           const color = getClusterColor(s.cluster)
           const [r, g, b] = hexToRgb(color)
-          ctx.strokeStyle = `rgba(${r},${g},${b},0.5)`
+          edgeColor = `rgba(${r},${g},${b},0.5)`
           width = 1.2
+          if (e.type === 'calls') { showArrow = true; showOrder = e.order != null }
         } else {
-          ctx.strokeStyle = `rgba(94,94,94,0.04)`
+          edgeColor = `rgba(94,94,94,0.04)`
           width = 0.3
         }
       } else {
-        ctx.strokeStyle = `rgba(94,94,94,${opacity})`
+        if (e.type === 'calls') showArrow = true
       }
 
+      ctx.strokeStyle = edgeColor
       ctx.lineWidth = width
       ctx.beginPath()
       ctx.moveTo(s.x, s.y)
       ctx.lineTo(t.x, t.y)
       ctx.stroke()
+
+      // Arrow head for call edges
+      if (showArrow) {
+        const dx = t.x - s.x
+        const dy = t.y - s.y
+        const len = Math.sqrt(dx * dx + dy * dy)
+        if (len > 0) {
+          const tRadius = Math.max(3, Math.min(18, 3 + t.size * 1.5))
+          const ux = dx / len
+          const uy = dy / len
+          const ax = t.x - ux * (tRadius + 2)
+          const ay = t.y - uy * (tRadius + 2)
+          const arrowSize = Math.max(4, width * 3)
+          ctx.fillStyle = edgeColor
+          ctx.beginPath()
+          ctx.moveTo(ax, ay)
+          ctx.lineTo(ax - ux * arrowSize - uy * arrowSize * 0.5, ay - uy * arrowSize + ux * arrowSize * 0.5)
+          ctx.lineTo(ax - ux * arrowSize + uy * arrowSize * 0.5, ay - uy * arrowSize - ux * arrowSize * 0.5)
+          ctx.closePath()
+          ctx.fill()
+        }
+      }
+
+      // Order number badge for call edges
+      if (showOrder && e.order != null) {
+        const mx = (s.x + t.x) / 2
+        const my = (s.y + t.y) / 2
+        const badgeR = 7 / cam.zoom
+        ctx.fillStyle = '#FF8C00'
+        ctx.beginPath()
+        ctx.arc(mx, my, badgeR, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.fillStyle = '#000'
+        const badgeFont = Math.max(7, 10 / cam.zoom)
+        ctx.font = `bold ${Math.round(badgeFont)}px sans-serif`
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(`${e.order + 1}`, mx, my)
+      }
     }
 
     // Draw nodes

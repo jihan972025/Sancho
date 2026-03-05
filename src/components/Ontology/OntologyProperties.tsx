@@ -1,4 +1,4 @@
-import { X, FileCode, ArrowRight, Circle } from 'lucide-react'
+import { X, FileCode, ArrowRight, Circle, ListOrdered } from 'lucide-react'
 import type { GraphNode, GraphEdge } from './OntologyGraph'
 
 interface Props {
@@ -92,6 +92,40 @@ export default function OntologyProperties({ node, edges, allNodes, onClose, onN
               <div className="text-white font-medium">#{node.cluster}</div>
             </div>
           </div>
+
+          {/* Call Sequence (for method/function nodes) */}
+          {(node.type === 'method' || node.type === 'function') && (() => {
+            const callEdges = outgoing
+              .filter((e) => e.type === 'calls' && e.order != null)
+              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+            if (callEdges.length === 0) return null
+            return (
+              <div>
+                <div className="text-slate-500 mb-1.5 flex items-center gap-1">
+                  <ListOrdered size={10} />
+                  Call Sequence ({callEdges.length})
+                </div>
+                <div className="space-y-0.5">
+                  {callEdges.map((e, i) => {
+                    const target = nodeMap.get(e.target)
+                    if (!target) return null
+                    return (
+                      <button
+                        key={i}
+                        className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                        onClick={() => onNavigate(e.target)}
+                      >
+                        <span className="shrink-0 w-4 h-4 rounded-full bg-orange-500/80 text-[9px] font-bold text-black flex items-center justify-center">
+                          {(e.order ?? 0) + 1}
+                        </span>
+                        <span className="truncate">{target.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Outgoing connections */}
           {outgoing.length > 0 && (

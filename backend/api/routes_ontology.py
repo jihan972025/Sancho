@@ -26,6 +26,7 @@ class OntologyEdge(BaseModel):
     source: str
     target: str
     type: str  # calls, imports, extends, implements, references
+    order: Optional[int] = None  # call sequence order within a method (0-based)
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +126,7 @@ def _parse_java(filepath: str, nodes: dict, edges: list, file_label: str):
                 )
             )
 
-        # Find method calls inside this method body
+        # Find method calls inside this method body (with call order)
         brace_count = 0
         body_start = m.end() - 1
         body_end = body_start
@@ -138,6 +139,7 @@ def _parse_java(filepath: str, nodes: dict, edges: list, file_label: str):
                     body_end = i
                     break
         body = content[body_start:body_end]
+        call_order = 0
         for call in _JAVA_CALL_RE.finditer(body):
             callee = call.group(1)
             if callee in (
@@ -150,8 +152,9 @@ def _parse_java(filepath: str, nodes: dict, edges: list, file_label: str):
             callee_id = f"method:{owner}.{callee}"
             if callee_id != method_id:
                 edges.append(
-                    OntologyEdge(source=method_id, target=callee_id, type="calls")
+                    OntologyEdge(source=method_id, target=callee_id, type="calls", order=call_order)
                 )
+                call_order += 1
 
 
 # ---------------------------------------------------------------------------
