@@ -361,16 +361,18 @@ export default function OntologyPanel() {
                   <span>{cycleCount} cycle{cycleCount > 1 ? 's' : ''}</span>
                 </button>
               )}
-              {deadCount > 0 && (
-                <button
-                  onClick={handleDeadBadgeClick}
-                  className="flex items-center gap-1 bg-slate-700/80 hover:bg-slate-600/90 text-slate-400 text-[10px] px-2 py-1 rounded cursor-pointer transition-colors"
-                  title="Click to navigate dead code"
-                >
-                  <Ghost size={11} />
-                  <span>{deadCount} dead</span>
-                </button>
-              )}
+              <button
+                onClick={handleDeadBadgeClick}
+                className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors ${
+                  deadCount > 0
+                    ? 'bg-slate-700/80 hover:bg-slate-600/90 text-slate-400 cursor-pointer'
+                    : 'bg-slate-800/60 text-slate-600 cursor-default'
+                }`}
+                title={deadCount > 0 ? 'Click to navigate dead code' : 'No dead code detected'}
+              >
+                <Ghost size={11} />
+                <span>{deadCount} dead</span>
+              </button>
             </div>
 
             {/* Bottom-right: controls */}
