@@ -12,6 +12,7 @@ export interface GraphNode {
   fanOut?: number
   lines?: number
   dead?: boolean
+  vulnCount?: number
   // Physics simulation state
   x: number
   y: number
@@ -25,6 +26,15 @@ export interface GraphEdge {
   type: string
   order?: number
   circular?: boolean
+}
+
+export interface Vulnerability {
+  rule: string
+  severity: string
+  message: string
+  line: number
+  file: string
+  nodeId: string
 }
 
 export type LayoutMode = 'force' | 'tree' | 'radial'
@@ -692,6 +702,27 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
         ctx.textBaseline = 'top'
         ctx.fillStyle = `rgba(255,255,255,${alpha * 0.9})`
         ctx.fillText(n.label, n.x, n.y + radius + 3)
+      }
+
+      // Vulnerability indicator (red dot at top-right)
+      if ((n.vulnCount ?? 0) > 0) {
+        const ix = n.x + radius * 0.65
+        const iy = n.y - radius * 0.65
+        const ir = Math.max(4, radius * 0.4)
+        ctx.fillStyle = `rgba(239,68,68,${alpha})`
+        ctx.beginPath()
+        ctx.arc(ix, iy, ir, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = `rgba(0,0,0,${alpha * 0.5})`
+        ctx.lineWidth = 0.5
+        ctx.stroke()
+        if (cam.zoom > 0.4) {
+          ctx.font = `bold ${Math.round(Math.max(7, ir * 1.2))}px sans-serif`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillStyle = `rgba(255,255,255,${alpha})`
+          ctx.fillText(`${n.vulnCount}`, ix, iy)
+        }
       }
     }
 

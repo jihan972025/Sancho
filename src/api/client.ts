@@ -517,6 +517,7 @@ export function analyzeOntology(folderPath: string) {
       fanOut?: number
       lines?: number
       dead?: boolean
+      vulnCount?: number
     }[]
     edges: {
       source: string
@@ -524,6 +525,14 @@ export function analyzeOntology(folderPath: string) {
       type: string
       order?: number
       circular?: boolean
+    }[]
+    vulnerabilities: {
+      rule: string
+      severity: string
+      message: string
+      line: number
+      file: string
+      nodeId: string
     }[]
   }>('/api/ontology/analyze', {
     method: 'POST',

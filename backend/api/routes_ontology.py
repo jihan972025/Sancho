@@ -24,6 +24,7 @@ class OntologyNode(BaseModel):
     fanOut: int = 0
     lines: int = 0
     dead: bool = False
+    vulnCount: int = 0
 
 
 class OntologyEdge(BaseModel):
@@ -32,6 +33,15 @@ class OntologyEdge(BaseModel):
     type: str  # calls, imports, extends, implements, references
     order: Optional[int] = None  # call sequence order within a method (0-based)
     circular: bool = False
+
+
+class Vulnerability(BaseModel):
+    rule: str        # e.g. "sql-injection", "hardcoded-credential"
+    severity: str    # "critical", "high", "medium", "low"
+    message: str     # Human-readable description
+    line: int        # Line number in file
+    file: str        # Relative file path
+    nodeId: str      # Enclosing node ID
 
 
 # ---------------------------------------------------------------------------
@@ -412,6 +422,155 @@ def _detect_dead_code(nodes: dict, edges: list) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Security vulnerability detection (regex-based)
+# ---------------------------------------------------------------------------
+
+_VULN_RULES: list[tuple[str, str, str, set, re.Pattern]] = []
+
+
+def _add_rule(rule_id: str, severity: str, message: str, langs: set, pattern: str, flags: int = 0):
+    _VULN_RULES.append((rule_id, severity, message, langs, re.compile(pattern, flags)))
+
+
+# Java
+_add_rule("sql-injection", "critical",
+    "Potential SQL injection via string concatenation",
+    {".java"},
+    r"""(?:"|')\s*(?:SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER)\s+.*?\+\s*\w+""",
+    re.IGNORECASE)
+
+_add_rule("command-injection", "critical",
+    "Potential command injection via Runtime.exec() or ProcessBuilder",
+    {".java"},
+    r"""Runtime\s*\.\s*getRuntime\s*\(\s*\)\s*\.\s*exec\s*\(|new\s+ProcessBuilder\s*\(""")
+
+_add_rule("unsafe-deserialization", "critical",
+    "Unsafe deserialization via ObjectInputStream.readObject()",
+    {".java"},
+    r"""ObjectInputStream.*?\.\s*readObject\s*\(""")
+
+_add_rule("weak-crypto", "medium",
+    "Use of weak cryptographic algorithm (MD5/SHA1/DES)",
+    {".java"},
+    r"""MessageDigest\s*\.\s*getInstance\s*\(\s*["'](?:MD5|SHA-?1|DES)["']""",
+    re.IGNORECASE)
+
+_add_rule("xxe", "medium",
+    "XML parsing without disabling external entities (potential XXE)",
+    {".java"},
+    r"""DocumentBuilderFactory\s*\.\s*newInstance\s*\(""")
+
+# Python
+_add_rule("sql-injection", "critical",
+    "Potential SQL injection via string formatting in execute()",
+    {".py"},
+    r"""\.execute\s*\(\s*(?:f["']|["'].*?%|["'].*?\.\s*format\s*\()""")
+
+_add_rule("command-injection", "critical",
+    "Potential command injection via os.system() or subprocess with shell=True",
+    {".py"},
+    r"""os\s*\.\s*system\s*\(|subprocess\s*\.\s*(?:call|run|Popen)\s*\([^)]*shell\s*=\s*True""")
+
+_add_rule("unsafe-deserialization", "critical",
+    "Unsafe deserialization via pickle or yaml.load without SafeLoader",
+    {".py"},
+    r"""pickle\s*\.\s*loads?\s*\(|yaml\s*\.\s*load\s*\([^)]*(?!Loader)""")
+
+_add_rule("eval-usage", "high",
+    "Use of eval() or exec() can execute arbitrary code",
+    {".py"},
+    r"""\b(?:eval|exec)\s*\(""")
+
+# TypeScript / JavaScript
+_add_rule("xss", "high",
+    "Potential XSS via innerHTML, document.write, or dangerouslySetInnerHTML",
+    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
+    r"""\.innerHTML\s*=|document\s*\.\s*write\s*\(|dangerouslySetInnerHTML""")
+
+_add_rule("command-injection", "critical",
+    "Potential command injection via child_process",
+    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
+    r"""child_process.*?\.exec\s*\(""")
+
+_add_rule("eval-usage", "high",
+    "Use of eval() or new Function() can execute arbitrary code",
+    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
+    r"""\beval\s*\(|new\s+Function\s*\(""")
+
+_add_rule("prototype-pollution", "medium",
+    "Potential prototype pollution via __proto__",
+    {".ts", ".tsx", ".js", ".jsx", ".mjs"},
+    r"""__proto__\s*[=\[]""")
+
+# All languages
+_add_rule("hardcoded-credential", "high",
+    "Hardcoded credential or secret in source code",
+    {".java", ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".c", ".cpp", ".cc", ".h", ".hpp"},
+    r"""(?:password|passwd|secret|api_?key|apikey|api_?secret|auth_?token|access_?token|private_?key)\s*[=:]\s*["'][^"']{4,}["']""",
+    re.IGNORECASE)
+
+_add_rule("hardcoded-ip", "low",
+    "Hardcoded IP address found",
+    {".java", ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".c", ".cpp", ".cc", ".h", ".hpp"},
+    r"""["'](?:\d{1,3}\.){3}\d{1,3}["']""")
+
+
+def _detect_vulnerabilities(
+    nodes: dict, file_contents: dict
+) -> list:
+    """Scan file contents for security vulnerability patterns."""
+    vulnerabilities: list[Vulnerability] = []
+
+    # Build lookup: file -> nodes sorted by line desc (to find enclosing node)
+    file_nodes: dict[str, list] = {}
+    for node in nodes.values():
+        if node.file and node.file != "(external)" and node.line:
+            file_nodes.setdefault(node.file, []).append(node)
+    for fn_list in file_nodes.values():
+        fn_list.sort(key=lambda n: n.line or 0, reverse=True)
+
+    for rel_path, content in file_contents.items():
+        ext = os.path.splitext(rel_path)[1].lower()
+        lines = content.split("\n")
+
+        for rule_id, severity, message, langs, pattern in _VULN_RULES:
+            if ext not in langs:
+                continue
+
+            for m in pattern.finditer(content):
+                line_no = content[:m.start()].count("\n") + 1
+
+                # Skip matches inside comments
+                line_text = lines[line_no - 1] if line_no <= len(lines) else ""
+                stripped = line_text.lstrip()
+                if stripped.startswith("//") or stripped.startswith("#") or stripped.startswith("*"):
+                    continue
+
+                # Find enclosing node
+                node_id = f"file:{rel_path}"
+                for n in file_nodes.get(rel_path, []):
+                    if n.line and n.line <= line_no:
+                        node_id = n.id
+                        break
+
+                vulnerabilities.append(Vulnerability(
+                    rule=rule_id,
+                    severity=severity,
+                    message=message,
+                    line=line_no,
+                    file=rel_path,
+                    nodeId=node_id,
+                ))
+
+    # Update vulnCount on nodes
+    for v in vulnerabilities:
+        if v.nodeId in nodes:
+            nodes[v.nodeId].vulnCount += 1
+
+    return vulnerabilities
+
+
+# ---------------------------------------------------------------------------
 # Compute node sizes based on degree
 # ---------------------------------------------------------------------------
 
@@ -445,6 +604,7 @@ MAX_FILE_SIZE = 512 * 1024  # 512 KB
 def _scan_and_parse(root: str):
     nodes: dict[str, OntologyNode] = {}
     edges: list[OntologyEdge] = []
+    file_contents: dict[str, str] = {}  # rel_path -> content for vuln scanning
     file_count = 0
 
     for dirpath, dirnames, filenames in os.walk(root):
@@ -467,6 +627,13 @@ def _scan_and_parse(root: str):
                 break
 
             rel = os.path.relpath(filepath, root).replace("\\", "/")
+
+            # Cache file content for vulnerability scanning
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                    file_contents[rel] = f.read()
+            except Exception:
+                pass
 
             if ext == ".java":
                 _parse_java(filepath, nodes, edges, rel)
@@ -491,8 +658,9 @@ def _scan_and_parse(root: str):
     _detect_communities(nodes, unique_edges)
     _detect_cycles(nodes, unique_edges)
     _detect_dead_code(nodes, unique_edges)
+    vulnerabilities = _detect_vulnerabilities(nodes, file_contents)
 
-    return list(nodes.values()), unique_edges
+    return list(nodes.values()), unique_edges, vulnerabilities
 
 
 # ---------------------------------------------------------------------------
@@ -504,10 +672,11 @@ async def analyze_ontology(req: AnalyzeRequest):
     folder = req.path
     if not os.path.isdir(folder):
         raise HTTPException(status_code=400, detail=f"Not a directory: {folder}")
-    nodes, edges = _scan_and_parse(folder)
+    nodes, edges, vulnerabilities = _scan_and_parse(folder)
     return {
         "nodes": [n.model_dump() for n in nodes],
         "edges": [e.model_dump() for e in edges],
+        "vulnerabilities": [v.model_dump() for v in vulnerabilities],
     }
 
 

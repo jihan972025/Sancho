@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import OntologyGraph, { type GraphNode, type GraphEdge, type GraphHandle, type LayoutMode } from './OntologyGraph'
+import OntologyGraph, { type GraphNode, type GraphEdge, type GraphHandle, type LayoutMode, type Vulnerability } from './OntologyGraph'
 import OntologyFileList from './OntologyFileList'
 import OntologyProperties from './OntologyProperties'
 import { analyzeOntology, listOntologyFiles, getCodePreview } from '../../api/client'
-import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost, RefreshCw, Locate } from 'lucide-react'
+import { ZoomIn, ZoomOut, Search, Download, GitBranch, AlertTriangle, Ghost, RefreshCw, Locate, ShieldAlert } from 'lucide-react'
 
 interface FileEntry {
   path: string
@@ -31,10 +31,12 @@ export default function OntologyPanel() {
   const [inheritanceMode, setInheritanceMode] = useState(false)
   const [hoverInfo, setHoverInfo] = useState<{ node: GraphNode; x: number; y: number; code?: string } | null>(null)
   const hoverTimerRef = useRef<number>(0)
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([])
 
   // Computed stats
   const cycleCount = useMemo(() => edges.filter(e => e.circular).length, [edges])
   const deadCount = useMemo(() => nodes.filter(n => n.dead).length, [nodes])
+  const vulnCount = useMemo(() => vulnerabilities.length, [vulnerabilities])
 
   // Circular edge source nodes (unique) for badge click navigation
   const circularNodes = useMemo(() => {
@@ -46,9 +48,14 @@ export default function OntologyPanel() {
   }, [edges, nodes])
 
   const deadNodes = useMemo(() => nodes.filter(n => n.dead), [nodes])
+  const vulnNodes = useMemo(() => {
+    const ids = new Set(vulnerabilities.map(v => v.nodeId))
+    return nodes.filter(n => ids.has(n.id))
+  }, [vulnerabilities, nodes])
 
   const cycleIdxRef = useRef(0)
   const deadIdxRef = useRef(0)
+  const vulnIdxRef = useRef(0)
 
   const handleCycleBadgeClick = useCallback(() => {
     if (circularNodes.length === 0) return
@@ -67,6 +74,15 @@ export default function OntologyPanel() {
     graphRef.current?.focusOnNode(node.id)
     deadIdxRef.current = (deadIdxRef.current + 1) % deadNodes.length
   }, [deadNodes])
+
+  const handleVulnBadgeClick = useCallback(() => {
+    if (vulnNodes.length === 0) return
+    vulnIdxRef.current = vulnIdxRef.current % vulnNodes.length
+    const node = vulnNodes[vulnIdxRef.current]
+    setSelectedNode(node)
+    graphRef.current?.focusOnNode(node.id)
+    vulnIdxRef.current = (vulnIdxRef.current + 1) % vulnNodes.length
+  }, [vulnNodes])
 
   // Impact analysis: BFS from selected node
   const impactMap = useMemo(() => {
@@ -165,6 +181,10 @@ export default function OntologyPanel() {
       })
       setNodes(graphNodes)
       setEdges(graphResult.edges)
+      setVulnerabilities(graphResult.vulnerabilities || [])
+      cycleIdxRef.current = 0
+      deadIdxRef.current = 0
+      vulnIdxRef.current = 0
     } catch (err: any) {
       setError(err.message || 'Failed to analyze folder')
     } finally {
@@ -386,6 +406,18 @@ export default function OntologyPanel() {
                 <Ghost size={11} />
                 <span>{deadCount} dead</span>
               </button>
+              <button
+                onClick={handleVulnBadgeClick}
+                className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors ${
+                  vulnCount > 0
+                    ? 'bg-red-900/80 hover:bg-red-800/90 text-red-300 cursor-pointer'
+                    : 'bg-slate-800/60 text-slate-600 cursor-default'
+                }`}
+                title={vulnCount > 0 ? 'Click to navigate security issues' : 'No vulnerabilities detected'}
+              >
+                <ShieldAlert size={11} />
+                <span>{vulnCount} vuln{vulnCount !== 1 ? 's' : ''}</span>
+              </button>
             </div>
 
             {/* Bottom-right: controls */}
@@ -476,6 +508,7 @@ export default function OntologyPanel() {
             edges={edges}
             allNodes={nodes}
             impactMap={impactMap}
+            vulnerabilities={vulnerabilities}
             onClose={() => setSelectedNode(null)}
             onNavigate={handleNavigateToNode}
           />

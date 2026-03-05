@@ -1,13 +1,22 @@
-import { X, FileCode, ArrowRight, Circle, ListOrdered, Zap, AlertTriangle, RefreshCw } from 'lucide-react'
-import type { GraphNode, GraphEdge } from './OntologyGraph'
+import { X, FileCode, ArrowRight, Circle, ListOrdered, Zap, AlertTriangle, RefreshCw, ShieldAlert } from 'lucide-react'
+import type { GraphNode, GraphEdge, Vulnerability } from './OntologyGraph'
 
 interface Props {
   node: GraphNode
   edges: GraphEdge[]
   allNodes: GraphNode[]
   impactMap: Map<string, number> | null
+  vulnerabilities: Vulnerability[]
   onClose: () => void
   onNavigate: (nodeId: string) => void
+}
+
+const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low'] as const
+const SEVERITY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  critical: { bg: 'bg-red-900/40', text: 'text-red-300', border: 'border-red-700/50' },
+  high: { bg: 'bg-orange-900/40', text: 'text-orange-300', border: 'border-orange-700/50' },
+  medium: { bg: 'bg-yellow-900/40', text: 'text-yellow-300', border: 'border-yellow-700/50' },
+  low: { bg: 'bg-blue-900/40', text: 'text-blue-300', border: 'border-blue-700/50' },
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -36,9 +45,11 @@ const EDGE_TYPE_LABELS: Record<string, string> = {
   references: 'contains',
 }
 
-export default function OntologyProperties({ node, edges, allNodes, impactMap, onClose, onNavigate }: Props) {
+export default function OntologyProperties({ node, edges, allNodes, impactMap, vulnerabilities, onClose, onNavigate }: Props) {
   const connectedEdges = edges.filter((e) => e.source === node.id || e.target === node.id)
   const nodeMap = new Map(allNodes.map((n) => [n.id, n]))
+  const nodeVulns = vulnerabilities.filter(v => v.nodeId === node.id)
+    .sort((a, b) => SEVERITY_ORDER.indexOf(a.severity as any) - SEVERITY_ORDER.indexOf(b.severity as any))
 
   const outgoing = connectedEdges.filter((e) => e.source === node.id)
   const incoming = connectedEdges.filter((e) => e.target === node.id)
@@ -60,6 +71,12 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
             {node.dead && (
               <span className="inline-block px-1.5 py-0.5 text-[10px] rounded border bg-slate-500/20 text-slate-400 border-slate-500/30">
                 Dead
+              </span>
+            )}
+            {nodeVulns.length > 0 && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] rounded border bg-red-500/20 text-red-400 border-red-500/30">
+                <ShieldAlert size={9} />
+                {nodeVulns.length}
               </span>
             )}
           </div>
@@ -112,6 +129,31 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
               </div>
             )}
           </div>
+
+          {/* Security Issues */}
+          {nodeVulns.length > 0 && (
+            <div>
+              <div className="text-red-400 mb-1.5 flex items-center gap-1 font-medium">
+                <ShieldAlert size={10} />
+                Security Issues ({nodeVulns.length})
+              </div>
+              <div className="space-y-1">
+                {nodeVulns.map((v, i) => {
+                  const sev = SEVERITY_STYLES[v.severity] || SEVERITY_STYLES.low
+                  return (
+                    <div key={i} className={`${sev.bg} border ${sev.border} rounded p-2`}>
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className={`text-[9px] font-bold uppercase ${sev.text}`}>{v.severity}</span>
+                        <span className="text-slate-400 text-[10px]">{v.rule}</span>
+                      </div>
+                      <div className="text-slate-300 text-[11px]">{v.message}</div>
+                      <div className="text-slate-500 text-[10px] mt-0.5">Line {v.line}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Circular Dependencies */}
           {(() => {
