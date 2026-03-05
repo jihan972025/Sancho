@@ -1,10 +1,11 @@
-import { X, FileCode, ArrowRight, Circle, ListOrdered } from 'lucide-react'
+import { X, FileCode, ArrowRight, Circle, ListOrdered, Zap } from 'lucide-react'
 import type { GraphNode, GraphEdge } from './OntologyGraph'
 
 interface Props {
   node: GraphNode
   edges: GraphEdge[]
   allNodes: GraphNode[]
+  impactMap: Map<string, number> | null
   onClose: () => void
   onNavigate: (nodeId: string) => void
 }
@@ -35,12 +36,10 @@ const EDGE_TYPE_LABELS: Record<string, string> = {
   references: 'contains',
 }
 
-export default function OntologyProperties({ node, edges, allNodes, onClose, onNavigate }: Props) {
-  // Find connected edges
+export default function OntologyProperties({ node, edges, allNodes, impactMap, onClose, onNavigate }: Props) {
   const connectedEdges = edges.filter((e) => e.source === node.id || e.target === node.id)
   const nodeMap = new Map(allNodes.map((n) => [n.id, n]))
 
-  // Group connections by type
   const outgoing = connectedEdges.filter((e) => e.source === node.id)
   const incoming = connectedEdges.filter((e) => e.target === node.id)
 
@@ -54,9 +53,16 @@ export default function OntologyProperties({ node, edges, allNodes, onClose, onN
           <h3 className="text-sm font-medium text-white truncate" title={node.label}>
             {node.label}
           </h3>
-          <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] rounded border ${typeStyle}`}>
-            {TYPE_LABELS[node.type] || node.type}
-          </span>
+          <div className="flex items-center gap-1 mt-1">
+            <span className={`inline-block px-1.5 py-0.5 text-[10px] rounded border ${typeStyle}`}>
+              {TYPE_LABELS[node.type] || node.type}
+            </span>
+            {node.dead && (
+              <span className="inline-block px-1.5 py-0.5 text-[10px] rounded border bg-slate-500/20 text-slate-400 border-slate-500/30">
+                Dead
+              </span>
+            )}
+          </div>
         </div>
         <button
           onClick={onClose}
@@ -81,8 +87,8 @@ export default function OntologyProperties({ node, edges, allNodes, onClose, onN
             )}
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* Stats grid */}
+          <div className="grid grid-cols-3 gap-1.5">
             <div className="bg-slate-800/50 rounded p-2">
               <div className="text-slate-500 text-[10px]">Connections</div>
               <div className="text-white font-medium">{connectedEdges.length}</div>
@@ -91,7 +97,58 @@ export default function OntologyProperties({ node, edges, allNodes, onClose, onN
               <div className="text-slate-500 text-[10px]">Cluster</div>
               <div className="text-white font-medium">#{node.cluster}</div>
             </div>
+            <div className="bg-slate-800/50 rounded p-2">
+              <div className="text-slate-500 text-[10px]">Fan-in</div>
+              <div className="text-white font-medium">{node.fanIn ?? 0}</div>
+            </div>
+            <div className="bg-slate-800/50 rounded p-2">
+              <div className="text-slate-500 text-[10px]">Fan-out</div>
+              <div className="text-white font-medium">{node.fanOut ?? 0}</div>
+            </div>
+            {(node.lines ?? 0) > 0 && (
+              <div className="bg-slate-800/50 rounded p-2">
+                <div className="text-slate-500 text-[10px]">Lines</div>
+                <div className="text-white font-medium">{node.lines}</div>
+              </div>
+            )}
           </div>
+
+          {/* Impact Analysis */}
+          {impactMap && impactMap.size > 1 && (
+            <div>
+              <div className="text-slate-500 mb-1.5 flex items-center gap-1">
+                <Zap size={10} />
+                Impact Analysis
+              </div>
+              {[1, 2, 3].map(depth => {
+                const nodesAtDepth = allNodes.filter(n => impactMap.get(n.id) === depth)
+                if (nodesAtDepth.length === 0) return null
+                const depthColors = ['text-orange-400', 'text-orange-500/70', 'text-orange-600/50']
+                return (
+                  <div key={depth} className="mb-1.5">
+                    <div className={`text-[10px] mb-0.5 ${depthColors[depth - 1]}`}>
+                      Depth {depth} ({nodesAtDepth.length})
+                    </div>
+                    <div className="space-y-0.5">
+                      {nodesAtDepth.slice(0, 8).map(n => (
+                        <button
+                          key={n.id}
+                          className="flex items-center gap-1.5 w-full text-left px-2 py-0.5 rounded hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                          onClick={() => onNavigate(n.id)}
+                        >
+                          <Circle size={5} className="shrink-0" style={{ color: getClusterColor(n.cluster) }} />
+                          <span className="truncate text-[11px]">{n.label}</span>
+                        </button>
+                      ))}
+                      {nodesAtDepth.length > 8 && (
+                        <div className="text-slate-600 text-[10px] px-2">+{nodesAtDepth.length - 8} more</div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {/* Call Sequence (for method/function nodes) */}
           {(node.type === 'method' || node.type === 'function') && (() => {

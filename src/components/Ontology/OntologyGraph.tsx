@@ -8,6 +8,10 @@ export interface GraphNode {
   line?: number
   cluster: number
   size: number
+  fanIn?: number
+  fanOut?: number
+  lines?: number
+  dead?: boolean
   // Physics simulation state
   x: number
   y: number
@@ -20,12 +24,17 @@ export interface GraphEdge {
   target: string
   type: string
   order?: number
+  circular?: boolean
 }
+
+export type LayoutMode = 'force' | 'tree' | 'radial'
 
 export interface GraphHandle {
   zoomIn: () => void
   zoomOut: () => void
   focusOnFile: (file: string) => void
+  focusOnNode: (nodeId: string) => void
+  getCanvas: () => HTMLCanvasElement | null
 }
 
 interface Props {
@@ -33,7 +42,10 @@ interface Props {
   edges: GraphEdge[]
   selectedNodeId: string | null
   highlightFile: string | null
+  layout: LayoutMode
+  impactMap: Map<string, number> | null
   onSelectNode: (node: GraphNode | null) => void
+  onHoverNode?: (node: GraphNode | null, screenX: number, screenY: number) => void
 }
 
 // InfraNode-style cluster colors
@@ -61,14 +73,102 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b]
 }
 
-const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ nodes, edges, selectedNodeId, highlightFile, onSelectNode }, ref) {
+// --- Layout algorithms ---
+
+function computeTreeLayout(nodes: GraphNode[], edges: GraphEdge[]) {
+  if (nodes.length === 0) return
+  const incoming = new Set<string>()
+  const outAdj = new Map<string, string[]>()
+  for (const n of nodes) outAdj.set(n.id, [])
+  for (const e of edges) {
+    incoming.add(e.target)
+    outAdj.get(e.source)?.push(e.target)
+  }
+  const roots = nodes.filter(n => !incoming.has(n.id))
+  if (roots.length === 0) roots.push(nodes[0])
+
+  const layer = new Map<string, number>()
+  const queue: string[] = []
+  for (const r of roots) { layer.set(r.id, 0); queue.push(r.id) }
+
+  let qi = 0
+  while (qi < queue.length) {
+    const curr = queue[qi++]
+    const depth = layer.get(curr)!
+    for (const nb of outAdj.get(curr) ?? []) {
+      if (!layer.has(nb)) {
+        layer.set(nb, depth + 1)
+        queue.push(nb)
+      }
+    }
+  }
+
+  // Assign orphans to layer 0
+  for (const n of nodes) {
+    if (!layer.has(n.id)) layer.set(n.id, 0)
+  }
+
+  // Group by layer
+  const layers = new Map<number, GraphNode[]>()
+  for (const n of nodes) {
+    const d = layer.get(n.id) ?? 0
+    if (!layers.has(d)) layers.set(d, [])
+    layers.get(d)!.push(n)
+  }
+
+  const layerHeight = 80
+  const nodeSpacing = 60
+  for (const [depth, layerNodes] of layers) {
+    const startX = -(layerNodes.length - 1) * nodeSpacing / 2
+    layerNodes.forEach((n, i) => {
+      n.x = startX + i * nodeSpacing
+      n.y = depth * layerHeight
+      n.vx = 0
+      n.vy = 0
+    })
+  }
+}
+
+function computeRadialLayout(nodes: GraphNode[]) {
+  if (nodes.length === 0) return
+  const clusters = new Map<number, GraphNode[]>()
+  for (const n of nodes) {
+    if (!clusters.has(n.cluster)) clusters.set(n.cluster, [])
+    clusters.get(n.cluster)!.push(n)
+  }
+
+  const clusterKeys = [...clusters.keys()].sort()
+  const sectorAngle = (2 * Math.PI) / Math.max(1, clusterKeys.length)
+
+  clusterKeys.forEach((cid, ci) => {
+    const clusterNodes = clusters.get(cid)!
+    const baseAngle = ci * sectorAngle
+    clusterNodes.forEach((n, ni) => {
+      const ring = 100 + Math.floor(ni / 8) * 60
+      const offset = (ni % 8) * (sectorAngle / Math.max(1, Math.min(8, clusterNodes.length)))
+      n.x = Math.cos(baseAngle + offset) * ring
+      n.y = Math.sin(baseAngle + offset) * ring
+      n.vx = 0
+      n.vy = 0
+    })
+  })
+}
+
+const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph(
+  { nodes, edges, selectedNodeId, highlightFile, layout, impactMap, onSelectNode, onHoverNode },
+  ref,
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animRef = useRef<number>(0)
   const nodesRef = useRef<GraphNode[]>([])
   const edgesRef = useRef<GraphEdge[]>([])
+  const layoutRef = useRef<LayoutMode>('force')
 
   // Camera state
   const camRef = useRef({ x: 0, y: 0, zoom: 1 })
+
+  // Minimap bounds cache
+  const minimapRef = useRef<{ x: number; y: number; w: number; h: number; minX: number; minY: number; scale: number } | null>(null)
 
   useImperativeHandle(ref, () => ({
     zoomIn() {
@@ -78,19 +178,26 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       camRef.current.zoom = Math.max(0.1, camRef.current.zoom * 0.7)
     },
     focusOnFile(file: string) {
-      // Find all nodes belonging to this file
       const fileNodes = nodesRef.current.filter((n) => n.file === file)
       if (fileNodes.length === 0) return
-      // Compute centroid
       let cx = 0, cy = 0
       for (const n of fileNodes) { cx += n.x; cy += n.y }
       cx /= fileNodes.length
       cy /= fileNodes.length
-      // Center camera on centroid with a nice zoom level
       camRef.current.x = -cx * camRef.current.zoom
       camRef.current.y = -cy * camRef.current.zoom
     },
+    focusOnNode(nodeId: string) {
+      const node = nodesRef.current.find(n => n.id === nodeId)
+      if (!node) return
+      camRef.current.x = -node.x * camRef.current.zoom
+      camRef.current.y = -node.y * camRef.current.zoom
+    },
+    getCanvas() {
+      return canvasRef.current
+    },
   }))
+
   const dragRef = useRef<{ dragging: boolean; startX: number; startY: number; camStartX: number; camStartY: number; draggedNode: GraphNode | null }>({
     dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null,
   })
@@ -98,6 +205,22 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
 
   // Build adjacency for fast lookup
   const adjRef = useRef<Map<string, Set<string>>>(new Map())
+
+  // Apply layout when layout mode changes
+  useEffect(() => {
+    layoutRef.current = layout
+    const ns = nodesRef.current
+    const es = edgesRef.current
+    if (ns.length === 0) return
+    if (layout === 'tree') {
+      computeTreeLayout(ns, es)
+      camRef.current = { x: 0, y: 0, zoom: 1 }
+    } else if (layout === 'radial') {
+      computeRadialLayout(ns)
+      camRef.current = { x: 0, y: 0, zoom: 1 }
+    }
+    // force: just let physics resume
+  }, [layout])
 
   // Initialize node positions
   useEffect(() => {
@@ -107,9 +230,8 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       return
     }
 
-    // Initialize positions in a spiral
     const initialized = nodes.map((n, i) => {
-      const angle = i * 2.39996  // golden angle
+      const angle = i * 2.39996
       const r = Math.sqrt(i) * 30
       return {
         ...n,
@@ -131,7 +253,13 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     }
     adjRef.current = adj
 
-    // Center camera
+    // Apply initial layout
+    if (layoutRef.current === 'tree') {
+      computeTreeLayout(initialized, edges)
+    } else if (layoutRef.current === 'radial') {
+      computeRadialLayout(initialized)
+    }
+
     camRef.current = { x: 0, y: 0, zoom: 1 }
   }, [nodes, edges])
 
@@ -152,12 +280,17 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     const es = edgesRef.current
     if (ns.length === 0) return
 
-    // Cool down simulation after initial convergence
+    // Skip physics for static layouts
+    if (layoutRef.current !== 'force') {
+      for (const n of ns) nodeMapRef.current.set(n.id, n)
+      return
+    }
+
     const alpha = Math.max(0.001, 0.3 * Math.pow(0.99, tickCount.current))
     tickCount.current++
 
     if (alpha > 0.005) {
-      // Repulsion (Barnes-Hut simplified: all pairs for < 500 nodes)
+      // Repulsion
       for (let i = 0; i < ns.length; i++) {
         for (let j = i + 1; j < ns.length; j++) {
           const dx = ns[j].x - ns[i].x
@@ -208,7 +341,6 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       }
     }
 
-    // Update node map
     for (const n of ns) nodeMapRef.current.set(n.id, n)
   }, [])
 
@@ -231,7 +363,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     const ns = nodesRef.current
     const es = edgesRef.current
 
-    // Clear with dark background
+    // Clear
     ctx.fillStyle = '#111111'
     ctx.fillRect(0, 0, w, h)
 
@@ -243,6 +375,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     const hovId = hoveredNode?.id ?? null
     const selId = selectedNodeId
     const hlFile = highlightFile
+    const impact = impactMap
 
     // Determine connected nodes for hover highlighting
     const connectedToHover = new Set<string>()
@@ -251,14 +384,12 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       adj.get(hovId)?.forEach((id) => connectedToHover.add(id))
     }
 
-    // Determine connected nodes for selected node
     const connectedToSel = new Set<string>()
     if (selId) {
       connectedToSel.add(selId)
       adj.get(selId)?.forEach((id) => connectedToSel.add(id))
     }
 
-    // Determine file-related nodes (file's own nodes + their direct neighbors)
     const fileRelated = new Set<string>()
     if (hlFile) {
       for (const n of ns) {
@@ -324,6 +455,13 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         }
       }
 
+      // Circular dependency override: red
+      if (e.circular) {
+        edgeColor = `rgba(255,60,60,0.7)`
+        width = Math.max(width, 1.5)
+        showArrow = true
+      }
+
       ctx.strokeStyle = edgeColor
       ctx.lineWidth = width
       ctx.beginPath()
@@ -331,7 +469,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       ctx.lineTo(t.x, t.y)
       ctx.stroke()
 
-      // Arrow head for call edges
+      // Arrow head
       if (showArrow) {
         const dx = t.x - s.x
         const dy = t.y - s.y
@@ -353,7 +491,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         }
       }
 
-      // Order number badge for call edges
+      // Order number badge
       if (showOrder && e.order != null) {
         const mx = (s.x + t.x) / 2
         const my = (s.y + t.y) / 2
@@ -375,20 +513,33 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     for (const n of ns) {
       const baseRadius = Math.max(3, Math.min(18, 3 + n.size * 1.5))
       const color = getClusterColor(n.cluster)
-      const [r, g, b] = hexToRgb(color)
+      let [r, g, b] = hexToRgb(color)
+
+      // Complexity heat: blend toward orange/red for high fan-in+fan-out
+      const complexity = (n.fanIn ?? 0) + (n.fanOut ?? 0)
+      if (complexity > 4 && !n.dead) {
+        const heat = Math.min(1, complexity / 20)
+        r = Math.round(r + (255 - r) * heat * 0.5)
+        g = Math.round(g * (1 - heat * 0.4))
+        b = Math.round(b * (1 - heat * 0.6))
+      }
+
+      // Dead code: override to gray
+      if (n.dead) {
+        r = 120; g = 120; b = 120
+      }
 
       let alpha = 1
-      let radius = baseRadius
+      const radius = baseRadius
       let glowRadius = 0
 
-      // Dimming when hovering another node
+      // Dimming
       if (hovId && !connectedToHover.has(n.id)) {
         alpha = 0.15
       } else if (!hovId && !hlFile && selId && !connectedToSel.has(n.id)) {
         alpha = 0.2
       }
 
-      // Highlight for file filter: file's nodes full, neighbors slightly dim, rest very dim
       if (hlFile) {
         if (n.file === hlFile) {
           alpha = 1
@@ -400,13 +551,11 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         }
       }
 
-      // Glow for hovered node
       if (n.id === hovId) {
         glowRadius = radius + 8
         alpha = 1
       }
 
-      // Selected node: orange ring
       if (n.id === selId) {
         glowRadius = radius + 6
         alpha = 1
@@ -428,11 +577,33 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         ctx.fill()
       }
 
+      // Impact analysis: depth rings
+      if (impact && selId) {
+        const depth = impact.get(n.id)
+        if (depth !== undefined && depth > 0) {
+          const depthColors = ['rgba(255,140,0,0.7)', 'rgba(204,112,0,0.5)', 'rgba(153,83,0,0.35)']
+          ctx.strokeStyle = depthColors[Math.min(depth - 1, 2)]
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.arc(n.x, n.y, radius + 4, 0, Math.PI * 2)
+          ctx.stroke()
+        }
+      }
+
       // Draw circle
       ctx.fillStyle = `rgba(${r},${g},${b},${alpha})`
       ctx.beginPath()
       ctx.arc(n.x, n.y, radius, 0, Math.PI * 2)
       ctx.fill()
+
+      // Dead code: dashed border
+      if (n.dead) {
+        ctx.setLineDash([3, 3])
+        ctx.strokeStyle = `rgba(180,180,180,${alpha * 0.6})`
+        ctx.lineWidth = 1
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
 
       // Selected border
       if (n.id === selId) {
@@ -441,7 +612,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         ctx.stroke()
       }
 
-      // Label (only if zoom > 0.4 or node is important)
+      // Label
       if (cam.zoom > 0.4 || n.size > 3 || n.id === hovId || n.id === selId) {
         const fontSize = Math.max(11, Math.min(22, 10 + n.size * 1.2)) / cam.zoom * 0.7
         ctx.font = `bold ${Math.round(fontSize)}px -apple-system, sans-serif`
@@ -454,12 +625,65 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
 
     ctx.restore()
 
+    // --- Minimap ---
+    if (ns.length > 0) {
+      const mmW = 140
+      const mmH = 90
+      const mmX = 8
+      const mmY = h - mmH - 24
+
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+      for (const n of ns) {
+        if (n.x < minX) minX = n.x
+        if (n.x > maxX) maxX = n.x
+        if (n.y < minY) minY = n.y
+        if (n.y > maxY) maxY = n.y
+      }
+      const rangeX = (maxX - minX) || 1
+      const rangeY = (maxY - minY) || 1
+      const pad = 8
+      const scaleX = (mmW - pad * 2) / rangeX
+      const scaleY = (mmH - pad * 2) / rangeY
+      const mmScale = Math.min(scaleX, scaleY)
+
+      // Background
+      ctx.fillStyle = 'rgba(15,15,15,0.85)'
+      ctx.fillRect(mmX, mmY, mmW, mmH)
+      ctx.strokeStyle = 'rgba(80,80,80,0.5)'
+      ctx.lineWidth = 1
+      ctx.strokeRect(mmX, mmY, mmW, mmH)
+
+      // Node dots
+      for (const n of ns) {
+        const mx = mmX + pad + (n.x - minX) * mmScale
+        const my = mmY + pad + (n.y - minY) * mmScale
+        ctx.fillStyle = n.dead ? 'rgba(120,120,120,0.5)' : getClusterColor(n.cluster)
+        ctx.fillRect(mx - 1, my - 1, 2, 2)
+      }
+
+      // Viewport rectangle
+      const vpCenterWX = -cam.x / cam.zoom
+      const vpCenterWY = -cam.y / cam.zoom
+      const vpHalfW = w / 2 / cam.zoom
+      const vpHalfH = h / 2 / cam.zoom
+      const vpL = mmX + pad + (vpCenterWX - vpHalfW - minX) * mmScale
+      const vpT = mmY + pad + (vpCenterWY - vpHalfH - minY) * mmScale
+      const vpW = (w / cam.zoom) * mmScale
+      const vpH = (h / cam.zoom) * mmScale
+      ctx.strokeStyle = 'rgba(255,140,0,0.7)'
+      ctx.lineWidth = 1
+      ctx.strokeRect(vpL, vpT, vpW, vpH)
+
+      // Store for click handling
+      minimapRef.current = { x: mmX, y: mmY, w: mmW, h: mmH, minX, minY, scale: mmScale }
+    }
+
     // HUD info
     ctx.fillStyle = 'rgba(255,255,255,0.3)'
     ctx.font = '11px monospace'
     ctx.textAlign = 'left'
     ctx.fillText(`Nodes: ${ns.length}  Edges: ${es.length}  Zoom: ${cam.zoom.toFixed(2)}x`, 8, h - 8)
-  }, [hoveredNode, selectedNodeId, highlightFile])
+  }, [hoveredNode, selectedNodeId, highlightFile, impactMap])
 
   // Animation loop
   useEffect(() => {
@@ -488,7 +712,6 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     const cam = camRef.current
     const w = rect.width
     const h = rect.height
-    // Convert screen coords to world coords
     const wx = (clientX - rect.left - w / 2 - cam.x) / cam.zoom
     const wy = (clientY - rect.top - h / 2 - cam.y) / cam.zoom
 
@@ -498,7 +721,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       const dx = n.x - wx
       const dy = n.y - wy
       const dist = Math.sqrt(dx * dx + dy * dy)
-      const radius = Math.max(3, Math.min(18, 3 + n.size * 1.5)) + 4 // hit area padding
+      const radius = Math.max(3, Math.min(18, 3 + n.size * 1.5)) + 4
       if (dist < radius && dist < closestDist) {
         closest = n
         closestDist = dist
@@ -509,6 +732,23 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
 
   // Mouse handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // Check minimap click
+    const canvas = canvasRef.current
+    if (canvas && minimapRef.current) {
+      const rect = canvas.getBoundingClientRect()
+      const cx = e.clientX - rect.left
+      const cy = e.clientY - rect.top
+      const mm = minimapRef.current
+      if (cx >= mm.x && cx <= mm.x + mm.w && cy >= mm.y && cy <= mm.y + mm.h) {
+        const pad = 8
+        const worldX = (cx - mm.x - pad) / mm.scale + mm.minX
+        const worldY = (cy - mm.y - pad) / mm.scale + mm.minY
+        camRef.current.x = -worldX * camRef.current.zoom
+        camRef.current.y = -worldY * camRef.current.zoom
+        return
+      }
+    }
+
     const node = findNodeAt(e.clientX, e.clientY)
     if (node) {
       dragRef.current = {
@@ -537,7 +777,6 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       const dx = e.clientX - d.startX
       const dy = e.clientY - d.startY
       if (d.draggedNode) {
-        // Drag node
         d.draggedNode.x += dx / camRef.current.zoom
         d.draggedNode.y += dy / camRef.current.zoom
         d.draggedNode.vx = 0
@@ -545,22 +784,21 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
         d.startX = e.clientX
         d.startY = e.clientY
       } else {
-        // Pan camera
         camRef.current.x = d.camStartX + dx
         camRef.current.y = d.camStartY + dy
       }
     } else {
       const node = findNodeAt(e.clientX, e.clientY)
       setHoveredNode(node)
+      onHoverNode?.(node, e.clientX, e.clientY)
     }
-  }, [findNodeAt])
+  }, [findNodeAt, onHoverNode])
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
     const d = dragRef.current
     if (d.dragging) {
       const dx = Math.abs(e.clientX - d.startX)
       const dy = Math.abs(e.clientY - d.startY)
-      // Click (not drag)
       if (d.draggedNode && dx < 3 && dy < 3) {
         onSelectNode(d.draggedNode.id === selectedNodeId ? null : d.draggedNode)
       } else if (!d.draggedNode && dx < 3 && dy < 3) {
@@ -577,7 +815,6 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
     camRef.current.zoom = newZoom
   }, [])
 
-  // Double-click to center on node
   const handleDblClick = useCallback((e: React.MouseEvent) => {
     const node = findNodeAt(e.clientX, e.clientY)
     if (node) {
@@ -596,6 +833,7 @@ const OntologyGraph = forwardRef<GraphHandle, Props>(function OntologyGraph({ no
       onMouseUp={handleMouseUp}
       onMouseLeave={() => {
         setHoveredNode(null)
+        onHoverNode?.(null, 0, 0)
         if (dragRef.current.dragging) {
           dragRef.current = { dragging: false, startX: 0, startY: 0, camStartX: 0, camStartY: 0, draggedNode: null }
         }

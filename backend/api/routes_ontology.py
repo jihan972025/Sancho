@@ -20,6 +20,10 @@ class OntologyNode(BaseModel):
     line: Optional[int] = None
     cluster: int = 0
     size: int = 1
+    fanIn: int = 0
+    fanOut: int = 0
+    lines: int = 0
+    dead: bool = False
 
 
 class OntologyEdge(BaseModel):
@@ -27,6 +31,7 @@ class OntologyEdge(BaseModel):
     target: str
     type: str  # calls, imports, extends, implements, references
     order: Optional[int] = None  # call sequence order within a method (0-based)
+    circular: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -139,6 +144,7 @@ def _parse_java(filepath: str, nodes: dict, edges: list, file_label: str):
                     body_end = i
                     break
         body = content[body_start:body_end]
+        nodes[method_id].lines = body.count("\n") + 1
         call_order = 0
         for call in _JAVA_CALL_RE.finditer(body):
             callee = call.group(1)
@@ -345,18 +351,82 @@ def _detect_communities(nodes: dict, edges: list) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Circular dependency detection (DFS back-edge detection)
+# ---------------------------------------------------------------------------
+
+def _detect_cycles(nodes: dict, edges: list) -> int:
+    """Mark edges that participate in cycles. Returns count of circular edges."""
+    adj: dict[str, list[tuple[str, int]]] = {nid: [] for nid in nodes}
+    for i, e in enumerate(edges):
+        if e.source in adj:
+            adj[e.source].append((e.target, i))
+
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: dict[str, int] = {nid: WHITE for nid in nodes}
+    circular_indices: set[int] = set()
+
+    def dfs(u: str):
+        color[u] = GRAY
+        for v, ei in adj.get(u, []):
+            if v not in color:
+                continue
+            if color[v] == GRAY:
+                circular_indices.add(ei)
+            elif color[v] == WHITE:
+                dfs(v)
+        color[u] = BLACK
+
+    # Increase recursion limit for large graphs
+    import sys
+    old_limit = sys.getrecursionlimit()
+    sys.setrecursionlimit(max(old_limit, len(nodes) + 1000))
+    try:
+        for nid in nodes:
+            if color.get(nid, WHITE) == WHITE:
+                dfs(nid)
+    finally:
+        sys.setrecursionlimit(old_limit)
+
+    for ei in circular_indices:
+        edges[ei].circular = True
+    return len(circular_indices)
+
+
+# ---------------------------------------------------------------------------
+# Dead code detection
+# ---------------------------------------------------------------------------
+
+def _detect_dead_code(nodes: dict, edges: list) -> int:
+    """Mark method/function nodes with zero incoming call/reference edges as dead."""
+    targets: set[str] = set()
+    for e in edges:
+        if e.type in ("calls", "references"):
+            targets.add(e.target)
+
+    count = 0
+    for nid, node in nodes.items():
+        if node.type in ("method", "function") and nid not in targets:
+            node.dead = True
+            count += 1
+    return count
+
+
+# ---------------------------------------------------------------------------
 # Compute node sizes based on degree
 # ---------------------------------------------------------------------------
 
 def _compute_sizes(nodes: dict, edges: list) -> None:
-    degree: dict[str, int] = {nid: 0 for nid in nodes}
+    in_deg: dict[str, int] = {nid: 0 for nid in nodes}
+    out_deg: dict[str, int] = {nid: 0 for nid in nodes}
     for e in edges:
-        if e.source in degree:
-            degree[e.source] += 1
-        if e.target in degree:
-            degree[e.target] += 1
-    for nid, d in degree.items():
-        nodes[nid].size = max(1, d)
+        if e.source in out_deg:
+            out_deg[e.source] += 1
+        if e.target in in_deg:
+            in_deg[e.target] += 1
+    for nid in nodes:
+        nodes[nid].fanIn = in_deg[nid]
+        nodes[nid].fanOut = out_deg[nid]
+        nodes[nid].size = max(1, in_deg[nid] + out_deg[nid])
 
 
 # ---------------------------------------------------------------------------
@@ -419,6 +489,8 @@ def _scan_and_parse(root: str):
 
     _compute_sizes(nodes, unique_edges)
     _detect_communities(nodes, unique_edges)
+    _detect_cycles(nodes, unique_edges)
+    _detect_dead_code(nodes, unique_edges)
 
     return list(nodes.values()), unique_edges
 
@@ -437,6 +509,28 @@ async def analyze_ontology(req: AnalyzeRequest):
         "nodes": [n.model_dump() for n in nodes],
         "edges": [e.model_dump() for e in edges],
     }
+
+
+class CodePreviewRequest(BaseModel):
+    file: str
+    line: int
+    context: int = 5
+
+
+@router.post("/code-preview")
+async def code_preview(req: CodePreviewRequest):
+    """Return a code snippet around a given line number."""
+    if not os.path.isfile(req.file):
+        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        with open(req.file, "r", encoding="utf-8", errors="ignore") as f:
+            all_lines = f.readlines()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    start = max(0, req.line - 1 - req.context)
+    end = min(len(all_lines), req.line + req.context)
+    snippet = "".join(all_lines[start:end])
+    return {"code": snippet, "startLine": start + 1, "endLine": end}
 
 
 @router.post("/list-files")

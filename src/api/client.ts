@@ -513,12 +513,17 @@ export function analyzeOntology(folderPath: string) {
       line?: number
       cluster: number
       size: number
+      fanIn?: number
+      fanOut?: number
+      lines?: number
+      dead?: boolean
     }[]
     edges: {
       source: string
       target: string
       type: string
       order?: number
+      circular?: boolean
     }[]
   }>('/api/ontology/analyze', {
     method: 'POST',
@@ -530,6 +535,13 @@ export function listOntologyFiles(folderPath: string) {
   return request<{ files: { path: string; ext: string }[] }>('/api/ontology/list-files', {
     method: 'POST',
     body: JSON.stringify({ path: folderPath }),
+  })
+}
+
+export function getCodePreview(file: string, line: number, context = 5) {
+  return request<{ code: string; startLine: number; endLine: number }>('/api/ontology/code-preview', {
+    method: 'POST',
+    body: JSON.stringify({ file, line, context }),
   })
 }
 
