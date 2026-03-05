@@ -483,7 +483,9 @@ async def _run_semgrep(scan_path: str, timeout: float = 120) -> dict:
 
     cmd = [
         semgrep_bin, "scan",
-        "--config", "auto",
+        "--config", "p/security-audit",
+        "--config", "p/owasp-top-ten",
+        "--config", "p/cwe-top-25",
         "--json",
         "--timeout", "10",
         "--exclude", "node_modules",
