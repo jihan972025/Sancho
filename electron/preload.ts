@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  selectFolder: () => ipcRenderer.invoke('select-folder'),
   getAppPath: () => ipcRenderer.invoke('get-app-path'),
   isDev: () => ipcRenderer.invoke('is-dev'),
   setSelectedModel: (model: string) => ipcRenderer.invoke('set-selected-model', model),

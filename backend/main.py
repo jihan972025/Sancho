@@ -26,6 +26,7 @@ from backend.api.routes_outlook_auth import router as outlook_auth_router
 from backend.api.routes_autotrading import router as autotrading_router
 from backend.api.routes_voice import router as voice_router
 from backend.api.routes_agents import router as agents_router
+from backend.api.routes_ontology import router as ontology_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -86,6 +87,7 @@ app.include_router(outlook_auth_router)
 app.include_router(autotrading_router)
 app.include_router(voice_router)
 app.include_router(agents_router)
+app.include_router(ontology_router)
 
 
 @app.get("/api/health")

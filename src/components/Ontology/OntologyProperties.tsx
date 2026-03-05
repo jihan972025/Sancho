@@ -1,0 +1,167 @@
+import { X, FileCode, ArrowRight, Circle } from 'lucide-react'
+import type { GraphNode, GraphEdge } from './OntologyGraph'
+
+interface Props {
+  node: GraphNode
+  edges: GraphEdge[]
+  allNodes: GraphNode[]
+  onClose: () => void
+  onNavigate: (nodeId: string) => void
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  class: 'Class',
+  method: 'Method',
+  function: 'Function',
+  file: 'File',
+  module: 'Module',
+  interface: 'Interface',
+}
+
+const TYPE_COLORS: Record<string, string> = {
+  class: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+  method: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  function: 'bg-green-500/20 text-green-400 border-green-500/30',
+  file: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  module: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+  interface: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+}
+
+const EDGE_TYPE_LABELS: Record<string, string> = {
+  calls: 'calls',
+  imports: 'imports',
+  extends: 'extends',
+  implements: 'implements',
+  references: 'contains',
+}
+
+export default function OntologyProperties({ node, edges, allNodes, onClose, onNavigate }: Props) {
+  // Find connected edges
+  const connectedEdges = edges.filter((e) => e.source === node.id || e.target === node.id)
+  const nodeMap = new Map(allNodes.map((n) => [n.id, n]))
+
+  // Group connections by type
+  const outgoing = connectedEdges.filter((e) => e.source === node.id)
+  const incoming = connectedEdges.filter((e) => e.target === node.id)
+
+  const typeStyle = TYPE_COLORS[node.type] || 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-3 border-b border-slate-700 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="text-sm font-medium text-white truncate" title={node.label}>
+            {node.label}
+          </h3>
+          <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] rounded border ${typeStyle}`}>
+            {TYPE_LABELS[node.type] || node.type}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white shrink-0"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Properties */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-3 space-y-3 text-xs">
+          {/* File info */}
+          <div>
+            <div className="text-slate-500 mb-1">File</div>
+            <div className="flex items-center gap-1 text-slate-300">
+              <FileCode size={12} className="text-slate-500 shrink-0" />
+              <span className="truncate" title={node.file}>{node.file}</span>
+            </div>
+            {node.line && (
+              <div className="text-slate-500 mt-0.5">Line {node.line}</div>
+            )}
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-slate-800/50 rounded p-2">
+              <div className="text-slate-500 text-[10px]">Connections</div>
+              <div className="text-white font-medium">{connectedEdges.length}</div>
+            </div>
+            <div className="bg-slate-800/50 rounded p-2">
+              <div className="text-slate-500 text-[10px]">Cluster</div>
+              <div className="text-white font-medium">#{node.cluster}</div>
+            </div>
+          </div>
+
+          {/* Outgoing connections */}
+          {outgoing.length > 0 && (
+            <div>
+              <div className="text-slate-500 mb-1.5 flex items-center gap-1">
+                <ArrowRight size={10} />
+                Outgoing ({outgoing.length})
+              </div>
+              <div className="space-y-0.5">
+                {outgoing.map((e, i) => {
+                  const target = nodeMap.get(e.target)
+                  if (!target) return null
+                  return (
+                    <button
+                      key={i}
+                      className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                      onClick={() => onNavigate(e.target)}
+                    >
+                      <Circle size={6} className="shrink-0" style={{ color: getClusterColor(target.cluster) }} />
+                      <span className="truncate">{target.label}</span>
+                      <span className="text-slate-600 ml-auto shrink-0">{EDGE_TYPE_LABELS[e.type] || e.type}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Incoming connections */}
+          {incoming.length > 0 && (
+            <div>
+              <div className="text-slate-500 mb-1.5 flex items-center gap-1">
+                <ArrowRight size={10} className="rotate-180" />
+                Incoming ({incoming.length})
+              </div>
+              <div className="space-y-0.5">
+                {incoming.map((e, i) => {
+                  const source = nodeMap.get(e.source)
+                  if (!source) return null
+                  return (
+                    <button
+                      key={i}
+                      className="flex items-center gap-1.5 w-full text-left px-2 py-1 rounded hover:bg-slate-700/50 text-slate-300 hover:text-white"
+                      onClick={() => onNavigate(e.source)}
+                    >
+                      <Circle size={6} className="shrink-0" style={{ color: getClusterColor(source.cluster) }} />
+                      <span className="truncate">{source.label}</span>
+                      <span className="text-slate-600 ml-auto shrink-0">{EDGE_TYPE_LABELS[e.type] || e.type}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {connectedEdges.length === 0 && (
+            <div className="text-slate-500 text-center py-4">No connections</div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Reuse cluster color palette
+const CLUSTER_COLORS = [
+  '#C9A961', '#4A9FD8', '#9BC816', '#C653E1', '#E07B54',
+  '#58C9B9', '#D94F6B', '#7B8CDE', '#B8D44E', '#E8A0BF',
+]
+
+function getClusterColor(cluster: number): string {
+  return CLUSTER_COLORS[cluster % CLUSTER_COLORS.length]
+}

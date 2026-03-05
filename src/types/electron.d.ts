@@ -50,6 +50,7 @@ interface ElectronOutlookAuthAPI {
 }
 
 interface ElectronAPI {
+  selectFolder: () => Promise<string | null>
   getAppPath: () => Promise<string>
   isDev: () => Promise<boolean>
   setSelectedModel: (model: string) => Promise<void>

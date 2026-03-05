@@ -10,6 +10,7 @@ const tabNames: Record<string, string> = {
   chat: 'Chat',
   crypto: 'Crypto Analysis',
   scheduler: 'Agent',
+  ontology: 'Ontology',
   p2pchat: 'P2P Chat',
   logs: 'Logs',
   settings: 'Settings',

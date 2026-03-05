@@ -502,6 +502,36 @@ export async function aiAgentBuildStream(
   }
 }
 
+// Ontology API
+export function analyzeOntology(folderPath: string) {
+  return request<{
+    nodes: {
+      id: string
+      label: string
+      type: string
+      file: string
+      line?: number
+      cluster: number
+      size: number
+    }[]
+    edges: {
+      source: string
+      target: string
+      type: string
+    }[]
+  }>('/api/ontology/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ path: folderPath }),
+  })
+}
+
+export function listOntologyFiles(folderPath: string) {
+  return request<{ files: { path: string; ext: string }[] }>('/api/ontology/list-files', {
+    method: 'POST',
+    body: JSON.stringify({ path: folderPath }),
+  })
+}
+
 // Health check
 export function healthCheck() {
   return request<{ status: string }>('/api/health')

@@ -608,6 +608,13 @@ app.on('before-quit', () => {
 })
 
 // IPC handlers
+ipcMain.handle('select-folder', async () => {
+  if (!mainWindow) return null
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+  })
+  return result.canceled ? null : result.filePaths[0] || null
+})
 ipcMain.handle('get-app-path', () => app.getAppPath())
 ipcMain.handle('is-dev', () => isDev)
 ipcMain.handle('set-selected-model', (_event, model: string) => setSelectedModel(model))

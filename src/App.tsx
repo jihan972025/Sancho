@@ -7,6 +7,7 @@ import AgentPanel from './components/Agent/AgentPanel'
 import SettingsPanel from './components/Settings/SettingsPanel'
 import LogPanel from './components/Log/LogPanel'
 import P2PChatPanel from './components/P2PChat/P2PChatPanel'
+import OntologyPanel from './components/Ontology/OntologyPanel'
 import { healthCheck, getSettings, getModels, getUserProfile } from './api/client'
 import OnboardingModal from './components/Onboarding/OnboardingModal'
 import { useSettingsStore } from './stores/settingsStore'
@@ -15,7 +16,7 @@ import { useMemoryStore } from './stores/memoryStore'
 import { useConversationStore } from './stores/conversationStore'
 import PatchNotification from './components/PatchNotification'
 
-type Tab = 'chat' | 'crypto' | 'scheduler' | 'p2pchat' | 'logs' | 'settings'
+type Tab = 'chat' | 'crypto' | 'scheduler' | 'ontology' | 'p2pchat' | 'logs' | 'settings'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('chat')
@@ -138,6 +139,7 @@ export default function App() {
               {activeTab === 'chat' && <ChatWindow />}
               {activeTab === 'crypto' && <CryptoPanel />}
               {activeTab === 'scheduler' && <AgentPanel />}
+              {activeTab === 'ontology' && <OntologyPanel />}
               {activeTab === 'p2pchat' && <P2PChatPanel />}
               {activeTab === 'logs' && <LogPanel />}
               {activeTab === 'settings' && <SettingsPanel />}
