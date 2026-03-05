@@ -391,7 +391,7 @@ export default function OntologyPanel() {
             {/* Bottom-right: controls */}
             <div className="absolute bottom-4 right-4 flex flex-col gap-1 z-10">
               {/* Layout selector */}
-              <div className="flex gap-0.5 mb-1">
+              <div className="flex flex-col gap-0.5 mb-1">
                 {(['force', 'tree', 'radial'] as const).map(l => (
                   <button
                     key={l}
