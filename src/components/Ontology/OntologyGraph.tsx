@@ -316,8 +316,8 @@ export default function OntologyGraph({ nodes, edges, selectedNodeId, highlightF
 
       // Label (only if zoom > 0.4 or node is important)
       if (cam.zoom > 0.4 || n.size > 3 || n.id === hovId || n.id === selId) {
-        const fontSize = Math.max(8, Math.min(14, 6 + n.size * 0.8)) / cam.zoom * 0.5
-        ctx.font = `${Math.round(fontSize)}px -apple-system, sans-serif`
+        const fontSize = Math.max(11, Math.min(22, 10 + n.size * 1.2)) / cam.zoom * 0.7
+        ctx.font = `bold ${Math.round(fontSize)}px -apple-system, sans-serif`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'top'
         ctx.fillStyle = `rgba(255,255,255,${alpha * 0.9})`
