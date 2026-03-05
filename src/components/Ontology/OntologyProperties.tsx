@@ -120,8 +120,11 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
             const circularIn = incoming.filter(e => e.circular)
             if (circularOut.length === 0 && circularIn.length === 0) return null
 
-            // Trace cycle paths: for each circular outgoing edge, trace forward to find the loop back
+            // Trace cycle paths
             const cyclePaths: { path: string[]; edgeTypes: string[] }[] = []
+            const seenCycles = new Set<string>()
+
+            // For outgoing circular edges: trace node → target → ... → node
             for (const ce of circularOut) {
               const path = [node.id, ce.target]
               const edgeTypes = [ce.type]
@@ -141,7 +144,37 @@ export default function OntologyProperties({ node, edges, allNodes, impactMap, o
                   current = nextEdge.target
                 }
               }
-              if (found) cyclePaths.push({ path, edgeTypes })
+              if (found) {
+                const key = path.join('→')
+                if (!seenCycles.has(key)) { seenCycles.add(key); cyclePaths.push({ path, edgeTypes }) }
+              }
+            }
+
+            // For incoming circular edges: trace node → ... → source → node
+            for (const ce of circularIn) {
+              const path = [node.id]
+              const edgeTypes: string[] = []
+              const visited = new Set<string>()
+              let current = node.id
+              let found = false
+              for (let step = 0; step < 10 && !found; step++) {
+                // Follow outgoing edges from current toward ce.source
+                const nextEdge = edges.find(e => e.source === current && !visited.has(e.target) && e !== ce)
+                if (!nextEdge) break
+                visited.add(nextEdge.target)
+                path.push(nextEdge.target)
+                edgeTypes.push(nextEdge.type)
+                if (nextEdge.target === ce.source) {
+                  edgeTypes.push(ce.type)
+                  found = true
+                } else {
+                  current = nextEdge.target
+                }
+              }
+              if (found) {
+                const key = path.join('→')
+                if (!seenCycles.has(key)) { seenCycles.add(key); cyclePaths.push({ path, edgeTypes }) }
+              }
             }
 
             return (
