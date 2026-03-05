@@ -78,8 +78,8 @@ function hexToRgb(hex: string): [number, number, number] {
 function computeTreeLayout(nodes: GraphNode[], edges: GraphEdge[]) {
   if (nodes.length === 0) return
   const nodeMap = new Map(nodes.map(n => [n.id, n]))
-  const NODE_GAP = 45
-  const LAYER_HEIGHT = 80
+  const NODE_GAP = 35        // vertical gap between sibling nodes
+  const DEPTH_GAP = 120      // horizontal gap between depth levels (left→right)
 
   // Build adjacency
   const incomingSet = new Set<string>()
@@ -131,49 +131,51 @@ function computeTreeLayout(nodes: GraphNode[], edges: GraphEdge[]) {
     roots.push(o)
   }
 
-  // Calculate subtree leaf-width bottom-up
-  const subtreeW = new Map<string, number>()
-  function calcWidth(nid: string): number {
+  // Calculate subtree height (leaf count) bottom-up
+  const subtreeH = new Map<string, number>()
+  function calcHeight(nid: string): number {
     const ch = treeChildren.get(nid) ?? []
-    if (ch.length === 0) { subtreeW.set(nid, 1); return 1 }
-    const w = ch.reduce((sum, c) => sum + calcWidth(c), 0)
-    subtreeW.set(nid, w)
-    return w
+    if (ch.length === 0) { subtreeH.set(nid, 1); return 1 }
+    const h = ch.reduce((sum, c) => sum + calcHeight(c), 0)
+    subtreeH.set(nid, h)
+    return h
   }
 
-  // Position each subtree: node centered above its children
-  function positionSubtree(nid: string, leftX: number, depth: number) {
+  // Left-to-right layout: x = depth, y = siblings stacked vertically
+  function positionSubtree(nid: string, topY: number, depth: number) {
     const n = nodeMap.get(nid)
     if (!n) return
     const ch = treeChildren.get(nid) ?? []
-    const w = subtreeW.get(nid) ?? 1
+    const h = subtreeH.get(nid) ?? 1
 
-    n.x = leftX + (w - 1) * NODE_GAP / 2
-    n.y = depth * LAYER_HEIGHT
+    n.x = depth * DEPTH_GAP
+    n.y = topY + (h - 1) * NODE_GAP / 2
     n.vx = 0
     n.vy = 0
 
-    let childX = leftX
+    let childY = topY
     for (const c of ch) {
-      const cw = subtreeW.get(c) ?? 1
-      positionSubtree(c, childX, depth + 1)
-      childX += cw * NODE_GAP
+      const ch_h = subtreeH.get(c) ?? 1
+      positionSubtree(c, childY, depth + 1)
+      childY += ch_h * NODE_GAP
     }
   }
 
-  // Layout all root subtrees side by side
-  for (const r of roots) calcWidth(r.id)
+  // Layout all root subtrees stacked vertically
+  for (const r of roots) calcHeight(r.id)
 
-  let totalX = 0
+  let totalY = 0
   for (const r of roots) {
-    positionSubtree(r.id, totalX, 0)
-    totalX += (subtreeW.get(r.id) ?? 1) * NODE_GAP
+    positionSubtree(r.id, totalY, 0)
+    totalY += (subtreeH.get(r.id) ?? 1) * NODE_GAP
   }
 
   // Center the whole tree at origin
   const xs = nodes.map(n => n.x)
+  const ys = nodes.map(n => n.y)
   const cx = (Math.min(...xs) + Math.max(...xs)) / 2
-  for (const n of nodes) n.x -= cx
+  const cy = (Math.min(...ys) + Math.max(...ys)) / 2
+  for (const n of nodes) { n.x -= cx; n.y -= cy }
 }
 
 function computeRadialLayout(nodes: GraphNode[]) {
