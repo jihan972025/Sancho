@@ -26,9 +26,6 @@ export default function Sidebar({ activeTab, onTabChange }: Props) {
 
   return (
     <div className="w-16 bg-slate-950 border-r border-slate-800 flex flex-col items-center py-4 gap-2">
-      <span className="text-[10px] text-slate-500 font-mono mb-1 select-none">
-        v{__APP_VERSION__}
-      </span>
       {tabs.filter((tab) => isVisible(tab.id)).map((tab) => {
         const Icon = tab.icon
         const isActive = activeTab === tab.id
